@@ -329,6 +329,38 @@ public class TutorialManager : MonoBehaviour
         // 自动进入下一步
         GoToNextStep();
     }
+    
+    // 重复检查玩家是否按下空格键的协程
+    private IEnumerator CheckForSpaceKeyPress()
+    {
+        Debug.Log("TutorialManager: 开始重复检查玩家是否按下空格键");
+        
+        // 记录初始的当前玩家索引
+        int initialPlayerIndex = playerController != null ? playerController.GetCurrentPlayerIndex() : 0;
+        
+        while (true)
+        {
+            // 检查当前玩家索引是否发生变化（表示玩家按下了空格键）
+            if (playerController != null)
+            {
+                int currentPlayerIndex = playerController.GetCurrentPlayerIndex();
+                if (currentPlayerIndex != initialPlayerIndex)
+                {
+                    Debug.Log($"TutorialManager: 检测到玩家按下空格键，从玩家{initialPlayerIndex}切换到玩家{currentPlayerIndex}，自动进入下一步");
+                    // 自动进入下一步
+                    GoToNextStep();
+                    yield break; // 退出协程
+                }
+            }
+            else
+            {
+                Debug.LogWarning("TutorialManager: 无法获取PlayerController信息");
+            }
+            
+            // 等待0.1秒后再次检查
+            yield return new WaitForSeconds(0.1f);
+        }
+    }
 
     private void HandleAfterGetChong()
     {
@@ -356,10 +388,13 @@ public class TutorialManager : MonoBehaviour
     {
         SetGuideExpression(exprNormal);
         hintText.text = "按下【空格键】切换到她的视角看看吧。";
-        continueButton.gameObject.SetActive(true);
+        continueButton.gameObject.SetActive(false); // 隐藏继续按钮，使用自动检测
         EnablePlayerMovement(1);
         EnablePlayerSwitching();
         EnableUIInteraction();
+        
+        // 开始重复检查玩家是否按下空格键
+        StartCoroutine(CheckForSpaceKeyPress());
     }
 
     private void HandleMoveToDie()
