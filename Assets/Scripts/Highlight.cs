@@ -445,7 +445,7 @@ public class Highlight : MonoBehaviour
         bool isPlayer1 = player.IsPlayer1();
         
         // 根据玩家类型查找对应的米字格
-        string targetMiSquareName = isPlayer1 ? "米字格1" : "米字格2";
+        string targetMiSquareName = isPlayer1 ? "MiSquare1" : "MiSquare2";
         
         // 查找指定名称的米字格
         GameObject targetMiSquare = GameObject.Find(targetMiSquareName);
@@ -490,48 +490,102 @@ public class Highlight : MonoBehaviour
     // 根据letter处理广播
     private void HandleBroadcastByObject(string broadcastedValue)
     {
+        Debug.Log($"=== 开始处理广播 ===");
+        Debug.Log($"广播值: '{broadcastedValue}'");
+        Debug.Log($"当前对象: {gameObject.name}");
+        Debug.Log($"当前letter: '{letter}'");
+        
         // 检查自己的letter是否在字典中，且值等于广播的值
         if (PublicData.stringKeyValuePairs.ContainsKey(letter))
         {
             string myValue = PublicData.stringKeyValuePairs[letter];
+            Debug.Log($"当前对象的letter '{letter}' 在字典中，对应值: '{myValue}'");
             if (myValue == broadcastedValue)
             {
                 Debug.Log($"当前对象的letter '{letter}' 值与广播值 '{broadcastedValue}' 匹配，执行特殊逻辑");
                 ExecuteSpecialLogic();
             }
         }
+        else
+        {
+            Debug.Log($"当前对象的letter '{letter}' 不在字典中");
+        }
         
         // 只有当广播值为"休"时才执行这些操作
         if (broadcastedValue == "休")
         {
+            Debug.Log($"广播值为'休'，检查letter: '{letter}'");
+            
             // 根据letter执行特定逻辑
             if (letter == "猎")
             {
+                Debug.Log($"检测到letter为'猎'，准备隐藏对象");
                 // 猎收到广播"休"以后隐藏
                 HideObject();
             }
             else if (letter == "王")
             {
+                Debug.Log($"检测到letter为'王'，准备显示对象");
                 // 王收到广播"休"以后显示
                 ShowObject();
             }
             else if (letter == "夹")
             {
+                Debug.Log($"检测到letter为'夹'，准备显示对象");
                 // 夹收到广播"休"以后显示
                 ShowObject();
             }
-            
+            else
+            {
+                Debug.Log($"letter '{letter}' 不在处理列表中");
+            }
         }
+        // 只有当广播值为"伙"时才执行这些操作
+        else if (broadcastedValue == "伙")
+        {
+            Debug.Log($"广播值为'伙'，检查letter: '{letter}'");
+            
+            // 根据letter执行特定逻辑
+            if (letter == "孩")
+            {
+                Debug.Log($"检测到letter为'孩'，准备隐藏对象");
+                // 孩收到广播"伙"以后隐藏
+                HideObject();
+            }
+            else if (letter == "门")
+            {
+                Debug.Log($"检测到letter为'门'，准备显示对象");
+                // 门收到广播"伙"以后显示
+                ShowObject();
+            }
+            else
+            {
+                Debug.Log($"letter '{letter}' 不在处理列表中");
+            }
+        }
+        else
+        {
+            Debug.Log($"广播值 '{broadcastedValue}' 不是'休'或'伙'，不执行特殊操作");
+        }
+        
+        Debug.Log($"=== 广播处理完成 ===");
     }
     
     // 隐藏对象（不涉及SetActive，保持对象活跃以接收广播）
     private void HideObject()
     {
+        Debug.Log($"=== 开始隐藏对象: {gameObject.name} ===");
+        
         // 禁用SpriteRenderer来隐藏对象
         SpriteRenderer spriteRenderer = GetComponent<SpriteRenderer>();
         if (spriteRenderer != null)
         {
             spriteRenderer.enabled = false;
+            Debug.Log($"已禁用SpriteRenderer");
+        }
+        else
+        {
+            Debug.LogWarning("未找到SpriteRenderer组件");
         }
         
         // 禁用Collider2D来防止交互
@@ -539,26 +593,58 @@ public class Highlight : MonoBehaviour
         if (collider != null)
         {
             collider.enabled = false;
+            Debug.Log($"已禁用Collider2D");
+        }
+        else
+        {
+            Debug.LogWarning("未找到Collider2D组件");
         }
         
-        // 禁用所有Light2D组件（包括子物体）
-        Light2D[] allLights = GetComponentsInChildren<Light2D>();
+        // 禁用所有Light2D组件（包括子物体）- 使用SetActive
+        Light2D[] allLights = GetComponentsInChildren<Light2D>(true); // true表示包括非激活的对象
+        Debug.Log($"找到 {allLights.Length} 个Light2D组件");
+        
         foreach (Light2D light in allLights)
         {
-            light.enabled = false;
+            if (light != null)
+            {
+                light.gameObject.SetActive(false);
+                Debug.Log($"已SetActive(false) Light2D组件: {light.gameObject.name}");
+            }
         }
         
-        Debug.Log($"已隐藏对象: {gameObject.name} (letter: {letter}) - 使用组件禁用方式，包括 {allLights.Length} 个Light2D组件");
+        // 额外检查：禁用所有子物体的Renderer组件
+        Renderer[] allRenderers = GetComponentsInChildren<Renderer>(true);
+        Debug.Log($"找到 {allRenderers.Length} 个Renderer组件");
+        
+        foreach (Renderer renderer in allRenderers)
+        {
+            if (renderer != null && renderer != spriteRenderer) // 避免重复处理主SpriteRenderer
+            {
+                renderer.enabled = false;
+                Debug.Log($"已禁用Renderer组件: {renderer.gameObject.name}");
+            }
+        }
+        
+        Debug.Log($"=== 对象隐藏完成: {gameObject.name} (letter: {letter}) ===");
+        Debug.Log($"隐藏的组件包括: SpriteRenderer, Collider2D, {allLights.Length}个Light2D(SetActive), {allRenderers.Length}个Renderer");
     }
     
     // 显示对象（不涉及SetActive，保持对象活跃以接收广播）
     private void ShowObject()
     {
+        Debug.Log($"=== 开始显示对象: {gameObject.name} ===");
+        
         // 启用SpriteRenderer来显示对象
         SpriteRenderer spriteRenderer = GetComponent<SpriteRenderer>();
         if (spriteRenderer != null)
         {
             spriteRenderer.enabled = true;
+            Debug.Log($"已启用SpriteRenderer");
+        }
+        else
+        {
+            Debug.LogWarning("未找到SpriteRenderer组件");
         }
         
         // 启用Collider2D来恢复交互
@@ -566,16 +652,41 @@ public class Highlight : MonoBehaviour
         if (collider != null)
         {
             collider.enabled = true;
+            Debug.Log($"已启用Collider2D");
+        }
+        else
+        {
+            Debug.LogWarning("未找到Collider2D组件");
         }
         
-        // 启用所有Light2D组件（包括子物体）
-        Light2D[] allLights = GetComponentsInChildren<Light2D>();
+        // 启用所有Light2D组件（包括子物体）- 使用SetActive
+        Light2D[] allLights = GetComponentsInChildren<Light2D>(true); // true表示包括非激活的对象
+        Debug.Log($"找到 {allLights.Length} 个Light2D组件");
+        
         foreach (Light2D light in allLights)
         {
-            light.enabled = true;
+            if (light != null)
+            {
+                light.gameObject.SetActive(true);
+                Debug.Log($"已SetActive(true) Light2D组件: {light.gameObject.name}");
+            }
         }
         
-        Debug.Log($"已显示对象: {gameObject.name} (letter: {letter}) - 使用组件启用方式，包括 {allLights.Length} 个Light2D组件");
+        // 额外检查：启用所有子物体的Renderer组件
+        Renderer[] allRenderers = GetComponentsInChildren<Renderer>(true);
+        Debug.Log($"找到 {allRenderers.Length} 个Renderer组件");
+        
+        foreach (Renderer renderer in allRenderers)
+        {
+            if (renderer != null && renderer != spriteRenderer) // 避免重复处理主SpriteRenderer
+            {
+                renderer.enabled = true;
+                Debug.Log($"已启用Renderer组件: {renderer.gameObject.name}");
+            }
+        }
+        
+        Debug.Log($"=== 对象显示完成: {gameObject.name} (letter: {letter}) ===");
+        Debug.Log($"显示的组件包括: SpriteRenderer, Collider2D, {allLights.Length}个Light2D(SetActive), {allRenderers.Length}个Renderer");
     }
     
     // 删除对象
