@@ -58,6 +58,9 @@ public class TutorialManager : MonoBehaviour
     // 事件系统
     private Dictionary<TutorialStep, System.Action> stepHandlers;
     private Dictionary<TutorialStep, TutorialStep> stepTransitions;
+    
+    // 状态标志
+    private bool chongShown = false;
     #endregion
 
     #region Unity Lifecycle
@@ -298,6 +301,9 @@ public class TutorialManager : MonoBehaviour
         EnablePlayerMovement(0);
         EnableEnterKey(); // 启用回车键响应，允许与草丛交互
 
+        // 重置虫显示标志
+        chongShown = false;
+
         // 开始重复检查玩家是否获得"虫"字
         StartCoroutine(CheckForChongCharacter());
     }
@@ -307,34 +313,21 @@ public class TutorialManager : MonoBehaviour
     {
         Debug.Log("TutorialManager: 开始重复检查玩家是否获得'虫'字");
         
-        while (true)
+        // 等待虫显示的通知
+        while (!chongShown)
         {
-            // 检查玩家是否已经获得"虫"字
-            if (playerController != null && playerController.GetCurrentPlayer() != null)
-            {
-                Player currentPlayer = playerController.GetCurrentPlayer();
-                if (currentPlayer.CarryCharacter == "虫")
-                {
-                    Debug.Log("TutorialManager: 检测到玩家已获得'虫'字，自动进入下一步");
-                    // 禁用回车键响应
-                    currentPlayer.SetEnterKeyEnabled(false);
-                    // 自动进入下一步
-                    GoToNextStep();
-                    yield break; // 退出协程
-                }
-                else
-                {
-                    Debug.Log($"TutorialManager: 玩家当前携带字符为 '{currentPlayer.CarryCharacter}'，继续等待获得'虫'字");
-                }
-            }
-            else
-            {
-                Debug.LogWarning("TutorialManager: 无法获取当前玩家信息");
-            }
-            
-            // 等待0.5秒后再次检查
-            yield return new WaitForSeconds(0.5f);
+            yield return new WaitForSeconds(0.1f);
         }
+        
+        Debug.Log("TutorialManager: 收到虫显示通知，自动进入下一步");
+        // 禁用回车键响应
+        if (playerController != null && playerController.GetCurrentPlayer() != null)
+        {
+            Player currentPlayer = playerController.GetCurrentPlayer();
+            currentPlayer.SetEnterKeyEnabled(false);
+        }
+        // 自动进入下一步
+        GoToNextStep();
     }
 
     private void HandleAfterGetChong()
@@ -955,6 +948,13 @@ public class TutorialManager : MonoBehaviour
     public bool IsInMoveToGrassStep()
     {
         return currentStep == TutorialStep.MoveToGrass;
+    }
+    
+    // 虫显示通知方法
+    public void OnChongShown()
+    {
+        Debug.Log("TutorialManager: 收到虫显示通知");
+        chongShown = true;
     }
     #endregion
 }

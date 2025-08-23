@@ -238,15 +238,40 @@ public class Highlight : MonoBehaviour
             {
                 Debug.Log($"FunctionA: 在MoveToGrass步骤中，玩家与草交互，执行特殊逻辑。玩家当前携带字符: '{player.CarryCharacter}'");
                 
+                // 显示草的子物体"虫"
+                ShowChongChildObject();
+                
                 // 添加"虫"到可用字符串列表
                 AddChongToAvailableList();
                 
-                // 激活"虫"物体
-                ActivateChongObject();
-                
-                // 设置玩家携带字符为"虫"
-                player.SetCarryCharacter("虫");
+                // 通知TutorialManager虫已显示，可以进入下一步
+                NotifyTutorialManagerChongShown();
             }
+        }
+    }
+    
+    // 通知TutorialManager虫已显示
+    private void NotifyTutorialManagerChongShown()
+    {
+        if (TutorialManager.Instance != null)
+        {
+            TutorialManager.Instance.OnChongShown();
+        }
+    }
+    
+    // 显示草的子物体"虫"
+    private void ShowChongChildObject()
+    {
+        // 查找当前草对象的子物体"虫"
+        Transform chongChild = transform.Find("虫");
+        if (chongChild != null)
+        {
+            chongChild.gameObject.SetActive(true);
+            Debug.Log($"FunctionA: 已显示草的子物体'虫': {chongChild.gameObject.name}");
+        }
+        else
+        {
+            Debug.LogWarning($"FunctionA: 未找到草对象的子物体'虫'");
         }
     }
     
@@ -273,20 +298,7 @@ public class Highlight : MonoBehaviour
         }
     }
     
-    // 激活"虫"物体
-    private void ActivateChongObject()
-    {
-        GameObject chongObject = GameObject.Find("虫");
-        if (chongObject != null)
-        {
-            chongObject.SetActive(true);
-            Debug.Log("FunctionA: 已激活'虫'物体");
-        }
-        else
-        {
-            Debug.LogWarning("FunctionA: 未找到名为'虫'的物体");
-        }
-    }
+
     
     private void BroadcastCarryLetterValue(string carryLetter)
     {
