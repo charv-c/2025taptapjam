@@ -352,5 +352,28 @@ public class Player : MonoBehaviour
         }
         
         Debug.Log("所有Highlight脚本恢复完成");
+        
+        // 将所有米字格设置为默认sprite
+        ResetAllMiSquares();
+    }
+    
+    // 将所有米字格设置为默认sprite
+    private void ResetAllMiSquares()
+    {
+        // 查找场景中所有带有MiSquareController脚本的对象
+        MiSquareController[] allMiSquares = FindObjectsOfType<MiSquareController>();
+        
+        Debug.Log($"找到 {allMiSquares.Length} 个米字格");
+        
+        foreach (MiSquareController miSquare in allMiSquares)
+        {
+            if (miSquare != null)
+            {
+                miSquare.ClearSprite(); // 清除sprite，恢复默认状态
+                Debug.Log($"已重置米字格: {miSquare.gameObject.name}");
+            }
+        }
+        
+        Debug.Log("所有米字格重置完成");
     }
 } 
