@@ -1085,7 +1085,7 @@ public class TutorialManager : MonoBehaviour
         {
             Debug.LogWarning("TutorialManager: 未设置中文字体资源，尝试加载默认字体");
             // 尝试加载默认的中文字体
-            TMP_FontAsset defaultFont = Resources.Load<TMP_FontAsset>("Fonts/linja-waso SDF");
+            TMP_FontAsset defaultFont = Resources.Load<TMP_FontAsset>("Fonts/SourceHanSerifCN-Heavy SDF");
             if (defaultFont != null)
             {
                 chineseFont = defaultFont;
