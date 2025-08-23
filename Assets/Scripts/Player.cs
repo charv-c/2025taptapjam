@@ -69,12 +69,7 @@ public class Player : MonoBehaviour
             // 应用移动
             transform.Translate(movement * moveSpeed * Time.deltaTime);
         }
-        else
-        {
-            // 使用外部设置的输入值
-            Vector3 movement = new Vector3(currentHorizontalInput, currentVerticalInput, 0f);
-            transform.Translate(movement * moveSpeed * Time.deltaTime);
-        }
+        // 当输入被禁用时，不进行任何移动
     }
 
     void ClampToScreen()
@@ -183,6 +178,11 @@ public class Player : MonoBehaviour
                 // 禁用输入时，重置输入值
                 currentHorizontalInput = 0f;
                 currentVerticalInput = 0f;
+                Debug.Log($"Player: 已禁用输入，重置输入值");
+            }
+            else
+            {
+                Debug.Log($"Player: 已启用输入");
             }
         }
 
