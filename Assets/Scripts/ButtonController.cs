@@ -7,7 +7,7 @@ using TMPro;
 public class ButtonController : MonoBehaviour
 {
     [Header("按钮设置")]
-    [SerializeField] private Button splitButton, combineButton,confirmButton, cancelButton;
+    [SerializeField] private Button splitButton, combineButton;
     [SerializeField] private float hideDelay = 0.1f;
     
     [Header("UI提示设置")]
@@ -38,8 +38,8 @@ public class ButtonController : MonoBehaviour
     
     private void Start()
     {
-        if (confirmButton != null) confirmButton.gameObject.SetActive(false);
-        if (cancelButton != null) cancelButton.gameObject.SetActive(false);
+        // 确保广播管理器存在
+        EnsureBroadcastManagerExists();
         
         if (messageText != null) messageText.gameObject.SetActive(false);
         
@@ -58,6 +58,7 @@ public class ButtonController : MonoBehaviour
 
     private void OnSplitButtonClicked()
     {
+        Debug.Log("ButtonController: OnSplitButtonClicked() 开始执行");
         // 飞行动画期间禁止操作
         if (isFlyingAnimationActive) return;
         
@@ -121,8 +122,7 @@ public class ButtonController : MonoBehaviour
     {
         if (splitButton != null) splitButton.gameObject.SetActive(false);
         if (combineButton != null) combineButton.gameObject.SetActive(false);
-        if (confirmButton != null) confirmButton.gameObject.SetActive(false);
-        if (cancelButton != null) cancelButton.gameObject.SetActive(false);
+        
     }
     
     private void ShowSplitAndCombineButtons()
@@ -133,6 +133,25 @@ public class ButtonController : MonoBehaviour
         if (stringSelector != null)
         {
             UpdateButtonStates(stringSelector.GetSelectionCount());
+        }
+    }
+    
+    // 确保广播管理器存在
+    private void EnsureBroadcastManagerExists()
+    {
+        if (BroadcastManager.Instance == null)
+        {
+            // 创建空对象
+            GameObject managerObject = new GameObject("BroadcastManager");
+
+            // 添加BroadcastManager组件
+            BroadcastManager manager = managerObject.AddComponent<BroadcastManager>();
+
+            Debug.Log("ButtonController: 已创建广播管理器");
+        }
+        else
+        {
+            Debug.Log("ButtonController: 广播管理器已存在");
         }
     }
     
@@ -162,53 +181,101 @@ public class ButtonController : MonoBehaviour
     
     private void splitletter()
     {
+        Debug.Log("ButtonController: splitletter() 开始执行");
+        
         if (stringSelector != null)
         {
             int selectedCount = stringSelector.GetSelectionCount();
+            Debug.Log($"ButtonController: 当前选中字符数量: {selectedCount}");
+            
             if (selectedCount != 1)
             {
+                Debug.LogWarning($"ButtonController: 选中字符数量不正确，期望1个，实际{selectedCount}个，清除选择");
                 stringSelector.ClearSelection();
                 return;
             }
             
             string selectedString = stringSelector.FirstSelectedString;
+            Debug.Log($"ButtonController: 选中的字符: '{selectedString}'");
+            
             if (!string.IsNullOrEmpty(selectedString))
             {
+                Debug.Log($"ButtonController: 检查字符 '{selectedString}' 是否可以拆分");
+                
                 if (PublicData.CanSplitString(selectedString))
                 {
                     var (part1, part2) = PublicData.GetStringSplit(selectedString);
+                    Debug.Log($"ButtonController: 字符 '{selectedString}' 可以拆分，结果为: '{part1}' 和 '{part2}'");
                     
                     if (AudioManager.Instance != null && AudioManager.Instance.sfxSplitSuccess != null)
                     {
                         AudioManager.Instance.PlaySFX(AudioManager.Instance.sfxSplitSuccess);
+                        Debug.Log("ButtonController: 播放拆分成功音效");
                     }
 
                     stringSelector.ClearSelection();
+                    Debug.Log("ButtonController: 清除选择");
+                    
                     stringSelector.RemoveAvailableString(selectedString);
+                    Debug.Log($"ButtonController: 从可用字符串列表中移除 '{selectedString}'");
+                    
                     stringSelector.AddAvailableString(part1);
+                    Debug.Log($"ButtonController: 添加字符 '{part1}' 到可用字符串列表");
+                    
                     stringSelector.AddAvailableString(part2);
+                    Debug.Log($"ButtonController: 添加字符 '{part2}' 到可用字符串列表");
+                    
                     stringSelector.RecreateAllButtonsPublic();
+                    Debug.Log("ButtonController: 重新创建所有按钮");
+                    
                     stringSelector.SetMaxSelectionCount(2);
+                    Debug.Log("ButtonController: 设置最大选择数量为2");
+                    
+                    // 发送拆分成功广播
+                    if (BroadcastManager.Instance != null)
+                    {
+                        BroadcastManager.Instance.BroadcastToAll("split_success");
+                        Debug.Log("ButtonController: 发送拆分成功广播");
+                    }
+                    
+                    Debug.Log("ButtonController: 拆分操作完成");
                 }
                 else
                 {
+                    Debug.LogWarning($"ButtonController: 字符 '{selectedString}' 无法拆分");
+                    
                     if (AudioManager.Instance != null && AudioManager.Instance.sfxOperationFailure != null)
                     {
                         AudioManager.Instance.PlaySFX(AudioManager.Instance.sfxOperationFailure);
+                        Debug.Log("ButtonController: 播放操作失败音效");
                     }
                     stringSelector.ClearSelection();
+                    Debug.Log("ButtonController: 清除选择");
                 }
             }
+            else
+            {
+                Debug.LogWarning("ButtonController: 选中的字符为空");
+            }
+        }
+        else
+        {
+            Debug.LogError("ButtonController: stringSelector为空，无法执行拆分操作");
         }
     }
     
     private void combineletter()
     {
+        Debug.Log("ButtonController: combineletter() 开始执行");
+        
         if (stringSelector != null)
         {
             int selectedCount = stringSelector.GetSelectionCount();
+            Debug.Log($"ButtonController: 当前选中字符数量: {selectedCount}");
+            
             if (selectedCount != 2)
             {
+                Debug.LogWarning($"ButtonController: 选中字符数量不正确，期望2个，实际{selectedCount}个，清除选择");
                 stringSelector.ClearSelection();
                 return;
             }
@@ -216,53 +283,98 @@ public class ButtonController : MonoBehaviour
             List<string> selectedStrings = stringSelector.SelectedStrings;
             string firstString = selectedStrings[0];
             string secondString = selectedStrings[1];
+            Debug.Log($"ButtonController: 选中的字符: '{firstString}' 和 '{secondString}'");
             
             string originalString = PublicData.FindOriginalString(firstString, secondString);
+            Debug.Log($"ButtonController: 查找原始字符，结果: '{originalString}'");
+            
             if (originalString != null)
             {
+                Debug.Log($"ButtonController: 找到原始字符 '{originalString}'，开始组合操作");
+                
                 if (AudioManager.Instance != null && AudioManager.Instance.sfxCombineSuccess != null)
                 {
                     AudioManager.Instance.PlaySFX(AudioManager.Instance.sfxCombineSuccess);
+                    Debug.Log("ButtonController: 播放组合成功音效");
                 }
 
                 stringSelector.ClearSelection();
+                Debug.Log("ButtonController: 清除选择");
+                
                 stringSelector.RemoveAvailableString(firstString);
+                Debug.Log($"ButtonController: 从可用字符串列表中移除 '{firstString}'");
+                
                 stringSelector.RemoveAvailableString(secondString);
+                Debug.Log($"ButtonController: 从可用字符串列表中移除 '{secondString}'");
                 
                 if (PublicData.IsCharacterInTargetList(originalString))
                 {
+                    Debug.Log($"ButtonController: 字符 '{originalString}' 在目标列表中");
+                    
                     Transform targetPosition = PublicData.GetTargetPositionForCharacter(originalString);
+                    Debug.Log($"ButtonController: 获取目标位置: {targetPosition?.name ?? "null"}");
+                    
                     if (targetPosition != null)
                     {
+                        Debug.Log($"ButtonController: 目标位置有效，准备播放飞行动画");
+                        
                         // 先添加到可用字符串列表
                         stringSelector.AddAvailableString(originalString);
+                        Debug.Log($"ButtonController: 添加字符 '{originalString}' 到可用字符串列表");
+                        
                         stringSelector.RecreateAllButtonsPublic();
+                        Debug.Log("ButtonController: 重新创建所有按钮");
                         
                         // 延迟一秒后播放飞行动画
                         StartCoroutine(DelayedFlyingAnimation(originalString, targetPosition));
+                        Debug.Log($"ButtonController: 启动飞行动画协程，字符: '{originalString}'");
                     }
                     else
                     {
+                        Debug.LogWarning($"ButtonController: 目标位置为空，直接添加字符 '{originalString}'");
                         stringSelector.AddAvailableString(originalString);
                     }
                 }
                 else
                 {
+                    Debug.Log($"ButtonController: 字符 '{originalString}' 不在目标列表中，直接添加");
                     stringSelector.AddAvailableString(originalString);
                 }
                 
                 stringSelector.RecreateAllButtonsPublic();
+                Debug.Log("ButtonController: 重新创建所有按钮");
+                
                 stringSelector.SetMaxSelectionCount(2);
+                Debug.Log("ButtonController: 设置最大选择数量为2");
+                
                 stringSelector.ClearSelection();
+                Debug.Log("ButtonController: 清除选择");
+                
+                // 发送组合成功广播
+                if (BroadcastManager.Instance != null)
+                {
+                    BroadcastManager.Instance.BroadcastToAll("combine_success");
+                    Debug.Log("ButtonController: 发送组合成功广播");
+                }
+                
+                Debug.Log("ButtonController: 组合操作完成");
             }
             else
             {
+                Debug.LogWarning($"ButtonController: 无法找到字符 '{firstString}' 和 '{secondString}' 的组合结果");
+                
                 if (AudioManager.Instance != null && AudioManager.Instance.sfxOperationFailure != null)
                 {
                     AudioManager.Instance.PlaySFX(AudioManager.Instance.sfxOperationFailure);
+                    Debug.Log("ButtonController: 播放操作失败音效");
                 }
                 stringSelector.ClearSelection();
+                Debug.Log("ButtonController: 清除选择");
             }
+        }
+        else
+        {
+            Debug.LogError("ButtonController: stringSelector为空，无法执行组合操作");
         }
     }
     

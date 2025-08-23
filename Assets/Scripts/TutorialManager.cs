@@ -1,6 +1,7 @@
 using UnityEngine;
 using UnityEngine.UI;
 using TMPro;
+using UnityEngine.SceneManagement;
 using System.Collections;
 using System.Collections.Generic;
 
@@ -191,6 +192,13 @@ public class TutorialManager : MonoBehaviour
         else
         {
             Debug.Log($"TutorialManager: 步骤 {currentStep} 没有下一个步骤，教程结束");
+            
+            // 如果是最后一个步骤，加载下一个场景
+            if (currentStep == TutorialStep.End_Part3)
+            {
+                Debug.Log("TutorialManager: 教学完成，加载下一个场景 Level2");
+                LoadNextScene();
+            }
         }
     }
     #endregion
@@ -516,6 +524,9 @@ public class TutorialManager : MonoBehaviour
         hintText.text = "成功拆分！你获得了【片】和【枼】。";
         EnablePlayerMovement(1);
 
+        // 恢复教学Panel的默认位置
+        ResetTutorialPanelPosition();
+
         // 显示继续按钮，等待玩家点击
         continueButton.gameObject.SetActive(true);
         EnableUIInteraction(); // 启用UI交互以便继续按钮可用
@@ -530,9 +541,10 @@ public class TutorialManager : MonoBehaviour
             HighlightUITarget(combineButton.transform);
         }
         DisablePlayerMovement();
+        EnableUIInteraction();
 
-        // 延迟一秒后显示继续按钮
-        StartCoroutine(DelayedShowContinueButton(1f));
+        // 调整教学Panel位置，避免遮挡底部UI
+        AdjustTutorialPanelPosition();
     }
 
     private void HandleAfterCombine()
@@ -665,8 +677,9 @@ public class TutorialManager : MonoBehaviour
     {
         if (sourceWord == "牒" && currentStep == TutorialStep.SelectAndSplit)
         {
-            Debug.Log("TutorialManager: 拆分'牒'字成功，但需要等待点击继续按钮");
-            // 不自动跳转，等待玩家点击继续按钮
+            Debug.Log("TutorialManager: 拆分'牒'字成功，自动跳转到下一步");
+            // 自动跳转到下一步
+            GoToNextStep();
         }
     }
 
@@ -674,8 +687,9 @@ public class TutorialManager : MonoBehaviour
     {
         if (resultWord == "蝶" && currentStep == TutorialStep.SelectAndCombine)
         {
-            Debug.Log("TutorialManager: 合成'蝶'字成功，但需要等待点击继续按钮");
-            // 不自动跳转，等待玩家点击继续按钮
+            Debug.Log("TutorialManager: 合成'蝶'字成功，自动跳转到下一步");
+            // 自动跳转到下一步
+            GoToNextStep();
         }
     }
 
@@ -709,6 +723,21 @@ public class TutorialManager : MonoBehaviour
             Debug.Log("TutorialManager: 广播管理器已存在");
         }
     }
+    
+    // 加载下一个场景
+    private void LoadNextScene()
+    {
+        Debug.Log("TutorialManager: 开始加载下一个场景");
+        
+        // 隐藏教学面板
+        if (tutorialPanel != null)
+        {
+            tutorialPanel.SetActive(false);
+        }
+        
+        // 加载 Level2 场景
+        SceneManager.LoadScene("level2");
+    }
 
     // 接收广播的方法
     public void ReceiveBroadcast(string broadcastedValue)
@@ -720,6 +749,18 @@ public class TutorialManager : MonoBehaviour
         {
             Debug.Log("TutorialManager: 收到'伏'字广播，执行OnPlayerTransformed");
             OnPlayerTransformed();
+        }
+        // 当收到拆分成功的广播时，执行OnSplitSuccess
+        else if (broadcastedValue == "split_success")
+        {
+            Debug.Log("TutorialManager: 收到拆分成功广播，执行OnSplitSuccess");
+            OnSplitSuccess("牒");
+        }
+        // 当收到组合成功的广播时，执行OnCombineSuccess
+        else if (broadcastedValue == "combine_success")
+        {
+            Debug.Log("TutorialManager: 收到组合成功广播，执行OnCombineSuccess");
+            OnCombineSuccess("蝶");
         }
     }
 
@@ -1071,6 +1112,85 @@ public class TutorialManager : MonoBehaviour
             
             Debug.Log($"TutorialManager: 在Canvas '{canvas.name}' 中禁用了 {disabledCount} 个UI元素的Raycast Target");
         }
+        
+        // 特别禁用Circle和Arrow的Raycast Target
+        DisableSpecificUIElements();
+    }
+    
+    // 特别禁用Circle和Arrow的Raycast Target
+    private void DisableSpecificUIElements()
+    {
+        // 查找所有包含"Circle"或"Arrow"名称的UI元素
+        UnityEngine.UI.Image[] allImages = FindObjectsOfType<UnityEngine.UI.Image>();
+        
+        foreach (UnityEngine.UI.Image image in allImages)
+        {
+            string imageName = image.name.ToLower();
+            
+            // 检查是否包含Circle或Arrow关键词
+            if (imageName.Contains("circle") || imageName.Contains("arrow") || 
+                imageName.Contains("圈") || imageName.Contains("箭头"))
+            {
+                image.raycastTarget = false;
+                Debug.Log($"TutorialManager: 已禁用 {image.name} 的Raycast Target");
+            }
+        }
+        
+        // 特别处理highlightBox（高亮圈）
+        if (highlightBox != null)
+        {
+            UnityEngine.UI.Image highlightImage = highlightBox.GetComponent<UnityEngine.UI.Image>();
+            if (highlightImage != null)
+            {
+                highlightImage.raycastTarget = false;
+                Debug.Log("TutorialManager: 已禁用highlightBox的Raycast Target");
+            }
+        }
+        
+        // 特别处理arrowImage（箭头）
+        if (arrowImage != null)
+        {
+            arrowImage.raycastTarget = false;
+            Debug.Log("TutorialManager: 已禁用arrowImage的Raycast Target");
+        }
+    }
+    
+    // 恢复Circle和Arrow的Raycast Target
+    private void RestoreSpecificUIElements()
+    {
+        // 查找所有包含"Circle"或"Arrow"名称的UI元素
+        UnityEngine.UI.Image[] allImages = FindObjectsOfType<UnityEngine.UI.Image>();
+        
+        foreach (UnityEngine.UI.Image image in allImages)
+        {
+            string imageName = image.name.ToLower();
+            
+            // 检查是否包含Circle或Arrow关键词
+            if (imageName.Contains("circle") || imageName.Contains("arrow") || 
+                imageName.Contains("圈") || imageName.Contains("箭头"))
+            {
+                image.raycastTarget = true;
+                Debug.Log($"TutorialManager: 已恢复 {image.name} 的Raycast Target");
+            }
+        }
+        
+        // 特别处理highlightBox（高亮圈）
+        if (highlightBox != null)
+        {
+            UnityEngine.UI.Image highlightImage = highlightBox.GetComponent<UnityEngine.UI.Image>();
+            if (highlightImage != null)
+            {
+                highlightImage.raycastTarget = true;
+                Debug.Log("TutorialManager: 已恢复highlightBox的Raycast Target");
+            }
+        }
+        
+        // 特别处理arrowImage（箭头）
+        if (arrowImage != null)
+        {
+            arrowImage.raycastTarget = true;
+            Debug.Log("TutorialManager: 已恢复arrowImage的Raycast Target");
+        }
     }
     
     // 恢复所有UI元素的Raycast Target
@@ -1111,6 +1231,9 @@ public class TutorialManager : MonoBehaviour
             
             Debug.Log($"TutorialManager: 在Canvas '{canvas.name}' 中恢复了 {restoredCount} 个UI元素的Raycast Target");
         }
+        
+        // 特别恢复Circle和Arrow的Raycast Target
+        RestoreSpecificUIElements();
     }
     
     // 恢复教学Panel的Raycast Target
