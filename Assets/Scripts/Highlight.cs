@@ -164,8 +164,7 @@ public class Highlight : MonoBehaviour
             {
                 Debug.Log($"AddLetterToAvailableList: 正在添加字符 '{letter}' 到可用字符串列表");
                 stringSelector.AddAvailableString(letter);
-                Debug.Log($"AddLetterToAvailableList: 字符 '{letter}' 已添加到可用字符串列表，准备销毁对象");
-                Destroy(gameObject);
+                Debug.Log($"AddLetterToAvailableList: 字符 '{letter}' 已添加到可用字符串列表");
             }
             else
             {
@@ -186,9 +185,8 @@ public class Highlight : MonoBehaviour
         {
             if (collectable)
             {
-                Debug.Log($"FunctionA: 对象 '{letter}' 是可收集的，调用AddLetterToAvailableList");
-                AddLetterToAvailableList();
-                return;
+                Debug.Log($"FunctionA: 对象 '{letter}' 是可收集的，先执行特殊逻辑，再调用AddLetterToAvailableList");
+                // 先执行特殊逻辑，再销毁对象
             }
             
             if (player.CarryCharacter == "人")
@@ -226,14 +224,24 @@ public class Highlight : MonoBehaviour
         
         // 特殊处理：草对象在教程步骤中的特殊逻辑
         HandleSpecialTutorialLogic();
+        
+        // 如果是可收集的对象，在特殊逻辑执行完后销毁对象
+        if (collectable)
+        {
+            Debug.Log($"FunctionA: 特殊逻辑执行完成，销毁对象 '{letter}'");
+            Destroy(gameObject);
+        }
     }
     
     // 处理教程中的特殊逻辑
     private void HandleSpecialTutorialLogic()
     {
+        Debug.Log($"FunctionA: HandleSpecialTutorialLogic - letter='{letter}', TutorialManager.Instance={TutorialManager.Instance != null}");
+        
         // 检查是否在MoveToGrass步骤中
         if (TutorialManager.Instance != null && TutorialManager.Instance.IsInMoveToGrassStep())
         {
+            Debug.Log("FunctionA: 当前在MoveToGrass步骤中");
             if (letter == "草" && player != null)
             {
                 Debug.Log($"FunctionA: 在MoveToGrass步骤中，玩家与草交互，执行特殊逻辑。玩家当前携带字符: '{player.CarryCharacter}'");
@@ -248,6 +256,33 @@ public class Highlight : MonoBehaviour
                 NotifyTutorialManagerChongShown();
             }
         }
+        
+        // 检查是否在MoveToDie步骤中
+        if (TutorialManager.Instance != null && TutorialManager.Instance.IsInMoveToDieStep())
+        {
+            Debug.Log("FunctionA: 当前在MoveToDie步骤中");
+            if (letter == "牒" && player != null)
+            {
+                Debug.Log($"FunctionA: 在MoveToDie步骤中，玩家与牒交互，执行特殊逻辑。玩家当前携带字符: '{player.CarryCharacter}'");
+                
+                // 设置玩家携带"牒"字
+                player.SetCarryCharacter("牒");
+                
+                // 添加"牒"到可用字符串列表
+                AddDieToAvailableList();
+                
+                // 通知TutorialManager牒已显示，可以进入下一步
+                NotifyTutorialManagerDieShown();
+            }
+            else
+            {
+                Debug.Log($"FunctionA: 在MoveToDie步骤中，但条件不匹配 - letter='{letter}', player={player != null}");
+            }
+        }
+        else
+        {
+            Debug.Log("FunctionA: 不在MoveToDie步骤中");
+        }
     }
     
     // 通知TutorialManager虫已显示
@@ -256,6 +291,15 @@ public class Highlight : MonoBehaviour
         if (TutorialManager.Instance != null)
         {
             TutorialManager.Instance.OnChongShown();
+        }
+    }
+    
+    // 通知TutorialManager牒已显示
+    private void NotifyTutorialManagerDieShown()
+    {
+        if (TutorialManager.Instance != null)
+        {
+            TutorialManager.Instance.OnDieShown();
         }
     }
     
@@ -295,6 +339,29 @@ public class Highlight : MonoBehaviour
         else
         {
             Debug.LogError("FunctionA: ButtonController.Instance为空，无法添加字符 '虫'");
+        }
+    }
+    
+    // 添加"牒"到可用字符串列表
+    private void AddDieToAvailableList()
+    {
+        if (ButtonController.Instance != null)
+        {
+            StringSelector stringSelector = ButtonController.Instance.GetStringSelector();
+            if (stringSelector != null)
+            {
+                Debug.Log("FunctionA: 正在添加字符 '牒' 到可用字符串列表");
+                stringSelector.AddAvailableString("牒");
+                Debug.Log("FunctionA: 字符 '牒' 已添加到可用字符串列表");
+            }
+            else
+            {
+                Debug.LogError("FunctionA: StringSelector为空，无法添加字符 '牒'");
+            }
+        }
+        else
+        {
+            Debug.LogError("FunctionA: ButtonController.Instance为空，无法添加字符 '牒'");
         }
     }
     

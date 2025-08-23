@@ -102,12 +102,12 @@ public class Player : MonoBehaviour
             if (isPlayer1)
             {
                 // 玩家1只能在左半边移动（X轴限制在-8.9到0）
-                clampedX = Mathf.Clamp(playerPosition.x, -8.9f, 0.5f);
+                clampedX = Mathf.Clamp(playerPosition.x, -8.9f, -0.8f);
             }
             else
             {
                 // 玩家2只能在右半边移动（X轴限制在0到8.9）
-                clampedX = Mathf.Clamp(playerPosition.x, 0.5f, 8.9f);
+                clampedX = Mathf.Clamp(playerPosition.x, 0.8f, 8.9f);
             }
 
             // Y轴移动范围限制在-2.4到2.4（使用世界坐标）

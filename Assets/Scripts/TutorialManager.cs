@@ -61,6 +61,7 @@ public class TutorialManager : MonoBehaviour
     
     // 状态标志
     private bool chongShown = false;
+    private bool dieShown = false;
     #endregion
 
     #region Unity Lifecycle
@@ -79,6 +80,9 @@ public class TutorialManager : MonoBehaviour
 
         // 设置中文字体
         SetChineseFont();
+
+        // 检查组件引用
+        CheckComponentReferences();
 
         // 延迟一帧后禁止玩家移动，确保PlayerController已完全初始化
         StartCoroutine(DelayedDisablePlayerMovement());
@@ -361,6 +365,42 @@ public class TutorialManager : MonoBehaviour
             yield return new WaitForSeconds(0.1f);
         }
     }
+    
+    // 重复检查玩家是否按下空格键的协程（Part2版本）
+    private IEnumerator CheckForSpaceKeyPressInPart2()
+    {
+        Debug.Log("TutorialManager: 开始重复检查玩家是否按下空格键（Part2）");
+        
+        // 记录初始的当前玩家索引
+        int initialPlayerIndex = playerController != null ? playerController.GetCurrentPlayerIndex() : 0;
+        
+        while (true)
+        {
+            // 检查当前玩家索引是否发生变化（表示玩家按下了空格键）
+            if (playerController != null)
+            {
+                int currentPlayerIndex = playerController.GetCurrentPlayerIndex();
+                if (currentPlayerIndex != initialPlayerIndex)
+                {
+                    Debug.Log($"TutorialManager: 检测到玩家按下空格键，从玩家{initialPlayerIndex}切换到玩家{currentPlayerIndex}，启用人物2移动并进入下一步");
+                    
+                    // 切换到人物2并启用移动
+                    EnablePlayerMovement(1);
+                    
+                    // 自动进入下一步
+                    GoToNextStep();
+                    yield break; // 退出协程
+                }
+            }
+            else
+            {
+                Debug.LogWarning("TutorialManager: 无法获取PlayerController信息");
+            }
+            
+            // 等待0.1秒后再次检查
+            yield return new WaitForSeconds(0.1f);
+        }
+    }
 
     private void HandleAfterGetChong()
     {
@@ -389,12 +429,12 @@ public class TutorialManager : MonoBehaviour
         SetGuideExpression(exprNormal);
         hintText.text = "按下【空格键】切换到她的视角看看吧。";
         continueButton.gameObject.SetActive(false); // 隐藏继续按钮，使用自动检测
-        EnablePlayerMovement(1);
-        EnablePlayerSwitching();
+        DisablePlayerMovement(); // 先禁用移动，等待空格键
+        EnablePlayerSwitching(); // 启用切换功能
         EnableUIInteraction();
         
         // 开始重复检查玩家是否按下空格键
-        StartCoroutine(CheckForSpaceKeyPress());
+        StartCoroutine(CheckForSpaceKeyPressInPart2());
     }
 
     private void HandleMoveToDie()
@@ -405,8 +445,18 @@ public class TutorialManager : MonoBehaviour
         {
             PointAtTarget(dieObject.transform);
         }
+        
+        // 确保当前玩家是人物2（祝英台）
+        if (playerController != null)
+        {
+            playerController.SetCurrentPlayerIndex(1);
+        }
+        
         EnablePlayerMovement(1);
         EnableEnterKey(); // 启用回车键响应，允许与文牒交互
+
+        // 重置牒显示标志
+        dieShown = false;
 
         // 开始重复检查玩家是否获得"牒"字
         StartCoroutine(CheckForDieCharacter());
@@ -417,34 +467,21 @@ public class TutorialManager : MonoBehaviour
     {
         Debug.Log("TutorialManager: 开始重复检查玩家是否获得'牒'字");
         
-        while (true)
+        // 等待牒显示的通知
+        while (!dieShown)
         {
-            // 检查玩家是否已经获得"牒"字
-            if (playerController != null && playerController.GetCurrentPlayer() != null)
-            {
-                Player currentPlayer = playerController.GetCurrentPlayer();
-                if (currentPlayer.CarryCharacter == "牒")
-                {
-                    Debug.Log("TutorialManager: 检测到玩家已获得'牒'字，自动进入下一步");
-                    // 禁用回车键响应
-                    currentPlayer.SetEnterKeyEnabled(false);
-                    // 自动进入下一步
-                    GoToNextStep();
-                    yield break; // 退出协程
-                }
-                else
-                {
-                    Debug.Log($"TutorialManager: 玩家当前携带字符为 '{currentPlayer.CarryCharacter}'，继续等待获得'牒'字");
-                }
-            }
-            else
-            {
-                Debug.LogWarning("TutorialManager: 无法获取当前玩家信息");
-            }
-            
-            // 等待0.5秒后再次检查
-            yield return new WaitForSeconds(0.5f);
+            yield return new WaitForSeconds(0.1f);
         }
+        
+        Debug.Log("TutorialManager: 收到牒显示通知，自动进入下一步");
+        // 禁用回车键响应
+        if (playerController != null && playerController.GetCurrentPlayer() != null)
+        {
+            Player currentPlayer = playerController.GetCurrentPlayer();
+            currentPlayer.SetEnterKeyEnabled(false);
+        }
+        // 自动进入下一步
+        GoToNextStep();
     }
 
     private void HandleAfterGetDie()
@@ -468,6 +505,9 @@ public class TutorialManager : MonoBehaviour
         }
         DisablePlayerMovement();
         EnableUIInteraction();
+        
+        // 调整教学Panel位置，避免遮挡底部UI
+        AdjustTutorialPanelPosition();
     }
 
     private void HandleAfterSplit()
@@ -500,6 +540,9 @@ public class TutorialManager : MonoBehaviour
         SetGuideExpression(exprHappy);
         hintText.text = "太棒了！诗句完成了！";
         EnablePlayerMovement(1);
+
+        // 恢复教学Panel的默认位置
+        ResetTutorialPanelPosition();
 
         // 显示继续按钮，等待玩家点击
         continueButton.gameObject.SetActive(true);
@@ -850,6 +893,14 @@ public class TutorialManager : MonoBehaviour
         if (tutorialMask != null)
         {
             tutorialMask.SetActive(true);
+            
+            // 获取Image组件并启用Raycast Target
+            UnityEngine.UI.Image maskImage = tutorialMask.GetComponent<UnityEngine.UI.Image>();
+            if (maskImage != null)
+            {
+                maskImage.raycastTarget = true;
+                Debug.Log("TutorialManager: 已启用tutorialMask的Raycast Target");
+            }
         }
 
         Debug.Log("TutorialManager: 禁用UI交互");
@@ -870,10 +921,18 @@ public class TutorialManager : MonoBehaviour
             }
         }
 
-        // 隐藏蒙层
+        // 隐藏蒙层并禁用其Raycast Target
         if (tutorialMask != null)
         {
             tutorialMask.SetActive(false);
+            
+            // 获取Image组件并禁用Raycast Target
+            UnityEngine.UI.Image maskImage = tutorialMask.GetComponent<UnityEngine.UI.Image>();
+            if (maskImage != null)
+            {
+                maskImage.raycastTarget = false;
+                Debug.Log("TutorialManager: 已禁用tutorialMask的Raycast Target");
+            }
         }
 
         Debug.Log("TutorialManager: 启用UI交互");
@@ -884,6 +943,17 @@ public class TutorialManager : MonoBehaviour
     // 设置中文字体
     private void SetChineseFont()
     {
+        // 如果没有设置中文字体，尝试从StringSelector获取
+        if (chineseFont == null)
+        {
+            StringSelector stringSelector = FindObjectOfType<StringSelector>();
+            if (stringSelector != null)
+            {
+                chineseFont = stringSelector.GetChineseFont();
+                Debug.Log("TutorialManager: 从StringSelector获取中文字体");
+            }
+        }
+        
         if (chineseFont != null)
         {
             // 设置提示文本的字体
@@ -905,12 +975,198 @@ public class TutorialManager : MonoBehaviour
         }
         else
         {
-            Debug.LogWarning("TutorialManager: 未设置中文字体资源");
+            Debug.LogWarning("TutorialManager: 未设置中文字体资源，尝试加载默认字体");
+            // 尝试加载默认的中文字体
+            TMP_FontAsset defaultFont = Resources.Load<TMP_FontAsset>("Fonts/linja-waso SDF");
+            if (defaultFont != null)
+            {
+                chineseFont = defaultFont;
+                if (hintText != null)
+                {
+                    hintText.font = chineseFont;
+                    hintText.ForceMeshUpdate();
+                }
+                Debug.Log("TutorialManager: 使用默认中文字体");
+            }
         }
     }
     #endregion
 
     #region Helper Methods
+    // 调整教学Panel，禁用所有遮挡元素的Raycast Target避免拦截点击事件
+    private void AdjustTutorialPanelPosition()
+    {
+        if (tutorialPanel != null)
+        {
+            // 禁用Panel的Raycast Target，让鼠标点击穿透到下面的UI
+            UnityEngine.UI.Image panelImage = tutorialPanel.GetComponent<UnityEngine.UI.Image>();
+            if (panelImage != null)
+            {
+                panelImage.raycastTarget = false;
+                Debug.Log("TutorialManager: 已禁用教学Panel的Raycast Target");
+            }
+            
+            // 同时禁用Panel内所有子对象的Raycast Target
+            UnityEngine.UI.Image[] childImages = tutorialPanel.GetComponentsInChildren<UnityEngine.UI.Image>();
+            foreach (UnityEngine.UI.Image childImage in childImages)
+            {
+                childImage.raycastTarget = false;
+            }
+            
+            Debug.Log($"TutorialManager: 已禁用教学Panel及其{childImages.Length}个子对象的Raycast Target");
+        }
+        
+        // 禁用所有可能遮挡的UI元素的Raycast Target
+        DisableAllBlockingUIElements();
+    }
+    
+    // 禁用所有可能遮挡的UI元素的Raycast Target
+    private void DisableAllBlockingUIElements()
+    {
+        // 查找场景中所有的Canvas
+        Canvas[] allCanvases = FindObjectsOfType<Canvas>();
+        
+        foreach (Canvas canvas in allCanvases)
+        {
+            // 检查Canvas内的所有UI元素
+            UnityEngine.UI.Image[] allImages = canvas.GetComponentsInChildren<UnityEngine.UI.Image>();
+            UnityEngine.UI.Button[] allButtons = canvas.GetComponentsInChildren<UnityEngine.UI.Button>();
+            UnityEngine.UI.Text[] allTexts = canvas.GetComponentsInChildren<UnityEngine.UI.Text>();
+            TMPro.TextMeshProUGUI[] allTMPTexts = canvas.GetComponentsInChildren<TMPro.TextMeshProUGUI>();
+            
+            int disabledCount = 0;
+            
+            // 禁用所有Image的Raycast Target（除了按钮和重要的交互元素）
+            foreach (UnityEngine.UI.Image image in allImages)
+            {
+                // 跳过按钮的Image组件
+                if (image.GetComponent<UnityEngine.UI.Button>() != null)
+                    continue;
+                    
+                // 跳过重要的交互元素（如"牒"字按钮、"拆"按钮等）
+                if (image.name.Contains("牒") || image.name.Contains("拆") || image.name.Contains("拼"))
+                    continue;
+                    
+                // 跳过底部UI区域的元素
+                if (image.transform.position.y < Screen.height * 0.3f)
+                    continue;
+                
+                image.raycastTarget = false;
+                disabledCount++;
+            }
+            
+            // 禁用所有Text的Raycast Target
+            foreach (UnityEngine.UI.Text text in allTexts)
+            {
+                text.raycastTarget = false;
+                disabledCount++;
+            }
+            
+            // 禁用所有TMP Text的Raycast Target
+            foreach (TMPro.TextMeshProUGUI tmpText in allTMPTexts)
+            {
+                tmpText.raycastTarget = false;
+                disabledCount++;
+            }
+            
+            Debug.Log($"TutorialManager: 在Canvas '{canvas.name}' 中禁用了 {disabledCount} 个UI元素的Raycast Target");
+        }
+    }
+    
+    // 恢复所有UI元素的Raycast Target
+    private void RestoreAllBlockingUIElements()
+    {
+        // 查找场景中所有的Canvas
+        Canvas[] allCanvases = FindObjectsOfType<Canvas>();
+        
+        foreach (Canvas canvas in allCanvases)
+        {
+            // 恢复所有UI元素的Raycast Target
+            UnityEngine.UI.Image[] allImages = canvas.GetComponentsInChildren<UnityEngine.UI.Image>();
+            UnityEngine.UI.Text[] allTexts = canvas.GetComponentsInChildren<UnityEngine.UI.Text>();
+            TMPro.TextMeshProUGUI[] allTMPTexts = canvas.GetComponentsInChildren<TMPro.TextMeshProUGUI>();
+            
+            int restoredCount = 0;
+            
+            // 恢复所有Image的Raycast Target
+            foreach (UnityEngine.UI.Image image in allImages)
+            {
+                image.raycastTarget = true;
+                restoredCount++;
+            }
+            
+            // 恢复所有Text的Raycast Target
+            foreach (UnityEngine.UI.Text text in allTexts)
+            {
+                text.raycastTarget = true;
+                restoredCount++;
+            }
+            
+            // 恢复所有TMP Text的Raycast Target
+            foreach (TMPro.TextMeshProUGUI tmpText in allTMPTexts)
+            {
+                tmpText.raycastTarget = true;
+                restoredCount++;
+            }
+            
+            Debug.Log($"TutorialManager: 在Canvas '{canvas.name}' 中恢复了 {restoredCount} 个UI元素的Raycast Target");
+        }
+    }
+    
+    // 恢复教学Panel的Raycast Target
+    private void ResetTutorialPanelPosition()
+    {
+        if (tutorialPanel != null)
+        {
+            // 恢复Panel的Raycast Target
+            UnityEngine.UI.Image panelImage = tutorialPanel.GetComponent<UnityEngine.UI.Image>();
+            if (panelImage != null)
+            {
+                panelImage.raycastTarget = true;
+                Debug.Log("TutorialManager: 已恢复教学Panel的Raycast Target");
+            }
+            
+            // 恢复Panel内所有子对象的Raycast Target
+            UnityEngine.UI.Image[] childImages = tutorialPanel.GetComponentsInChildren<UnityEngine.UI.Image>();
+            foreach (UnityEngine.UI.Image childImage in childImages)
+            {
+                childImage.raycastTarget = true;
+            }
+            
+            Debug.Log($"TutorialManager: 已恢复教学Panel及其{childImages.Length}个子对象的Raycast Target");
+        }
+        
+        // 恢复所有UI元素的Raycast Target
+        RestoreAllBlockingUIElements();
+    }
+    // 检查组件引用
+    private void CheckComponentReferences()
+    {
+        if (arrowImage == null)
+            Debug.LogError("TutorialManager: arrowImage 未设置!");
+            
+        if (highlightBox == null)
+            Debug.LogError("TutorialManager: highlightBox 未设置!");
+            
+        if (guideCharacterImage == null)
+            Debug.LogError("TutorialManager: guideCharacterImage 未设置!");
+            
+        if (arrowLeft == null)
+            Debug.LogError("TutorialManager: arrowLeft 未设置!");
+            
+        if (arrowDownLeft == null)
+            Debug.LogError("TutorialManager: arrowDownLeft 未设置!");
+            
+        if (dogObject == null)
+            Debug.LogWarning("TutorialManager: dogObject 未设置!");
+            
+        if (grassObject == null)
+            Debug.LogWarning("TutorialManager: grassObject 未设置!");
+            
+        if (dieObject == null)
+            Debug.LogWarning("TutorialManager: dieObject 未设置!");
+    }
+    
     // 设置引导人物表情
     private void SetGuideExpression(Sprite expression)
     {
@@ -920,7 +1176,7 @@ public class TutorialManager : MonoBehaviour
         }
     }
 
-    // 指向场景中的世界物体 (已更新为箭头 sprite切换 和 翻转 逻辑)
+    // 指向场景中的世界物体 (箭头紧挨高亮圈，尾部对着引导人物)
     private void PointAtTarget(Transform target)
     {
         if (arrowImage == null || guideCharacterImage == null || target == null)
@@ -929,13 +1185,28 @@ public class TutorialManager : MonoBehaviour
             return;
         }
 
+        // 首先显示高亮圈在目标物体上
+        HighlightUITarget(target);
+        
         arrowImage.gameObject.SetActive(true);
-        arrowImage.transform.position = guideCharacterImage.transform.position;
-
+        
+        // 获取引导人物的屏幕坐标
+        Vector3 guideScreenPos = Camera.main.WorldToScreenPoint(guideCharacterImage.transform.position);
+        
+        // 获取目标的屏幕坐标
         Vector3 targetScreenPos = Camera.main.WorldToScreenPoint(target.position);
-        Vector3 direction = (targetScreenPos - arrowImage.transform.position);
+        
+        // 计算从引导人物到目标的方向向量
+        Vector3 direction = (targetScreenPos - guideScreenPos).normalized;
 
+        // 计算角度
         float angle = Mathf.Atan2(direction.y, direction.x) * Mathf.Rad2Deg;
+
+        // 将箭头放置在目标附近，紧挨着高亮圈
+        // 根据方向计算箭头的偏移位置，指向高亮圈的边缘
+        float arrowOffset = 80f; // 箭头距离目标的偏移距离，增大以指向高亮圈边缘
+        Vector3 arrowPosition = targetScreenPos + direction * arrowOffset;
+        arrowImage.transform.position = arrowPosition;
 
         // 决定是否水平翻转
         if (angle > 90 || angle < -90)
@@ -961,7 +1232,7 @@ public class TutorialManager : MonoBehaviour
         arrowImage.transform.rotation = Quaternion.Euler(0, 0, angle);
     }
 
-    // 高亮UI元素
+    // 高亮UI元素或世界物体
     private void HighlightUITarget(Transform target)
     {
         if (highlightBox == null || target == null)
@@ -971,11 +1242,25 @@ public class TutorialManager : MonoBehaviour
         }
 
         highlightBox.gameObject.SetActive(true);
-        highlightBox.position = target.position;
+        
+        // 检查目标是否是UI元素
         RectTransform targetRect = target.GetComponent<RectTransform>();
         if (targetRect != null)
         {
-            highlightBox.sizeDelta = targetRect.sizeDelta + new Vector2(20, 20);
+            // UI元素：直接使用RectTransform位置
+            highlightBox.position = target.position;
+            Vector2 size = targetRect.sizeDelta + new Vector2(20, 20);
+            highlightBox.sizeDelta = size;
+        }
+        else
+        {
+            // 世界物体：转换为屏幕坐标
+            Vector3 targetScreenPos = Camera.main.WorldToScreenPoint(target.position);
+            highlightBox.position = targetScreenPos;
+            
+            // 为世界物体设置默认大小
+            Vector2 defaultSize = new Vector2(150, 150); // 增大默认高亮框大小
+            highlightBox.sizeDelta = defaultSize;
         }
     }
     
@@ -985,11 +1270,25 @@ public class TutorialManager : MonoBehaviour
         return currentStep == TutorialStep.MoveToGrass;
     }
     
+    // 检查是否在MoveToDie步骤中
+    public bool IsInMoveToDieStep()
+    {
+        return currentStep == TutorialStep.MoveToDie;
+    }
+    
     // 虫显示通知方法
     public void OnChongShown()
     {
         Debug.Log("TutorialManager: 收到虫显示通知");
         chongShown = true;
+    }
+    
+    // 牒显示通知方法
+    public void OnDieShown()
+    {
+        Debug.Log("TutorialManager: 收到牒显示通知，设置dieShown为true");
+        dieShown = true;
+        Debug.Log($"TutorialManager: dieShown状态: {dieShown}");
     }
     #endregion
 }
