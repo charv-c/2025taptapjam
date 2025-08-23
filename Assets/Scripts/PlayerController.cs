@@ -12,6 +12,18 @@ public class PlayerController : MonoBehaviour
     
     void Start()
     {
+        // 游戏开始时，根据设计文档播放下雨场景的BGM
+        if (AudioManager.Instance != null && AudioManager.Instance.bgmRainy != null)
+        {
+            AudioManager.Instance.PlayBGM(AudioManager.Instance.bgmRainy);
+        }
+
+        // 同时播放下雨的环境音
+        if (AudioManager.Instance != null && AudioManager.Instance.ambientRain != null)
+        {
+            AudioManager.Instance.PlayAmbient(AudioManager.Instance.ambientRain);
+        }
+
         // 如果没有手动设置玩家，自动查找场景中的所有Player组件
         if (players.Count == 0)
         {

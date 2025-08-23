@@ -68,12 +68,22 @@ public class ButtonController : MonoBehaviour
 
     private void OnSplitButtonClicked()
     {
+        // 播放UI点击音效
+        if (AudioManager.Instance != null && AudioManager.Instance.sfxUIClick != null)
+        {
+            AudioManager.Instance.PlaySFX(AudioManager.Instance.sfxUIClick);
+        }
         // 直接执行分割操作
         splitletter();
     }
     
     private void OnCombineButtonClicked()
     {
+        // 播放UI点击音效
+        if (AudioManager.Instance != null && AudioManager.Instance.sfxUIClick != null)
+        {
+            AudioManager.Instance.PlaySFX(AudioManager.Instance.sfxUIClick);
+        }
         // 直接执行合并操作
         combineletter();
     }
@@ -190,6 +200,12 @@ public class ButtonController : MonoBehaviour
                     Debug.Log($"分割结果: '{part1}' 和 '{part2}'");
                     Debug.Log($"分割结果Unicode: part1={(int)part1[0]:X4}, part2={(int)part2[0]:X4}");
                     
+                    // 播放成功音效
+                    if (AudioManager.Instance != null && AudioManager.Instance.sfxSplitSuccess != null)
+                    {
+                        AudioManager.Instance.PlaySFX(AudioManager.Instance.sfxSplitSuccess);
+                    }
+
                     // 先清除当前选择状态
                     stringSelector.ClearSelection();
                     
@@ -211,6 +227,11 @@ public class ButtonController : MonoBehaviour
                 else
                 {
                     Debug.LogWarning($"字符串 '{selectedString}' 没有预定义的分割映射");
+                    // 播放失败音效
+                    if (AudioManager.Instance != null && AudioManager.Instance.sfxOperationFailure != null)
+                    {
+                        AudioManager.Instance.PlaySFX(AudioManager.Instance.sfxOperationFailure);
+                    }
                     // 静默处理，清空选择
                     stringSelector.ClearSelection();
                 }
@@ -254,6 +275,12 @@ public class ButtonController : MonoBehaviour
             {
                 Debug.Log($"合并结果: {originalString}");
                 
+                // 播放成功音效
+                if (AudioManager.Instance != null && AudioManager.Instance.sfxCombineSuccess != null)
+                {
+                    AudioManager.Instance.PlaySFX(AudioManager.Instance.sfxCombineSuccess);
+                }
+
                 // 先清除当前选择状态
                 stringSelector.ClearSelection();
                 
@@ -278,6 +305,11 @@ public class ButtonController : MonoBehaviour
             else
             {
                 Debug.LogWarning($"无法找到由 '{firstString}' 和 '{secondString}' 组成的有效合并结果");
+                // 播放失败音效
+                if (AudioManager.Instance != null && AudioManager.Instance.sfxOperationFailure != null)
+                {
+                    AudioManager.Instance.PlaySFX(AudioManager.Instance.sfxOperationFailure);
+                }
                 // 静默处理，清空选择
                 stringSelector.ClearSelection();
             }
