@@ -13,13 +13,18 @@ public class StringSelector : MonoBehaviour
     [SerializeField] private TMP_FontAsset fallbackFont; // 回退字体资源
     
     [Header("选择设置")]
-    public int maxSelectionCount = 1; // 最大选择数量
+    [SerializeField] private int maxSelectionCount = 2; // 最大选择数量，始终保持为2
     
     [Header("字符串列表")]
     [SerializeField] private List<string> allStrings = new List<string>()
     {
+        // 基础字符
         "人", "王", "两点水", "木", "火", "土", "金", "水", "日", "月", "山", 
-        "川", "口", "心", "手", "足", "目", "耳", "鼻", "舌"
+        "川", "口", "心", "手", "足", "目", "耳", "鼻", "舌",
+        // 拼字符串可能用到的额外字符
+        "门", "女", "子", "言", "尔", "也",
+        // 拼字符串后产生的新字符
+        "闪", "明", "林", "众", "好", "休", "信", "你", "他", "们"
     };
     
     [Header("游戏开始时可用字符串")]
@@ -50,6 +55,9 @@ public class StringSelector : MonoBehaviour
     
     void Start()
     {
+        // 确保最大选择数始终为2
+        maxSelectionCount = 2;
+        
         InitializeUI();
     }
     
@@ -102,20 +110,20 @@ public class StringSelector : MonoBehaviour
             GameObject buttonObj = Instantiate(buttonPrefab, buttonContainer);
             Button button = buttonObj.GetComponent<Button>();
             TextMeshProUGUI buttonText = buttonObj.GetComponentInChildren<TextMeshProUGUI>();
-            
+
             // 确保按钮有正确的RectTransform设置
             RectTransform rectTransform = buttonObj.GetComponent<RectTransform>();
             if (rectTransform != null)
             {
                 // 设置合适的尺寸，避免按钮重叠
                 rectTransform.sizeDelta = new Vector2(100, 50);
-                
+
                 // 确保按钮有正确的锚点设置，避免占据整个容器
                 rectTransform.anchorMin = new Vector2(0, 0);
                 rectTransform.anchorMax = new Vector2(0, 0);
                 rectTransform.anchoredPosition = Vector2.zero;
             }
-            
+
             // 确保Image组件可以正确接收点击
             Image buttonImage = buttonObj.GetComponent<Image>();
             if (buttonImage != null)
@@ -126,63 +134,86 @@ public class StringSelector : MonoBehaviour
                 imageColor.a = 1.0f;
                 buttonImage.color = imageColor;
             }
-            
+
             if (buttonText != null)
             {
                 buttonText.text = str;
+                Debug.Log($"StringSelector: 正在创建按钮，字符串: '{str}'，字符代码: {(int)str[0]}，索引: {index}");
                 
+                // 添加按钮标识，用于调试
+                buttonObj.name = $"Button_{index}_{str}";
+
                 // 设置字体
                 if (chineseFont != null)
                 {
                     buttonText.font = chineseFont;
-                    
+
                     // 检查字体是否支持当前字符
                     if (!chineseFont.HasCharacter(str[0]))
                     {
-                        Debug.LogWarning($"StringSelector: 字体 '{chineseFont.name}' 不支持字符 '{str}' (Unicode: {(int)str[0]:X4})");
-                        
-                        // 尝试使用回退字体
+                        Debug.LogWarning($"StringSelector: 中文字体不支持字符 '{str}'，字符代码: {(int)str[0]}");
                         if (fallbackFont != null && fallbackFont.HasCharacter(str[0]))
                         {
                             buttonText.font = fallbackFont;
-                            Debug.Log($"StringSelector: 使用回退字体 '{fallbackFont.name}' 显示字符 '{str}'");
+                            Debug.Log($"StringSelector: 使用回退字体显示字符 '{str}'");
+                        }
+                        else
+                        {
+                            Debug.LogWarning($"StringSelector: 回退字体也不支持字符 '{str}'，将使用默认字体");
                         }
                     }
                     else
                     {
-                        Debug.Log($"StringSelector: 字体 '{chineseFont.name}' 支持字符 '{str}' (Unicode: {(int)str[0]:X4})");
+                        Debug.Log($"StringSelector: 中文字体支持字符 '{str}'");
                     }
+
+                    // 确保文本居中显示
+                    buttonText.alignment = TextAlignmentOptions.Center;
+                    buttonText.fontSize = 72; // 设置字体大小为72
+
+                    // 强制更新文本显示
+                    buttonText.ForceMeshUpdate();
+
                 }
                 else
                 {
-                    Debug.LogWarning("StringSelector: 未设置中文字体资源，可能导致中文字符显示异常");
+                    Debug.LogError($"StringSelector: 未设置中文字体，无法创建按钮 '{str}'");
+                    return;
                 }
-                
-                // 确保文本居中显示
-                buttonText.alignment = TextAlignmentOptions.Center;
-                buttonText.fontSize = 72; // 设置字体大小为72
-                
-                // 强制更新文本显示
-                buttonText.ForceMeshUpdate();
+
+                // 设置按钮点击事件，传递索引而不是字符串
+                int buttonIndex = index; // 捕获当前索引
+                Debug.Log($"StringSelector: 为按钮设置点击事件，字符串: '{str}'，索引: {buttonIndex}");
+                button.onClick.RemoveAllListeners(); // 先清除所有监听器
+                button.onClick.AddListener(() => OnStringButtonClicked(buttonIndex, button));
+
+                // 确保按钮可以交互
+                button.interactable = true;
+
+                stringButtons.Add(button);
+                Debug.Log($"StringSelector: 按钮已添加到stringButtons列表，当前按钮数量: {stringButtons.Count}");
+
+                // 延迟更新按钮显示，确保文字正确显示
+                StartCoroutine(DelayedButtonUpdate(buttonText, str));
             }
-            else
-            {
-                Debug.LogError($"StringSelector: 无法找到按钮的TextMeshProUGUI组件，字符串: {str}, 索引: {index}");
-                return;
-            }
-            
-            // 设置按钮点击事件，传递索引而不是字符串
-            int buttonIndex = index; // 捕获当前索引
-            button.onClick.AddListener(() => OnStringButtonClicked(buttonIndex, button));
-            
-            // 确保按钮可以交互
-            button.interactable = true;
-            
-            stringButtons.Add(button);
         }
         catch (System.Exception e)
         {
             Debug.LogError($"StringSelector: 创建按钮时发生错误，字符串: {str}, 索引: {index}, 错误: {e.Message}");
+        }
+    }
+    
+    // 延迟更新按钮显示的协程
+    private IEnumerator DelayedButtonUpdate(TextMeshProUGUI buttonText, string str)
+    {
+        // 等待一帧
+        yield return null;
+        
+        // 再次强制更新文本显示
+        if (buttonText != null)
+        {
+            buttonText.ForceMeshUpdate();
+            Debug.Log($"StringSelector: 延迟更新完成，字符串 '{str}' 的文本网格已重新更新");
         }
     }
     
@@ -191,17 +222,41 @@ public class StringSelector : MonoBehaviour
     {
         string str = index < availableStrings.Count ? availableStrings[index] : "未知";
         
+        // Debug输出被点击的字符串
+        Debug.Log($"StringSelector: 字符串按钮被点击，字符串: '{str}'，索引: {index}");
+        Debug.Log($"StringSelector: 按钮名称: '{button.gameObject.name}'");
+        Debug.Log($"StringSelector: 当前availableStrings列表: [{string.Join(", ", availableStrings)}]");
+        Debug.Log($"StringSelector: 当前stringButtons数量: {stringButtons.Count}");
+        
+        // 添加更详细的调试信息
+        Debug.Log($"StringSelector: 按钮文本显示: '{button.GetComponentInChildren<TextMeshProUGUI>()?.text ?? "无文本"}'");
+        Debug.Log($"StringSelector: 按钮是否可交互: {button.interactable}");
+        Debug.Log($"StringSelector: 按钮是否激活: {button.gameObject.activeInHierarchy}");
+        
+        // 验证索引是否正确
+        if (index >= 0 && index < availableStrings.Count)
+        {
+            Debug.Log($"StringSelector: 索引验证 - 索引{index}对应字符串: '{availableStrings[index]}'");
+        }
+        else
+        {
+            Debug.LogError($"StringSelector: 索引错误 - 索引{index}超出范围[0, {availableStrings.Count})");
+        }
+        
         if (selectedIndices.Contains(index))
         {
             // 取消选择
             selectedIndices.Remove(index);
             UpdateButtonVisual(button, false);
+            Debug.Log($"StringSelector: 取消选择字符串 '{str}'");
         }
         else if (selectedIndices.Count < maxSelectionCount)
         {
             // 添加选择
             selectedIndices.Add(index);
+            Debug.Log($"StringSelector: 添加选择，索引: {index}，字符串: '{str}'，当前选择数量: {selectedIndices.Count}");
             UpdateButtonVisual(button, true);
+            Debug.Log($"StringSelector: 选择字符串 '{str}'，当前选择数量: {selectedIndices.Count}");
         }
         
         // 通知ButtonController更新确认按钮状态
@@ -213,23 +268,27 @@ public class StringSelector : MonoBehaviour
     {
         if (ButtonController.Instance != null)
         {
-            ButtonController.Instance.RefreshConfirmButtonState();
+            ButtonController.Instance.UpdateButtonStates(selectedIndices.Count);
         }
     }
     
     // 更新按钮视觉效果
     private void UpdateButtonVisual(Button button, bool isSelected)
     {
+        Debug.Log($"StringSelector: 更新按钮视觉效果，isSelected: {isSelected}");
+        
         ColorBlock colors = button.colors;
         if (isSelected)
         {
             colors.normalColor = Color.green;
             colors.selectedColor = Color.green;
+            Debug.Log($"StringSelector: 设置按钮为绿色（选中状态）");
         }
         else
         {
             colors.normalColor = Color.white;
             colors.selectedColor = Color.white;
+            Debug.Log($"StringSelector: 设置按钮为白色（未选中状态）");
         }
         button.colors = colors;
         
@@ -245,6 +304,22 @@ public class StringSelector : MonoBehaviour
             Color imageColor = buttonImage.color;
             imageColor.a = 1.0f;
             buttonImage.color = imageColor;
+            
+            // 直接设置Image的颜色
+            if (isSelected)
+            {
+                buttonImage.color = Color.green;
+                Debug.Log($"StringSelector: 直接设置Image颜色为绿色");
+            }
+            else
+            {
+                buttonImage.color = Color.white;
+                Debug.Log($"StringSelector: 直接设置Image颜色为白色");
+            }
+        }
+        else
+        {
+            Debug.LogWarning($"StringSelector: 按钮没有Image组件");
         }
         
         // 确保按钮的RectTransform有正确的尺寸
@@ -257,6 +332,12 @@ public class StringSelector : MonoBehaviour
                 rectTransform.sizeDelta = new Vector2(100, 50);
             }
         }
+        
+        // 强制更新按钮状态
+        button.enabled = false;
+        button.enabled = true;
+        
+        Debug.Log($"StringSelector: 按钮视觉效果更新完成");
     }
     
     // 清除选择
@@ -307,22 +388,52 @@ public class StringSelector : MonoBehaviour
         }
     }
     
+    // 公共方法：重新创建所有按钮
+    public void RecreateAllButtonsPublic()
+    {
+        Debug.Log($"StringSelector: 重新创建所有按钮，当前可用字符串: [{string.Join(", ", availableStrings)}]");
+        RecreateAllButtons();
+        Debug.Log($"StringSelector: 按钮重新创建完成，按钮数量: {stringButtons.Count}");
+    }
+    
 
     
     // 公共方法：添加可用字符串
     public void AddAvailableString(string str)
     {
-        // 检查字符串是否在allStrings中存在
+        Debug.Log($"StringSelector: 开始添加字符串 '{str}'");
+        
+        // 如果字符串不在allStrings中，先添加到allStrings
         if (!allStrings.Contains(str))
         {
-            Debug.LogWarning($"字符串 '{str}' 不在所有字符串列表中，无法添加");
-            return;
+            Debug.Log($"StringSelector: 字符 '{str}' 不在allStrings列表中，正在添加...");
+            AddToAllStrings(str);
         }
+        
+        Debug.Log($"StringSelector: 正在添加字符串 '{str}' 到可用字符串列表");
+        
+        // 清空当前选择
+        ClearSelection();
         
         // 直接添加字符串，不检查是否已存在
         availableStrings.Add(str);
         int index = availableStrings.Count - 1; // 获取新添加字符串的索引
+        
+        Debug.Log($"StringSelector: 字符串 '{str}' 已添加到索引 {index}，当前可用字符串数量: {availableStrings.Count}");
+        
         CreateStringButton(str, index);
+        
+        Debug.Log($"StringSelector: 字符串 '{str}' 的按钮已创建完成");
+        
+        // 验证按钮是否真的被创建了
+        if (index < stringButtons.Count && stringButtons[index] != null)
+        {
+            Debug.Log($"StringSelector: 验证成功 - 按钮 '{str}' 已正确创建");
+        }
+        else
+        {
+            Debug.LogError($"StringSelector: 验证失败 - 按钮 '{str}' 创建失败");
+        }
     }
     
     // 公共方法：移除可用字符串
@@ -333,25 +444,71 @@ public class StringSelector : MonoBehaviour
             int index = availableStrings.IndexOf(str);
             availableStrings.Remove(str);
             
-            // 重新创建所有按钮以保持正确的索引
-            RecreateAllButtons();
+            // 移除对应的按钮
+            if (index >= 0 && index < stringButtons.Count)
+            {
+                Button buttonToRemove = stringButtons[index];
+                if (buttonToRemove != null)
+                {
+                    DestroyImmediate(buttonToRemove.gameObject);
+                }
+                stringButtons.RemoveAt(index);
+            }
+            
+            // 更新后续按钮的索引
+            UpdateButtonIndicesAfterRemoval(index);
         }
     }
     
-    // 公共方法：设置最大选择数量
-    public void SetMaxSelectionCount(int count)
+    // 更新移除按钮后的索引
+    private void UpdateButtonIndicesAfterRemoval(int removedIndex)
     {
-        // 检查是否真的需要设置
-        if (maxSelectionCount == count)
+        // 更新selectedIndices中大于removedIndex的索引
+        for (int i = 0; i < selectedIndices.Count; i++)
         {
-            return;
+            if (selectedIndices[i] > removedIndex)
+            {
+                selectedIndices[i]--;
+            }
+            else if (selectedIndices[i] == removedIndex)
+            {
+                // 移除已删除的索引
+                selectedIndices.RemoveAt(i);
+                i--; // 调整循环索引
+            }
         }
         
-        maxSelectionCount = Mathf.Max(1, count);
-        
-        if (selectedIndices.Count > maxSelectionCount)
+        // 更新按钮的点击事件，重新绑定正确的索引
+        for (int i = 0; i < stringButtons.Count; i++)
         {
-            selectedIndices.RemoveRange(maxSelectionCount, selectedIndices.Count - maxSelectionCount);
+            if (stringButtons[i] != null)
+            {
+                // 移除旧的点击事件
+                stringButtons[i].onClick.RemoveAllListeners();
+                
+                // 添加新的点击事件，使用正确的索引
+                int currentIndex = i;
+                stringButtons[i].onClick.AddListener(() => OnStringButtonClicked(currentIndex, stringButtons[i]));
+            }
+        }
+    }
+    
+    // 公共属性：获取最大选择数量（始终为2）
+    public int MaxSelectionCount => 2;
+    
+    // 公共方法：设置最大选择数量（此方法被禁用，始终返回2）
+    public void SetMaxSelectionCount(int count)
+    {
+        // 此方法被禁用，最大选择数始终为2
+        Debug.LogWarning("SetMaxSelectionCount方法已被禁用，最大选择数始终为2");
+        
+        // 确保maxSelectionCount始终为2
+        maxSelectionCount = 2;
+        
+        // 如果选择数量超过2，移除多余的选择
+        if (selectedIndices.Count > 2)
+        {
+            selectedIndices.RemoveRange(2, selectedIndices.Count - 2);
             UpdateAllButtonVisuals();
         }
     }
@@ -374,6 +531,12 @@ public class StringSelector : MonoBehaviour
     public int GetSelectionCount()
     {
         return selectedIndices.Count;
+    }
+    
+    // 公共方法：获取最大选择数量（始终为2）
+    public int GetMaxSelectionCount()
+    {
+        return 2;
     }
     
     // 公共方法：修复按钮点击区域
@@ -492,5 +655,21 @@ public class StringSelector : MonoBehaviour
     public string GetCurrentFontName()
     {
         return chineseFont != null ? chineseFont.name : "未设置";
+    }
+    
+    // 公共方法：动态添加字符到allStrings列表
+    public void AddToAllStrings(string str)
+    {
+        if (!allStrings.Contains(str))
+        {
+            allStrings.Add(str);
+            Debug.Log($"StringSelector: 已添加字符 '{str}' 到allStrings列表");
+        }
+    }
+    
+    // 公共方法：检查字符是否在allStrings列表中
+    public bool IsInAllStrings(string str)
+    {
+        return allStrings.Contains(str);
     }
 }

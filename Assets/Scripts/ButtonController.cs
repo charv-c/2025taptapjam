@@ -17,9 +17,6 @@ public class ButtonController : MonoBehaviour
     [Header("选择器引用")]
     [SerializeField] private StringSelector stringSelector; // StringSelector引用
     
-    // 私有变量
-    private int currentMaxSelectCount = 1; // 当前最大选择数量
-    
     // 单例模式，方便其他脚本访问
     public static ButtonController Instance { get; private set; }
     
@@ -46,6 +43,9 @@ public class ButtonController : MonoBehaviour
         // 初始化时隐藏消息文本
         if (messageText != null) messageText.gameObject.SetActive(false);
         
+        // 初始化split按钮状态
+        UpdateButtonStates(0);
+        
         // 添加按钮点击事件
         if (splitButton != null)
         {
@@ -64,96 +64,18 @@ public class ButtonController : MonoBehaviour
         {
             Debug.LogError("未找到combineButton组件！");
         }
-        
-        // 添加confirm和cancel按钮事件
-        if (confirmButton != null)
-        {
-            confirmButton.onClick.AddListener(OnConfirmButtonClicked);
-        }
-        
-        if (cancelButton != null)
-        {
-            cancelButton.onClick.AddListener(OnCancelButtonClicked);
-        }
     }
 
     private void OnSplitButtonClicked()
     {
-        // 显示确认按钮并设置maxselectcount为1
-        ShowConfirmButtonsWithMaxCount(1);
+        // 直接执行分割操作
+        splitletter();
     }
     
     private void OnCombineButtonClicked()
     {
-        // 显示确认按钮并设置maxselectcount为2
-        ShowConfirmButtonsWithMaxCount(2);
-    }
-    
-    // 私有方法：显示确认按钮并设置最大选择数量
-    private void ShowConfirmButtonsWithMaxCount(int maxCount)
-    {
-        // 隐藏split和combine按钮
-        if (splitButton != null) splitButton.gameObject.SetActive(false);
-        if (combineButton != null) combineButton.gameObject.SetActive(false);
-        
-        // 显示confirm和cancel按钮，但确认按钮初始状态为禁用
-        if (confirmButton != null) 
-        {
-            confirmButton.gameObject.SetActive(true);
-            confirmButton.interactable = false; // 初始状态为禁用
-        }
-        if (cancelButton != null) cancelButton.gameObject.SetActive(true);
-        
-        // 清空当前选择
-        ClearCurrentSelection();
-        
-        // 设置maxselectcount
-        SetMaxSelectCount(maxCount);
-        
-        // 立即检查一次选择数量，使用传入的maxCount参数
-        UpdateConfirmButtonStateWithMaxCount(maxCount);
-    }
-    
-    // 私有方法：更新确认按钮状态
-    private void UpdateConfirmButtonState()
-    {
-        if (confirmButton == null) return;
-        
-        // 使用存储的最大选择数量
-        int currentMaxCount = currentMaxSelectCount;
-        
-        // 获取当前选择数量
-        int currentSelectionCount = GetCurrentSelectionCount();
-        
-        // 如果选择数量达到最大值，启用确认按钮
-        bool shouldEnable = currentSelectionCount >= currentMaxCount;
-        confirmButton.interactable = shouldEnable;
-    }
-    
-    // 私有方法：使用指定最大数量更新确认按钮状态
-    private void UpdateConfirmButtonStateWithMaxCount(int maxCount)
-    {
-        if (confirmButton == null) return;
-        
-        // 获取当前选择数量
-        int currentSelectionCount = GetCurrentSelectionCount();
-        
-        // 如果选择数量达到指定的最大值，启用确认按钮
-        bool shouldEnable = currentSelectionCount >= maxCount;
-        confirmButton.interactable = shouldEnable;
-    }
-    
-    // 私有方法：获取当前最大选择数量
-    private int GetCurrentMaxSelectCount()
-    {
-        // 从StringSelector获取当前最大选择数量
-        if (stringSelector != null)
-        {
-            return stringSelector.maxSelectionCount;
-        }
-        
-        // 如果没有找到StringSelector，返回默认值
-        return 1;
+        // 直接执行合并操作
+        combineletter();
     }
     
     // 私有方法：获取当前选择数量
@@ -169,57 +91,19 @@ public class ButtonController : MonoBehaviour
         return 0;
     }
     
-    // 公共方法：手动更新确认按钮状态（供其他脚本调用）
-    public void RefreshConfirmButtonState()
+    // 公共方法：更新按钮状态
+    public void UpdateButtonStates(int selectedCount)
     {
-        UpdateConfirmButtonState();
-    }
-    
-    private void OnConfirmButtonClicked()
-    {
-        // 隐藏所有按钮
-        HideAllButtons();
-        
-        // 根据最大可选数执行不同的函数
-        if (currentMaxSelectCount == 1)
+        if (splitButton != null)
         {
-            splitletter();
-        }
-        else if (currentMaxSelectCount == 2)
-        {
-            combineletter();
-        }
-        else
-        {
-            Debug.LogWarning($"未知的最大选择数量: {currentMaxSelectCount}");
+            // 当选中0个或2个字符串时，禁用split按钮
+            splitButton.interactable = selectedCount == 1;
         }
         
-        // 执行完操作后，重新显示split和combine按钮
-        ShowSplitAndCombineButtons();
-        
-        // 清空当前选择
-        ClearCurrentSelection();
-        
-        // 恢复最大选择数量到默认值
-        RestoreMaxSelectCount();
-    }
-    
-    private void OnCancelButtonClicked()
-    {
-        // 隐藏confirm和cancel按钮
-        if (confirmButton != null) confirmButton.gameObject.SetActive(false);
-        if (cancelButton != null) cancelButton.gameObject.SetActive(false);
-        
-        // 重新显示split和combine按钮
-        ShowSplitAndCombineButtons();
-        
-        // 恢复maxselectcount
-        RestoreMaxSelectCount();
-        
-        // 清除选择
-        if (stringSelector != null)
+        if (combineButton != null)
         {
-            stringSelector.ClearSelection();
+            // 当选中2个字符串时，启用combine按钮（因为合并需要2个字符串）
+            combineButton.interactable = selectedCount == 2;
         }
     }
     
@@ -237,6 +121,12 @@ public class ButtonController : MonoBehaviour
     {
         if (splitButton != null) splitButton.gameObject.SetActive(true);
         if (combineButton != null) combineButton.gameObject.SetActive(true);
+        
+        // 更新split按钮状态
+        if (stringSelector != null)
+        {
+            UpdateButtonStates(stringSelector.GetSelectionCount());
+        }
     }
     
     // 显示消息提示
@@ -277,41 +167,63 @@ public class ButtonController : MonoBehaviour
     {
         if (stringSelector != null)
         {
+            // 检查选择数量
+            int selectedCount = stringSelector.GetSelectionCount();
+            if (selectedCount != 1)
+            {
+                Debug.LogWarning($"分割操作需要选择1个字符串，当前选择了{selectedCount}个");
+                // 静默处理，清空选择
+                stringSelector.ClearSelection();
+                return;
+            }
+            
             string selectedString = stringSelector.FirstSelectedString;
             if (!string.IsNullOrEmpty(selectedString))
             {
                 Debug.Log($"执行分割操作，选中的字符串: {selectedString}");
+                Debug.Log($"选中的字符串Unicode: {(int)selectedString[0]:X4}");
                 
                 // 使用PublicData中的分割映射
                 if (PublicData.CanSplitString(selectedString))
                 {
                     var (part1, part2) = PublicData.GetStringSplit(selectedString);
                     Debug.Log($"分割结果: '{part1}' 和 '{part2}'");
+                    Debug.Log($"分割结果Unicode: part1={(int)part1[0]:X4}, part2={(int)part2[0]:X4}");
                     
-                    // 添加分割后的新字符串
+                    // 先清除当前选择状态
+                    stringSelector.ClearSelection();
+                    
+                    // 先移除原本的字符串
+                    stringSelector.RemoveAvailableString(selectedString);
+                    
+                    // 最后添加分割后的新字符串
                     stringSelector.AddAvailableString(part1);
                     stringSelector.AddAvailableString(part2);
                     
-                    // 移除原本的字符串
-                    stringSelector.RemoveAvailableString(selectedString);
+                    // 重新创建所有按钮以确保索引正确
+                    stringSelector.RecreateAllButtonsPublic();
                     
-                    Debug.Log($"已移除原本的字符串: {selectedString}");
+                    // 确保最大选择数仍然是2
+                    stringSelector.SetMaxSelectionCount(2);
+                    
+                    Debug.Log($"已移除原本的字符串: {selectedString}，添加新字符串: {part1} 和 {part2}，并重新创建按钮");
                 }
                 else
                 {
                     Debug.LogWarning($"字符串 '{selectedString}' 没有预定义的分割映射");
+                    // 静默处理，清空选择
+                    stringSelector.ClearSelection();
                 }
             }
             else
             {
                 Debug.LogWarning("没有选中的字符串，无法执行分割操作");
-                ShowMessage("请先选择一个字符串进行分割");
+                
             }
         }
         else
         {
             Debug.LogError("StringSelector引用为空，无法执行分割操作");
-            
         }
     }
     
@@ -320,94 +232,59 @@ public class ButtonController : MonoBehaviour
     {
         if (stringSelector != null)
         {
-            List<string> selectedStrings = stringSelector.SelectedStrings;
-            if (selectedStrings.Count == 2)
+            // 检查选择数量
+            
+            int selectedCount = stringSelector.GetSelectionCount();
+            if (selectedCount != 2)
             {
-                string firstString = selectedStrings[0];
-                string secondString = selectedStrings[1];
-                Debug.Log($"执行合并操作，第一个字符串: {firstString}，第二个字符串: {secondString}");
+                Debug.LogWarning($"合并操作需要选择2个字符串，当前选择了{selectedCount}个");
+                // 静默处理，清空选择
+                stringSelector.ClearSelection();
+                return;
+            }
+            
+            List<string> selectedStrings = stringSelector.SelectedStrings;
+            string firstString = selectedStrings[0];
+            string secondString = selectedStrings[1];
+            Debug.Log($"执行合并操作，第一个字符串: {firstString}，第二个字符串: {secondString}");
+            
+            // 使用PublicData中的反向查找功能
+            string originalString = PublicData.FindOriginalString(firstString, secondString);
+            if (originalString != null)
+            {
+                Debug.Log($"合并结果: {originalString}");
                 
-                // 使用PublicData中的反向查找功能
-                string originalString = PublicData.FindOriginalString(firstString, secondString);
-                if (originalString != null)
-                {
-                    Debug.Log($"合并结果: {originalString}");
-                    
-                    // 添加合并后的新字符串
-                    stringSelector.AddAvailableString(originalString);
-                    
-                    // 移除原本的字符串
-                    stringSelector.RemoveAvailableString(firstString);
-                    stringSelector.RemoveAvailableString(secondString);
-                    
-                    Debug.Log($"已移除原本的字符串: {firstString} 和 {secondString}");
-                }
-                else
-                {
-                    Debug.LogWarning($"无法找到由 '{firstString}' 和 '{secondString}' 组成的有效合并结果");
-                }
+                // 先清除当前选择状态
+                stringSelector.ClearSelection();
+                
+                // 先移除原本的字符串
+                stringSelector.RemoveAvailableString(firstString);
+                stringSelector.RemoveAvailableString(secondString);
+                
+                // 最后添加合并后的新字符串
+                stringSelector.AddAvailableString(originalString);
+                
+                // 重新创建所有按钮以确保索引正确
+                stringSelector.RecreateAllButtonsPublic();
+                
+                // 确保最大选择数仍然是2
+                stringSelector.SetMaxSelectionCount(2);
+                
+                // 清空选择
+                stringSelector.ClearSelection();
+                
+                Debug.Log($"已移除原本的字符串: {firstString} 和 {secondString}，添加新字符串: {originalString}，并重新创建按钮");
             }
             else
             {
-                Debug.LogWarning($"选中的字符串数量不正确，需要2个，实际有{selectedStrings.Count}个");
-                ShowMessage($"请选择2个字符串进行合并，当前选择了{selectedStrings.Count}个");
+                Debug.LogWarning($"无法找到由 '{firstString}' 和 '{secondString}' 组成的有效合并结果");
+                // 静默处理，清空选择
+                stringSelector.ClearSelection();
             }
         }
         else
         {
             Debug.LogError("StringSelector引用为空，无法执行合并操作");
-        }
-    }
-    
-    private void SetMaxSelectCount(int count)
-    {
-        // 检查是否真的需要设置
-        if (stringSelector != null && stringSelector.maxSelectionCount == count)
-        {
-            currentMaxSelectCount = count;
-            return;
-        }
-        
-        // 存储当前最大选择数量
-        currentMaxSelectCount = count;
-        
-        // 设置StringSelector的最大选择数量
-        if (stringSelector != null)
-        {
-            stringSelector.SetMaxSelectionCount(count);
-        }
-        else
-        {
-            Debug.LogWarning("StringSelector引用为空，无法设置最大选择数量");
-        }
-    }
-    
-    // 私有方法：清空当前选择
-    private void ClearCurrentSelection()
-    {
-        if (stringSelector != null)
-        {
-            stringSelector.ClearSelection();
-        }
-        else
-        {
-            Debug.LogWarning("StringSelector引用为空，无法清空选择");
-        }
-    }
-    
-    private void RestoreMaxSelectCount()
-    {
-        // 恢复存储的最大选择数量到默认值
-        currentMaxSelectCount = 1;
-        
-        // 恢复StringSelector的最大选择数量到默认值
-        if (stringSelector != null)
-        {
-            stringSelector.SetMaxSelectionCount(1); // 默认值为1
-        }
-        else
-        {
-            Debug.LogWarning("StringSelector引用为空，无法恢复最大选择数量");
         }
     }
     
@@ -418,44 +295,18 @@ public class ButtonController : MonoBehaviour
         if (combineButton != null) combineButton.gameObject.SetActive(true);
     }
     
-    // 公共方法：显示确认按钮
-    public void ShowConfirmButtons()
-    {
-        if (confirmButton != null) confirmButton.gameObject.SetActive(true);
-        if (cancelButton != null) cancelButton.gameObject.SetActive(true);
-    }
-    
-    // 公共方法：切换确认按钮显示状态
-    public void ToggleConfirmButtons()
-    {
-        bool currentState = confirmButton != null && confirmButton.gameObject.activeSelf;
-        if (confirmButton != null) confirmButton.gameObject.SetActive(!currentState);
-        if (cancelButton != null) cancelButton.gameObject.SetActive(!currentState);
-    }
-    
     // 公共方法：设置所有按钮是否可交互
     public void SetAllButtonsInteractable(bool interactable)
     {
         if (splitButton != null) splitButton.interactable = interactable;
         if (combineButton != null) combineButton.interactable = interactable;
-        if (confirmButton != null) confirmButton.interactable = interactable;
-        if (cancelButton != null) cancelButton.interactable = interactable;
-    }
-    
-    // 公共方法：获取确认按钮是否可见
-    public bool AreConfirmButtonsVisible()
-    {
-        return (confirmButton != null && confirmButton.gameObject.activeSelf) ||
-               (cancelButton != null && cancelButton.gameObject.activeSelf);
     }
     
     // 公共方法：获取所有按钮是否可交互
     public bool AreAllButtonsInteractable()
     {
         return (splitButton != null && splitButton.interactable) &&
-               (combineButton != null && combineButton.interactable) &&
-               (confirmButton != null && confirmButton.interactable) &&
-               (cancelButton != null && cancelButton.interactable);
+               (combineButton != null && combineButton.interactable);
     }
     
     // 公共方法：手动触发Split按钮点击（供其他脚本调用）
@@ -464,42 +315,15 @@ public class ButtonController : MonoBehaviour
         OnSplitButtonClicked();
     }
     
-    // 公共方法：手动触发Confirm按钮点击（供其他脚本调用）
-    public void TriggerConfirmButton()
-    {
-        OnConfirmButtonClicked();
-    }
-    
-    // 公共方法：手动触发Cancel按钮点击（供其他脚本调用）
-    public void TriggerCancelButton()
-    {
-        OnCancelButtonClicked();
-    }
-    
-    // 公共方法：重置到初始状态
-    public void ResetToInitialState()
-    {
-        // 显示split和combine按钮
-        if (splitButton != null) splitButton.gameObject.SetActive(true);
-        if (combineButton != null) combineButton.gameObject.SetActive(true);
-        
-        // 隐藏confirm和cancel按钮
-        if (confirmButton != null) confirmButton.gameObject.SetActive(false);
-        if (cancelButton != null) cancelButton.gameObject.SetActive(false);
-        
-        // 恢复maxselectcount
-        RestoreMaxSelectCount();
-    }
-    
-    // 公共方法：检查是否处于确认状态
-    public bool IsInConfirmState()
-    {
-        return AreConfirmButtonsVisible();
-    }
-    
     // 公共方法：设置StringSelector引用
     public void SetStringSelector(StringSelector selector)
     {
         stringSelector = selector;
+    }
+    
+    // 公共方法：获取StringSelector引用
+    public StringSelector GetStringSelector()
+    {
+        return stringSelector;
     }
 }

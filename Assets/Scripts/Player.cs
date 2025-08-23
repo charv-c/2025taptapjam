@@ -42,6 +42,12 @@ public class Player : MonoBehaviour
     {
         HandleMovement();
         ClampToScreen();
+        
+        // 检测R键按下
+        if (Input.GetKeyDown(KeyCode.R))
+        {
+            OnRKeyPressed();
+        }
     }
 
     
@@ -93,13 +99,12 @@ public class Player : MonoBehaviour
             screenPosition.x = Mathf.Clamp(screenPosition.x, leftBoundary, rightBoundary);
         }
 
-        // 垂直方向限制（两个玩家都可以在屏幕范围内移动）
-        screenPosition.y = Mathf.Clamp(screenPosition.y, playerHeight / 2 + screenBoundaryOffset,
-                                      screenHeight - playerHeight / 2 - screenBoundaryOffset);
-
         // 将屏幕坐标转换回世界坐标
         Vector3 clampedWorldPosition = mainCamera.ScreenToWorldPoint(screenPosition);
         clampedWorldPosition.z = transform.position.z; // 保持原有的Z坐标
+        
+        // Y轴移动范围限制在-2.6到2.4
+        clampedWorldPosition.y = Mathf.Clamp(clampedWorldPosition.y, -2.6f, 2.4f);
 
         // 应用限制后的位置
         transform.position = clampedWorldPosition;
@@ -157,6 +162,10 @@ public class Player : MonoBehaviour
         }
         
         defaultPosition.z = transform.position.z; // 保持原有的Z坐标
+        
+        // 确保初始位置在Y轴限制范围内
+        defaultPosition.y = Mathf.Clamp(defaultPosition.y, -2.6f, 2.4f);
+        
         transform.position = defaultPosition;
     }
 
@@ -269,5 +278,79 @@ public class Player : MonoBehaviour
         {
             SetDefaultStartPosition();
         }
+    }
+    
+    // 公共方法：重置到初始状态
+    public void ResetToInitialState()
+    {
+        useCustomStartPosition = false;
+        if (mainCamera != null)
+        {
+            SetDefaultStartPosition();
+        }
+    }
+    
+    // 公共方法：获取Y轴限制范围
+    public (float min, float max) GetYAxisLimits()
+    {
+        return (-2.6f, 2.4f);
+    }
+    
+    // 公共方法：设置Y轴限制范围
+    public void SetYAxisLimits(float minY, float maxY)
+    {
+        // 这里可以添加设置Y轴限制的逻辑
+        Debug.Log($"Y轴限制范围设置为: {minY} 到 {maxY}");
+    }
+    
+    // 公共方法：检查当前位置是否在Y轴限制范围内
+    public bool IsWithinYAxisLimits()
+    {
+        float currentY = transform.position.y;
+        return currentY >= -2.6f && currentY <= 2.4f;
+    }
+    
+    // 公共方法：强制将位置限制在Y轴范围内
+    public void ClampToYAxisLimits()
+    {
+        Vector3 position = transform.position;
+        position.y = Mathf.Clamp(position.y, -2.6f, 2.4f);
+        transform.position = position;
+    }
+    
+    // R键按下时的处理
+    private void OnRKeyPressed()
+    {
+        Debug.Log("R键被按下");
+        
+        // 如果player的carryletter不等于"人"，将其设置为人
+        if (CarryCharacter != "人")
+        {
+            CarryCharacter = "人";
+            Debug.Log($"已将CarryCharacter重置为: {CarryCharacter}");
+        }
+        
+        // 恢复场景中所有物体的highlight脚本
+        RestoreAllHighlightScripts();
+    }
+    
+    // 恢复场景中所有物体的highlight脚本
+    private void RestoreAllHighlightScripts()
+    {
+        // 查找场景中所有带有Highlight脚本的对象
+        Highlight[] allHighlights = FindObjectsOfType<Highlight>();
+        
+        Debug.Log($"找到 {allHighlights.Length} 个Highlight脚本");
+        
+        foreach (Highlight highlight in allHighlights)
+        {
+            if (highlight != null && !highlight.enabled)
+            {
+                highlight.enabled = true;
+                Debug.Log($"已恢复Highlight脚本: {highlight.gameObject.name}");
+            }
+        }
+        
+        Debug.Log("所有Highlight脚本恢复完成");
     }
 } 

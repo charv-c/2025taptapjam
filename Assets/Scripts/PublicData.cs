@@ -7,25 +7,52 @@ public class PublicData : MonoBehaviour
     [Header("字符图片映射")]
     [SerializeField] private List<CharacterSpriteMapping> characterSpriteMappings = new List<CharacterSpriteMapping>();
     
+    [Header("米字格图片映射")]
+    [SerializeField] private List<CharacterSpriteMapping> miZiGeSpriteMappings = new List<CharacterSpriteMapping>();
+    
 
     
     // 字符串分割映射字典，存储分割前的字符串和分割后的两部分
     public static Dictionary<string, (string, string)> stringSplitMappings = new Dictionary<string, (string, string)>()
     {
-        {"人", ("门", "闪")},
-        {"明", ("日", "月")},
-        {"林", ("木", "木")},
-        {"众", ("人", "人")},
+        {"闪", ("门", "人")},
+        {"停", ("亭", "人")},
+        {"丛", ("从", "一")},
+        {"仙", ("人", "山")},
+        {"伙", ("人", "火")},
         {"好", ("女", "子")},
         {"休", ("人", "木")},
-        {"信", ("人", "言")},
+        {"侠", ("人", "夹")},
         {"你", ("人", "尔")},
         {"他", ("人", "也")},
         {"们", ("人", "门")}
     };
     
+    // 花相关的字符列表
+    public static List<string> listofhua = new List<string>()
+    {
+        "亭", "山", "火", "木", "夹",
+    };
+    
+    // 字符串键值对字典
+    public static Dictionary<string, string> stringKeyValuePairs = new Dictionary<string, string>()
+    {
+        {"停", "雨"},
+        {"再见", "告别语"},
+        {"谢谢", "感谢语"},
+        {"对不起", "道歉语"},
+        {"没关系", "回应语"},
+        {"请", "礼貌语"},
+        {"可以", "同意语"},
+        {"好的", "确认语"},
+        {"不行", "否定语"}
+    };
+    
     // 运行时字典，用于快速查找字符对应的Sprite
     private static Dictionary<string, Sprite> characterSprites = new Dictionary<string, Sprite>();
+    
+    // 运行时字典，用于快速查找字符对应的米字格Sprite
+    private static Dictionary<string, Sprite> miZiGeSprites = new Dictionary<string, Sprite>();
     
     void Awake()
     {
@@ -36,12 +63,23 @@ public class PublicData : MonoBehaviour
     // 初始化sprite字典
     private void InitializeSpriteDictionary()
     {
+        // 初始化普通字符字典
         characterSprites.Clear();
         foreach (var mapping in characterSpriteMappings)
         {
             if (!string.IsNullOrEmpty(mapping.character) && mapping.sprite != null)
             {
                 characterSprites[mapping.character] = mapping.sprite;
+            }
+        }
+        
+        // 初始化米字格字符字典
+        miZiGeSprites.Clear();
+        foreach (var mapping in miZiGeSpriteMappings)
+        {
+            if (!string.IsNullOrEmpty(mapping.character) && mapping.sprite != null)
+            {
+                miZiGeSprites[mapping.character] = mapping.sprite;
             }
         }
     }
@@ -58,6 +96,32 @@ public class PublicData : MonoBehaviour
             Debug.LogWarning($"未找到字符 '{character}' 对应的Sprite");
             return null;
         }
+    }
+    
+    // 公共方法：根据字符获取对应的米字格Sprite
+    public static Sprite GetMiZiGeSprite(string character)
+    {
+        if (miZiGeSprites.ContainsKey(character))
+        {
+            return miZiGeSprites[character];
+        }
+        else
+        {
+            Debug.LogWarning($"未找到字符 '{character}' 对应的米字格Sprite");
+            return null;
+        }
+    }
+    
+    // 公共方法：检查字符是否有对应的米字格图片
+    public static bool HasMiZiGeSprite(string character)
+    {
+        return miZiGeSprites.ContainsKey(character);
+    }
+    
+    // 公共方法：获取所有有米字格图片的字符列表
+    public static List<string> GetAllMiZiGeCharacters()
+    {
+        return new List<string>(miZiGeSprites.Keys);
     }
     
     // 公共方法：检查操作是否合法，并返回对应的结果（使用stringSplitMappings）
