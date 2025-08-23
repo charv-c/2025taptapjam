@@ -116,11 +116,11 @@ public class Highlight : MonoBehaviour
         }
         
         // 不禁用Highlight组件，保持其激活状态以接收广播
-        // Highlight highlightComponent = GetComponent<Highlight>();
-        // if (highlightComponent != null)
-        // {
-        //     highlightComponent.enabled = false;
-        // }
+        Highlight highlightComponent = GetComponent<Highlight>();
+        if (highlightComponent != null)
+        {
+            highlightComponent.enabled = false;
+        }
     }
     
     void AddLetterToAvailableList(){
@@ -290,6 +290,9 @@ public class Highlight : MonoBehaviour
             {
                 ShowObject();
             }
+            if(letter == "雨"){
+                HideObject();
+            }
         }
         else if (broadcastedValue == "侠")
         {
@@ -336,7 +339,7 @@ public class Highlight : MonoBehaviour
         }
     }
     
-    private void ShowObject()
+    public void ShowObject()
     {
         // 确保Highlight组件被激活
         if (!enabled)

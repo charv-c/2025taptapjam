@@ -244,6 +244,9 @@ public class PublicData : MonoBehaviour
     {
         if (AreAllTargetsCompleted())
         {
+            // 在切换场景前禁用门的highlight
+            DisableDoorHighlights();
+            
             // 所有目标完成，切换到下一个场景
             if (!string.IsNullOrEmpty(sceneName))
             {
@@ -255,6 +258,29 @@ public class PublicData : MonoBehaviour
                 Debug.LogWarning("场景名称未设置，无法切换场景");
             }
         }
+    }
+    
+    // 禁用所有门的highlight
+    private static void DisableDoorHighlights()
+    {
+        // 查找场景中所有带有Highlight脚本的对象
+        Highlight[] allHighlights = FindObjectsOfType<Highlight>();
+        
+        foreach (Highlight highlight in allHighlights)
+        {
+            if (highlight != null && highlight.letter == "门")
+            {
+                // 禁用门的Highlight组件
+                highlight.enabled = false;
+                Debug.Log($"禁用门的highlight: {highlight.gameObject.name}");
+            }
+        }
+    }
+    
+    // 公共方法：场景切换前的通用处理
+    public static void OnBeforeSceneTransition()
+    {
+        DisableDoorHighlights();
     }
     
     // 重置目标完成状态（用于重新开始关卡）

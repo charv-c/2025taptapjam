@@ -31,6 +31,8 @@ public class StartMenuManager : MonoBehaviour
         else
         {
             // 如果没有设置音效，则直接加载场景，避免卡住
+            PublicData.OnBeforeSceneTransition();
+            
             SceneManager.LoadScene(sceneToLoad);
         }
     }
@@ -47,6 +49,7 @@ public class StartMenuManager : MonoBehaviour
         yield return new WaitForSeconds(clickSound.length);
 
         // 3. 音效播放得差不多了，现在加载下一个场景
+        PublicData.OnBeforeSceneTransition();
         SceneManager.LoadScene(sceneToLoad);
     }
 

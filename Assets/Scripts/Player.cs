@@ -286,6 +286,24 @@ public class Player : MonoBehaviour
         }
         
         RestoreAllHighlightScripts();
+        ShowRainObject();
+    }
+    
+    // 显示雨对象
+    private void ShowRainObject()
+    {
+        // 查找场景中所有带有Highlight脚本的对象
+        Highlight[] allHighlights = FindObjectsOfType<Highlight>();
+        
+        foreach (Highlight highlight in allHighlights)
+        {
+            if (highlight != null && highlight.letter == "雨")
+            {
+                // 直接调用雨对象的ShowObject方法
+                highlight.ShowObject();
+                Debug.Log($"R键按下：显示雨对象 {highlight.gameObject.name}");
+            }
+        }
     }
     
     // 恢复场景中所有物体的highlight脚本

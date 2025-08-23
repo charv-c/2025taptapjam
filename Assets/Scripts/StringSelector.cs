@@ -421,12 +421,13 @@ public class StringSelector : MonoBehaviour
         // 清空当前选择
         ClearSelection();
         
-        // 检查字符串是否已经存在
-        if (availableStrings.Contains(str))
-        {
-            Debug.Log($"StringSelector: 字符串 '{str}' 已存在于可用字符串列表中，跳过添加");
-            return;
-        }
+        // 允许添加重复的字符串，这样可以支持拆分操作（如"从"拆分成两个"人"）
+        // 注释掉重复检查，允许添加相同的字符
+        // if (availableStrings.Contains(str))
+        // {
+        //     Debug.Log($"StringSelector: 字符串 '{str}' 已存在于可用字符串列表中，跳过添加");
+        //     return;
+        // }
         
         // 直接添加字符串
         availableStrings.Add(str);
@@ -473,6 +474,33 @@ public class StringSelector : MonoBehaviour
             
             // 更新后续按钮的索引
             UpdateButtonIndicesAfterRemoval(index);
+        }
+    }
+    
+    // 公共方法：移除指定数量的可用字符串
+    public void RemoveAvailableString(string str, int count)
+    {
+        for (int i = 0; i < count; i++)
+        {
+            if (availableStrings.Contains(str))
+            {
+                int index = availableStrings.IndexOf(str);
+                availableStrings.Remove(str);
+                
+                // 移除对应的按钮
+                if (index >= 0 && index < stringButtons.Count)
+                {
+                    Button buttonToRemove = stringButtons[index];
+                    if (buttonToRemove != null)
+                    {
+                        DestroyImmediate(buttonToRemove.gameObject);
+                    }
+                    stringButtons.RemoveAt(index);
+                }
+                
+                // 更新后续按钮的索引
+                UpdateButtonIndicesAfterRemoval(index);
+            }
         }
     }
     

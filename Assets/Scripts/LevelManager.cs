@@ -96,6 +96,7 @@ public class LevelManager : MonoBehaviour
     public void RestartLevel()
     {
         PublicData.ResetTargetCompletion();
+        PublicData.OnBeforeSceneTransition();
         SceneManager.LoadScene(SceneManager.GetActiveScene().name);
     }
     
