@@ -129,6 +129,10 @@ public class TutorialManager : MonoBehaviour
         stepHandlers[TutorialStep.End_Part1] = HandleEndPart1;
         stepHandlers[TutorialStep.End_Part2] = HandleEndPart2;
         stepHandlers[TutorialStep.End_Part3] = HandleEndPart3;
+        
+        Debug.Log($"TutorialManager: 已注册 {stepHandlers.Count} 个步骤处理函数");
+        Debug.Log($"TutorialManager: SelectAndCombine步骤注册状态: {stepHandlers.ContainsKey(TutorialStep.SelectAndCombine)}");
+        Debug.Log($"TutorialManager: SelectAndCombine步骤的处理函数: {stepHandlers[TutorialStep.SelectAndCombine]?.Method.Name ?? "null"}");
     }
 
     private void RegisterStepTransitions()
@@ -155,32 +159,46 @@ public class TutorialManager : MonoBehaviour
 
     private void ExecuteCurrentStep()
     {
+        Debug.Log($"TutorialManager: ExecuteCurrentStep - 开始执行，当前步骤: {currentStep}");
+        
         // 初始化UI状态
         InitializeUI();
 
         Debug.Log($"TutorialManager: 执行步骤 {currentStep}");
+        Debug.Log($"TutorialManager: 当前步骤的整数值: {(int)currentStep}");
 
         if (stepHandlers.ContainsKey(currentStep))
         {
+            Debug.Log($"TutorialManager: 找到步骤 {currentStep} 的处理函数，准备调用");
             try
             {
-                stepHandlers[currentStep]?.Invoke();
+                var handler = stepHandlers[currentStep];
+                Debug.Log($"TutorialManager: 处理函数类型: {handler?.Method.Name ?? "null"}");
+                Debug.Log($"TutorialManager: ExecuteCurrentStep - 即将调用处理函数");
+                handler?.Invoke();
                 Debug.Log($"TutorialManager: 步骤 {currentStep} 执行成功");
             }
             catch (System.Exception e)
             {
                 Debug.LogError($"TutorialManager: 步骤 {currentStep} 执行失败: {e.Message}");
+                Debug.LogError($"TutorialManager: 异常堆栈: {e.StackTrace}");
             }
         }
         else
         {
             Debug.LogError($"TutorialManager: 未找到步骤 {currentStep} 的处理函数");
+            Debug.LogError($"TutorialManager: 已注册的步骤: {string.Join(", ", stepHandlers.Keys)}");
+            
+            // 检查SelectAndCombine步骤的注册情况
+            Debug.LogError($"TutorialManager: SelectAndCombine步骤是否存在: {stepHandlers.ContainsKey(TutorialStep.SelectAndCombine)}");
+            Debug.LogError($"TutorialManager: SelectAndCombine步骤的整数值: {(int)TutorialStep.SelectAndCombine}");
         }
     }
 
     public void GoToNextStep()
     {
         Debug.Log($"TutorialManager: 尝试从步骤 {currentStep} 跳转到下一步");
+        Debug.Log($"TutorialManager: GoToNextStep - 调用堆栈: {System.Environment.StackTrace}");
 
         if (stepTransitions.ContainsKey(currentStep))
         {
@@ -520,9 +538,11 @@ public class TutorialManager : MonoBehaviour
 
     private void HandleAfterSplit()
     {
+        DisablePlayerMovement();
         SetGuideExpression(exprHappy);
         hintText.text = "成功拆分！你获得了【片】和【枼】。";
-        EnablePlayerMovement(1);
+        // 清理高亮UI元素
+        ClearHighlightUI();
 
         // 恢复教学Panel的默认位置
         ResetTutorialPanelPosition();
@@ -534,17 +554,26 @@ public class TutorialManager : MonoBehaviour
 
     private void HandleSelectAndCombine()
     {
+        Debug.Log("TutorialManager: HandleSelectAndCombine - 开始执行");
+        Debug.Log("TutorialManager: HandleSelectAndCombine - 第一行代码执行");
+        Debug.Log("TutorialManager: HandleSelectAndCombine - 立即输出测试");
         SetGuideExpression(exprSideEye);
-        hintText.text = "化蝶的部件已齐。请选中【虫】和【枼】，然后点击【拼】按钮。";
+        hintText.text = "testtest,化蝶的部件已齐。请选中【虫】和【枼】，然后点击【拼】按钮。";
         if (combineButton != null)
         {
+            Debug.Log($"TutorialManager: HandleSelectAndCombine - 调用HighlightUITarget，目标: {combineButton.name}");
             HighlightUITarget(combineButton.transform);
+        }
+        else
+        {
+            Debug.LogError("TutorialManager: HandleSelectAndCombine - combineButton为空!");
         }
         DisablePlayerMovement();
         EnableUIInteraction();
 
         // 调整教学Panel位置，避免遮挡底部UI
         AdjustTutorialPanelPosition();
+        Debug.Log("TutorialManager: HandleSelectAndCombine - 执行完成");
     }
 
     private void HandleAfterCombine()
@@ -552,6 +581,9 @@ public class TutorialManager : MonoBehaviour
         SetGuideExpression(exprHappy);
         hintText.text = "太棒了！诗句完成了！";
         EnablePlayerMovement(1);
+
+        // 清理高亮UI元素
+        ClearHighlightUI();
 
         // 恢复教学Panel的默认位置
         ResetTutorialPanelPosition();
@@ -685,11 +717,16 @@ public class TutorialManager : MonoBehaviour
 
     public void OnCombineSuccess(string resultWord)
     {
+        Debug.Log($"TutorialManager: OnCombineSuccess - 被调用，参数: {resultWord}，当前步骤: {currentStep}");
         if (resultWord == "蝶" && currentStep == TutorialStep.SelectAndCombine)
         {
             Debug.Log("TutorialManager: 合成'蝶'字成功，自动跳转到下一步");
             // 自动跳转到下一步
             GoToNextStep();
+        }
+        else
+        {
+            Debug.Log($"TutorialManager: OnCombineSuccess - 条件不满足，resultWord: {resultWord}, currentStep: {currentStep}");
         }
     }
 
@@ -735,8 +772,38 @@ public class TutorialManager : MonoBehaviour
             tutorialPanel.SetActive(false);
         }
         
+        // 在切换到level2之前，启用所有操作
+        EnableAllOperations();
+        
         // 加载 Level2 场景
         SceneManager.LoadScene("level2");
+    }
+    
+    // 启用所有操作（移动、切换、回车、空格）
+    private void EnableAllOperations()
+    {
+        Debug.Log("TutorialManager: 准备进入level2，操作将由Level2Manager处理");
+        
+        // 在level2场景中，Level2Manager会自动启用所有操作
+        // 这里只需要确保教学面板被隐藏
+        if (tutorialPanel != null)
+        {
+            tutorialPanel.SetActive(false);
+        }
+    }
+    
+    // 清理高亮UI元素
+    private void ClearHighlightUI()
+    {
+        if (highlightBox != null)
+        {
+            highlightBox.gameObject.SetActive(false);
+        }
+        if (arrowImage != null)
+        {
+            arrowImage.gameObject.SetActive(false);
+        }
+        Debug.Log("TutorialManager: 清理高亮UI元素");
     }
 
     // 接收广播的方法
@@ -1365,6 +1432,7 @@ public class TutorialManager : MonoBehaviour
         }
 
         highlightBox.gameObject.SetActive(true);
+        arrowImage.gameObject.SetActive(true);
         
         // 检查目标是否是UI元素
         RectTransform targetRect = target.GetComponent<RectTransform>();
@@ -1374,6 +1442,9 @@ public class TutorialManager : MonoBehaviour
             highlightBox.position = target.position;
             Vector2 size = targetRect.sizeDelta + new Vector2(20, 20);
             highlightBox.sizeDelta = size;
+            
+            // 为UI元素设置箭头位置
+            SetupArrowForUI(targetRect);
         }
         else
         {
@@ -1384,7 +1455,107 @@ public class TutorialManager : MonoBehaviour
             // 为世界物体设置默认大小
             Vector2 defaultSize = new Vector2(150, 150); // 增大默认高亮框大小
             highlightBox.sizeDelta = defaultSize;
+            
+            // 为世界物体设置箭头位置
+            SetupArrowForWorldObject(targetScreenPos);
         }
+    }
+    
+    // 为UI元素设置箭头位置
+    private void SetupArrowForUI(RectTransform targetRect)
+    {
+        if (arrowImage == null || guideCharacterImage == null)
+        {
+            Debug.LogWarning("TutorialManager: SetupArrowForUI - 缺少必要的组件引用");
+            return;
+        }
+        
+        // 获取引导人物的屏幕坐标
+        Vector3 guideScreenPos = Camera.main.WorldToScreenPoint(guideCharacterImage.transform.position);
+        
+        // 获取UI元素的屏幕坐标
+        Vector3 targetScreenPos = targetRect.position;
+        
+        // 计算从引导人物到目标的方向向量
+        Vector3 direction = (targetScreenPos - guideScreenPos).normalized;
+        
+        // 计算角度
+        float angle = Mathf.Atan2(direction.y, direction.x) * Mathf.Rad2Deg;
+        
+        // 将箭头放置在目标附近，紧挨着高亮圈
+        float arrowOffset = 80f; // 箭头距离目标的偏移距离
+        Vector3 arrowPosition = targetScreenPos + direction * arrowOffset;
+        arrowImage.transform.position = arrowPosition;
+        
+        // 决定是否水平翻转
+        if (angle > 90 || angle < -90)
+        {
+            arrowImage.transform.localScale = new Vector3(-1, 1, 1); // 向左指，翻转
+            angle += 180; // 修正角度
+        }
+        else
+        {
+            arrowImage.transform.localScale = new Vector3(1, 1, 1); // 向右指，不翻转
+        }
+        
+        // 根据角度的绝对值决定使用哪个Sprite
+        if (Mathf.Abs(angle) > 45) // 角度较大，更偏向下方
+        {
+            arrowImage.sprite = arrowDownLeft;
+        }
+        else // 角度较小，更偏向水平
+        {
+            arrowImage.sprite = arrowLeft;
+        }
+        
+        arrowImage.transform.rotation = Quaternion.Euler(0, 0, angle);
+    }
+    
+    // 为世界物体设置箭头位置
+    private void SetupArrowForWorldObject(Vector3 targetScreenPos)
+    {
+        if (arrowImage == null || guideCharacterImage == null)
+        {
+            Debug.LogWarning("TutorialManager: SetupArrowForWorldObject - 缺少必要的组件引用");
+            return;
+        }
+        
+        // 获取引导人物的屏幕坐标
+        Vector3 guideScreenPos = Camera.main.WorldToScreenPoint(guideCharacterImage.transform.position);
+        
+        // 计算从引导人物到目标的方向向量
+        Vector3 direction = (targetScreenPos - guideScreenPos).normalized;
+        
+        // 计算角度
+        float angle = Mathf.Atan2(direction.y, direction.x) * Mathf.Rad2Deg;
+        
+        // 将箭头放置在目标附近，紧挨着高亮圈
+        float arrowOffset = 80f; // 箭头距离目标的偏移距离
+        Vector3 arrowPosition = targetScreenPos + direction * arrowOffset;
+        arrowImage.transform.position = arrowPosition;
+        
+        // 决定是否水平翻转
+        if (angle > 90 || angle < -90)
+        {
+            arrowImage.transform.localScale = new Vector3(-1, 1, 1); // 向左指，翻转
+            angle += 180; // 修正角度
+        }
+        else
+        {
+            arrowImage.transform.localScale = new Vector3(1, 1, 1); // 向右指，不翻转
+        }
+        
+        // 根据角度的绝对值决定使用哪个Sprite
+        if (Mathf.Abs(angle) > 45) // 角度较大，更偏向下方
+        {
+            arrowImage.sprite = arrowDownLeft;
+        }
+        else // 角度较小，更偏向水平
+        {
+            arrowImage.sprite = arrowLeft;
+        }
+        
+        arrowImage.transform.rotation = Quaternion.Euler(0, 0, angle);
     }
     
     // 检查是否在MoveToGrass步骤中

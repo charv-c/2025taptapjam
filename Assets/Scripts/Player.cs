@@ -66,9 +66,10 @@ public class Player : MonoBehaviour
         // 只有在输入启用时才处理移动
         if (inputEnabled)
         {
-            // 获取输入
-            float horizontalInput = Input.GetAxis("Horizontal");
-            float verticalInput = Input.GetAxis("Vertical");
+            // 使用SetInput设置的值，而不是直接获取输入
+            // 这样PlayerController可以控制输入
+            float horizontalInput = currentHorizontalInput;
+            float verticalInput = currentVerticalInput;
 
             // 计算移动向量
             Vector3 movement = new Vector3(horizontalInput, verticalInput, 0f);

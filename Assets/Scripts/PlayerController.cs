@@ -138,6 +138,16 @@ public class PlayerController : MonoBehaviour
         return currentPlayer;
     }
 
+    // 公共方法：获取指定索引的玩家
+    public Player GetPlayerByIndex(int index)
+    {
+        if (index >= 0 && index < players.Count)
+        {
+            return players[index];
+        }
+        return null;
+    }
+
     // 公共方法：获取当前玩家索引
     public int GetCurrentPlayerIndex()
     {
