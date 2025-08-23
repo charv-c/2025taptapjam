@@ -288,13 +288,14 @@ public class ButtonController : MonoBehaviour
                     var (part1, part2) = PublicData.GetStringSplit(selectedString);
                     Debug.Log($"分割结果: '{part1}' 和 '{part2}'");
                     
-                    // 这里可以添加具体的分割逻辑
-                    // 例如：将分割后的字符添加到可用字符串列表中
-                    if (stringSelector != null)
-                    {
-                        stringSelector.AddAvailableString(part1);
-                        stringSelector.AddAvailableString(part2);
-                    }
+                    // 添加分割后的新字符串
+                    stringSelector.AddAvailableString(part1);
+                    stringSelector.AddAvailableString(part2);
+                    
+                    // 移除原本的字符串
+                    stringSelector.RemoveAvailableString(selectedString);
+                    
+                    Debug.Log($"已移除原本的字符串: {selectedString}");
                 }
                 else
                 {
@@ -310,7 +311,7 @@ public class ButtonController : MonoBehaviour
         else
         {
             Debug.LogError("StringSelector引用为空，无法执行分割操作");
-            ShowMessage("系统错误：StringSelector组件未找到");
+            
         }
     }
     
@@ -332,9 +333,14 @@ public class ButtonController : MonoBehaviour
                 {
                     Debug.Log($"合并结果: {originalString}");
                     
-                    // 这里可以添加具体的合并逻辑
-                    // 例如：将合并后的字符串添加到可用字符串列表中
+                    // 添加合并后的新字符串
                     stringSelector.AddAvailableString(originalString);
+                    
+                    // 移除原本的字符串
+                    stringSelector.RemoveAvailableString(firstString);
+                    stringSelector.RemoveAvailableString(secondString);
+                    
+                    Debug.Log($"已移除原本的字符串: {firstString} 和 {secondString}");
                 }
                 else
                 {
@@ -350,7 +356,6 @@ public class ButtonController : MonoBehaviour
         else
         {
             Debug.LogError("StringSelector引用为空，无法执行合并操作");
-            ShowMessage("系统错误：StringSelector组件未找到");
         }
     }
     

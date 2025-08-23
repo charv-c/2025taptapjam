@@ -9,16 +9,21 @@ public class StringSelector : MonoBehaviour
     [Header("UI设置")]
     [SerializeField] private Transform buttonContainer; // 按钮容器
     [SerializeField] private GameObject buttonPrefab; // 按钮预制体
+    [SerializeField] private TMP_FontAsset chineseFont; // 中文字体资源
+    [SerializeField] private TMP_FontAsset fallbackFont; // 回退字体资源
     
     [Header("选择设置")]
     public int maxSelectionCount = 1; // 最大选择数量
     
     [Header("字符串列表")]
-    [SerializeField] private List<string> availableStrings = new List<string>()
+    [SerializeField] private List<string> allStrings = new List<string>()
     {
         "人", "王", "两点水", "木", "火", "土", "金", "水", "日", "月", "山", 
         "川", "口", "心", "手", "足", "目", "耳", "鼻", "舌"
     };
+    
+    [Header("游戏开始时可用字符串")]
+    [SerializeField] private List<string> availableStrings = new List<string>();
     
     // 私有变量
     private List<int> selectedIndices = new List<int>(); // 已选择的按钮索引
@@ -45,7 +50,6 @@ public class StringSelector : MonoBehaviour
     
     void Start()
     {
-        EnsureRenAtFirstPosition();
         InitializeUI();
     }
     
@@ -127,9 +131,39 @@ public class StringSelector : MonoBehaviour
             {
                 buttonText.text = str;
                 
+                // 设置字体
+                if (chineseFont != null)
+                {
+                    buttonText.font = chineseFont;
+                    
+                    // 检查字体是否支持当前字符
+                    if (!chineseFont.HasCharacter(str[0]))
+                    {
+                        Debug.LogWarning($"StringSelector: 字体 '{chineseFont.name}' 不支持字符 '{str}' (Unicode: {(int)str[0]:X4})");
+                        
+                        // 尝试使用回退字体
+                        if (fallbackFont != null && fallbackFont.HasCharacter(str[0]))
+                        {
+                            buttonText.font = fallbackFont;
+                            Debug.Log($"StringSelector: 使用回退字体 '{fallbackFont.name}' 显示字符 '{str}'");
+                        }
+                    }
+                    else
+                    {
+                        Debug.Log($"StringSelector: 字体 '{chineseFont.name}' 支持字符 '{str}' (Unicode: {(int)str[0]:X4})");
+                    }
+                }
+                else
+                {
+                    Debug.LogWarning("StringSelector: 未设置中文字体资源，可能导致中文字符显示异常");
+                }
+                
                 // 确保文本居中显示
                 buttonText.alignment = TextAlignmentOptions.Center;
-                buttonText.fontSize = 24; // 设置合适的字体大小
+                buttonText.fontSize = 72; // 设置字体大小为72
+                
+                // 强制更新文本显示
+                buttonText.ForceMeshUpdate();
             }
             else
             {
@@ -273,62 +307,34 @@ public class StringSelector : MonoBehaviour
         }
     }
     
-    // 确保"人"在第一位
-    private void EnsureRenAtFirstPosition()
-    {
-        // 移除所有"人"字符
-        availableStrings.RemoveAll(str => str == "人");
-        
-        // 在第一位插入"人"
-        availableStrings.Insert(0, "人");
-    }
+
     
     // 公共方法：添加可用字符串
     public void AddAvailableString(string str)
     {
-        // 如果字符串是"人"，检查是否已经存在
-        if (str == "人")
+        // 检查字符串是否在allStrings中存在
+        if (!allStrings.Contains(str))
         {
-            if (!availableStrings.Contains("人"))
-            {
-                // 如果不存在"人"，将其添加到第一位
-                availableStrings.Insert(0, "人");
-                // 重新创建所有按钮以保持正确的索引
-                RecreateAllButtons();
-            }
-            // 如果已经存在"人"，不做任何操作
+            Debug.LogWarning($"字符串 '{str}' 不在所有字符串列表中，无法添加");
             return;
         }
         
-        // 对于非"人"的字符串，检查是否已存在
-        if (!availableStrings.Contains(str))
-        {
-            availableStrings.Add(str);
-            int index = availableStrings.Count - 1; // 获取新添加字符串的索引
-            CreateStringButton(str, index);
-        }
+        // 直接添加字符串，不检查是否已存在
+        availableStrings.Add(str);
+        int index = availableStrings.Count - 1; // 获取新添加字符串的索引
+        CreateStringButton(str, index);
     }
     
     // 公共方法：移除可用字符串
     public void RemoveAvailableString(string str)
     {
-        // 不允许移除"人"
-        if (str == "人")
-        {
-            Debug.LogWarning("不允许移除'人'字符");
-            return;
-        }
-        
         if (availableStrings.Contains(str))
         {
             int index = availableStrings.IndexOf(str);
             availableStrings.Remove(str);
             
-            if (index < stringButtons.Count)
-            {
-                DestroyImmediate(stringButtons[index].gameObject);
-                stringButtons.RemoveAt(index);
-            }
+            // 重新创建所有按钮以保持正确的索引
+            RecreateAllButtons();
         }
     }
     
@@ -423,20 +429,68 @@ public class StringSelector : MonoBehaviour
         Debug.Log($"StringSelector: 所有按钮尺寸设置为: {size}");
     }
     
-    // 公共方法：获取所有可用字符串（排除"人"）
-    public List<string> GetAvailableStringsExcludingRen()
+
+    
+    // 公共方法：获取所有可用字符串
+    public List<string> GetAvailableStrings()
     {
-        List<string> result = new List<string>();
-        for (int i = 1; i < availableStrings.Count; i++) // 从索引1开始，跳过"人"
-        {
-            result.Add(availableStrings[i]);
-        }
-        return result;
+        return new List<string>(availableStrings);
     }
     
-    // 公共方法：检查字符串是否为"人"
-    public bool IsRen(string str)
+
+    
+    // 公共方法：获取所有字符串列表
+    public List<string> GetAllStrings()
     {
-        return str == "人";
+        return new List<string>(allStrings);
+    }
+    
+    // 公共方法：检查字符串是否可用
+    public bool IsStringAvailable(string str)
+    {
+        return availableStrings.Contains(str);
+    }
+    
+    // 公共方法：获取可用字符串数量
+    public int GetAvailableStringCount()
+    {
+        return availableStrings.Count;
+    }
+    
+    // 公共方法：设置中文字体
+    public void SetChineseFont(TMP_FontAsset font)
+    {
+        chineseFont = font;
+        
+        // 更新所有现有按钮的字体
+        foreach (Button button in stringButtons)
+        {
+            if (button != null)
+            {
+                TextMeshProUGUI buttonText = button.GetComponentInChildren<TextMeshProUGUI>();
+                if (buttonText != null && chineseFont != null)
+                {
+                    buttonText.font = chineseFont;
+                }
+            }
+        }
+    }
+    
+    // 公共方法：检查字体是否支持字符
+    public bool IsCharacterSupported(string character)
+    {
+        if (chineseFont == null)
+        {
+            Debug.LogWarning("StringSelector: 未设置中文字体");
+            return false;
+        }
+        
+        return chineseFont.HasCharacter(character[0]);
+    }
+    
+    // 公共方法：获取当前字体名称
+    public string GetCurrentFontName()
+    {
+        return chineseFont != null ? chineseFont.name : "未设置";
     }
 }

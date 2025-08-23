@@ -12,7 +12,7 @@ public class PublicData : MonoBehaviour
     // 字符串分割映射字典，存储分割前的字符串和分割后的两部分
     public static Dictionary<string, (string, string)> stringSplitMappings = new Dictionary<string, (string, string)>()
     {
-        {"玩", ("王", "元")},
+        {"人", ("门", "闪")},
         {"明", ("日", "月")},
         {"林", ("木", "木")},
         {"众", ("人", "人")},
