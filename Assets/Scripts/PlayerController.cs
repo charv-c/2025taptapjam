@@ -1,5 +1,6 @@
 using UnityEngine;
 using System.Collections.Generic;
+using UnityEngine.SceneManagement;
 
 public class PlayerController : MonoBehaviour
 {
@@ -12,16 +13,28 @@ public class PlayerController : MonoBehaviour
     
     void Start()
     {
-        // 游戏开始时，根据设计文档播放下雨场景的BGM
-        if (AudioManager.Instance != null && AudioManager.Instance.bgmRainy != null)
+        // 根据当前关卡播放对应的BGM
+        string currentSceneName = SceneManager.GetActiveScene().name;
+        if (currentSceneName == "level1")
         {
-            AudioManager.Instance.PlayBGM(AudioManager.Instance.bgmRainy);
+            if (AudioManager.Instance != null && AudioManager.Instance.bgmTutorial != null)
+            {
+                AudioManager.Instance.PlayBGM(AudioManager.Instance.bgmTutorial);
+            }
         }
-
-        // 同时播放下雨的环境音
-        if (AudioManager.Instance != null && AudioManager.Instance.ambientRain != null)
+        else // 默认为第二个关卡或其他关卡的处理方式
         {
-            AudioManager.Instance.PlayAmbient(AudioManager.Instance.ambientRain);
+            // 游戏开始时，根据设计文档播放下雨场景的BGM
+            if (AudioManager.Instance != null && AudioManager.Instance.bgmRainy != null)
+            {
+                AudioManager.Instance.PlayBGM(AudioManager.Instance.bgmRainy);
+            }
+
+            // 同时播放下雨的环境音
+            if (AudioManager.Instance != null && AudioManager.Instance.ambientRain != null)
+            {
+                AudioManager.Instance.PlayAmbient(AudioManager.Instance.ambientRain);
+            }
         }
 
         // 如果没有手动设置玩家，自动查找场景中的所有Player组件

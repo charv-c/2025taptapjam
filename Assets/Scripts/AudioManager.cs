@@ -25,6 +25,7 @@ public class AudioManager : MonoBehaviour
     public AudioClip bgmMenu;       // 用于主菜单的BGM [cite: 8]
     public AudioClip bgmRainy;      // 用于关卡下雨阶段的BGM [cite: 8]
     public AudioClip bgmSunny;      // 雨停后的BGM [cite: 8]
+    public AudioClip bgmTutorial;   // 教程阶段的BGM [cite: 8]
 
     [Header("音效 (SFX)")]
     public AudioClip sfxUIClick;             // UI按钮交互音效 [cite: 12]
