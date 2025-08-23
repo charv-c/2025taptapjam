@@ -27,7 +27,6 @@ public class Player : MonoBehaviour
         mainCamera = Camera.main;
         if (mainCamera == null)
         {
-            Debug.LogError("未找到主摄像机！");
             return;
         }
 
@@ -144,7 +143,6 @@ public class Player : MonoBehaviour
         {
             // 使用自定义初始位置
             transform.position = customStartPosition;
-            Debug.Log($"使用自定义初始位置: {customStartPosition}");
         }
         else
         {
@@ -153,7 +151,6 @@ public class Player : MonoBehaviour
         }
         
         // 验证初始位置
-        Debug.Log($"最终初始位置: {transform.position}");
     }
     
     void SetDefaultStartPosition()
@@ -173,8 +170,6 @@ public class Player : MonoBehaviour
         }
         
         transform.position = defaultPosition;
-        
-        Debug.Log($"设置默认初始位置: {defaultPosition}, 玩家类型: {(isPlayer1 ? "Player1" : "Player2")}");
     }
 
 
@@ -265,7 +260,6 @@ public class Player : MonoBehaviour
     public void SetYAxisLimits(float minY, float maxY)
     {
         // 这里可以添加设置Y轴限制的逻辑
-        Debug.Log($"Y轴限制范围设置为: {minY} 到 {maxY}");
     }
     
     // 公共方法：检查当前位置是否在Y轴限制范围内
@@ -286,16 +280,11 @@ public class Player : MonoBehaviour
     // R键按下时的处理
     private void OnRKeyPressed()
     {
-        Debug.Log("R键被按下");
-        
-        // 如果player的carryletter不等于"人"，将其设置为人
         if (CarryCharacter != "人")
         {
             CarryCharacter = "人";
-            Debug.Log($"已将CarryCharacter重置为: {CarryCharacter}");
         }
         
-        // 恢复场景中所有物体的highlight脚本
         RestoreAllHighlightScripts();
     }
     
@@ -305,20 +294,14 @@ public class Player : MonoBehaviour
         // 查找场景中所有带有Highlight脚本的对象
         Highlight[] allHighlights = FindObjectsOfType<Highlight>();
         
-        Debug.Log($"找到 {allHighlights.Length} 个Highlight脚本");
-        
         foreach (Highlight highlight in allHighlights)
         {
             if (highlight != null && !highlight.enabled)
             {
                 highlight.enabled = true;
-                Debug.Log($"已恢复Highlight脚本: {highlight.gameObject.name}");
             }
         }
         
-        Debug.Log("所有Highlight脚本恢复完成");
-        
-        // 将所有米字格设置为默认sprite
         ResetAllMiSquares();
     }
     
@@ -328,18 +311,13 @@ public class Player : MonoBehaviour
         // 查找场景中所有带有MiSquareController脚本的对象
         MiSquareController[] allMiSquares = FindObjectsOfType<MiSquareController>();
         
-        Debug.Log($"找到 {allMiSquares.Length} 个米字格");
-        
         foreach (MiSquareController miSquare in allMiSquares)
         {
             if (miSquare != null)
             {
                 // 设置为"人"对应的米字格图片
                 miSquare.SetMiSquareSprite("人");
-                Debug.Log($"已将米字格 {miSquare.gameObject.name} 设置为'人'对应的图片");
             }
         }
-        
-        Debug.Log("所有米字格已设置为'人'对应的图片");
     }
 } 
