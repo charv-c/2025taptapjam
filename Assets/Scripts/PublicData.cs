@@ -1,0 +1,332 @@
+using System.Collections;
+using System.Collections.Generic;
+using UnityEngine;
+using UnityEngine.SceneManagement;
+
+public class PublicData : MonoBehaviour
+{
+    [Header("字符图片映射")]
+    [SerializeField] private List<CharacterSpriteMapping> characterSpriteMappings = new List<CharacterSpriteMapping>();
+    
+    [Header("米字格图片映射")]
+    [SerializeField] private List<CharacterSpriteMapping> miZiGeSpriteMappings = new List<CharacterSpriteMapping>();
+    
+    [Header("目标字符列表")]
+    [SerializeField] private List<string> target = new List<string>()
+    {
+        "金", "相", "便", "间"
+    };
+    
+    [Header("目标位置设置")]
+    [SerializeField] private List<CharacterTransformMapping> targetPositionMappings = new List<CharacterTransformMapping>();
+    
+    [Header("场景设置")]
+    [SerializeField] private string nextSceneName = "NextLevel";
+    
+    public static List<string> targetList = new List<string>()
+    {
+        "金", "相", "便", "间"
+    };
+    
+    public static Dictionary<string, Transform> targetPositionDict = new Dictionary<string, Transform>();
+    
+    // 跟踪已合成的目标字符
+    public static HashSet<string> completedTargets = new HashSet<string>();
+    
+    // 静态场景名称
+    public static string sceneName;
+    
+
+    
+    public static Dictionary<string, (string, string)> stringSplitMappings = new Dictionary<string, (string, string)>()
+    {
+        {"闪", ("门", "人")},
+        {"休", ("人", "木")},
+        {"停", ("亭", "人")},
+        {"丛", ("从", "一")},
+        {"仙", ("人", "山")},
+        {"伙", ("人", "火")},
+        {"粳", ("米", "更")},
+        {"米", ("丷", "木")},
+        {"从", ("人", "人")},
+        {"全", ("王", "人")},
+        {"目", ("日", "一")},
+        {"大", ("人", "一")},
+        {"昌", ("日", "日")},
+        {"侠", ("人", "夹")},
+
+        {"金", ("全", "丷")},
+        {"相", ("木", "目")},
+        {"便", ("人", "更")},
+        {"间", ("门", "日")},
+    };
+    
+    public static List<string> listofhua = new List<string>()
+    {
+        "亭", "山", "火", "木", "夹", "日",
+    };
+    
+    public static Dictionary<string, string> stringKeyValuePairs = new Dictionary<string, string>()
+    {
+        {"停", "雨"},
+        {"休", "猎"},
+        {"侠", "王"},
+        {"伙", "孩"},
+        {"仙", "日"},
+    };
+    
+    private static Dictionary<string, Sprite> characterSprites = new Dictionary<string, Sprite>();
+    private static Dictionary<string, Sprite> miZiGeSprites = new Dictionary<string, Sprite>();
+    
+    void Awake()
+    {
+        targetList.Clear();
+        targetList.AddRange(target);
+        
+        // 初始化场景名称
+        sceneName = nextSceneName;
+        
+        targetPositionDict.Clear();
+        foreach (var mapping in targetPositionMappings)
+        {
+            if (!string.IsNullOrEmpty(mapping.character) && mapping.targetTransform != null)
+            {
+                targetPositionDict[mapping.character] = mapping.targetTransform;
+            }
+        }
+        
+        InitializeSpriteDictionary();
+    }
+    
+    private void InitializeSpriteDictionary()
+    {
+        characterSprites.Clear();
+        foreach (var mapping in characterSpriteMappings)
+        {
+            if (!string.IsNullOrEmpty(mapping.character) && mapping.sprite != null)
+            {
+                characterSprites[mapping.character] = mapping.sprite;
+            }
+        }
+        
+        miZiGeSprites.Clear();
+        foreach (var mapping in miZiGeSpriteMappings)
+        {
+            if (!string.IsNullOrEmpty(mapping.character) && mapping.sprite != null)
+            {
+                miZiGeSprites[mapping.character] = mapping.sprite;
+            }
+        }
+    }
+    
+    public static Sprite GetCharacterSprite(string character)
+    {
+        if (characterSprites.ContainsKey(character))
+        {
+            return characterSprites[character];
+        }
+        return null;
+    }
+    
+    public static Sprite GetMiZiGeSprite(string character)
+    {
+        if (miZiGeSprites.ContainsKey(character))
+        {
+            return miZiGeSprites[character];
+        }
+        return null;
+    }
+    
+    public static bool HasMiZiGeSprite(string character)
+    {
+        return miZiGeSprites.ContainsKey(character);
+    }
+    
+    public static List<string> GetAllMiZiGeCharacters()
+    {
+        return new List<string>(miZiGeSprites.Keys);
+    }
+    
+    public static string EnsureLegal(string character, string operation)
+    {
+        string result = FindOriginalString(character, operation);
+        if (result != null)
+        {
+            return result;
+        }
+        return null;
+    }
+    
+    public static Sprite GetResultSprite(string character, string operation)
+    {
+        string result = EnsureLegal(character, operation);
+        if (result != null)
+        {
+            return GetCharacterSprite(result);
+        }
+        return null;
+    }
+    
+    public static (string, string) GetStringSplit(string originalString)
+    {
+        if (stringSplitMappings.ContainsKey(originalString))
+        {
+            return stringSplitMappings[originalString];
+        }
+        return (originalString, "");
+    }
+    
+    public static bool CanSplitString(string originalString)
+    {
+        return stringSplitMappings.ContainsKey(originalString);
+    }
+    
+    public static List<string> GetAllSplittableStrings()
+    {
+        return new List<string>(stringSplitMappings.Keys);
+    }
+    
+    public static string FindOriginalString(string part1, string part2)
+    {
+        foreach (var kvp in stringSplitMappings)
+        {
+            var storedPart1 = kvp.Value.Item1;
+            var storedPart2 = kvp.Value.Item2;
+            
+            if ((storedPart1 == part1 && storedPart2 == part2) ||
+                (storedPart1 == part2 && storedPart2 == part1))
+            {
+                return kvp.Key;
+            }
+        }
+        return null;
+    }
+    
+    public static bool IsCharacterInTargetList(string character)
+    {
+        return targetList.Contains(character);
+    }
+    
+    public static Transform GetTargetPositionForCharacter(string character)
+    {
+        if (targetPositionDict.ContainsKey(character))
+        {
+            return targetPositionDict[character];
+        }
+        return null;
+    }
+    
+    public List<string> GetTargetList()
+    {
+        return new List<string>(target);
+    }
+    
+    // 标记目标字符为已完成
+    public static void MarkTargetAsCompleted(string character)
+    {
+        if (targetList.Contains(character))
+        {
+            completedTargets.Add(character);
+            // 从目标列表中移除已完成的字符
+            targetList.Remove(character);
+            CheckAllTargetsCompleted();
+        }
+    }
+    
+    // 检查是否所有目标都已完成
+    public static bool AreAllTargetsCompleted()
+    {
+        return completedTargets.Count >= targetList.Count;
+    }
+    
+    // 检查所有目标完成状态
+    private static void CheckAllTargetsCompleted()
+    {
+        if (AreAllTargetsCompleted())
+        {
+            // 在切换场景前禁用门的highlight
+            DisableDoorHighlights();
+            
+            // 所有目标完成，切换到下一个场景
+            if (!string.IsNullOrEmpty(sceneName))
+            {
+                Debug.Log($"所有目标完成，切换到场景: {sceneName}");
+                SceneManager.LoadScene(sceneName);
+            }
+            else
+            {
+                Debug.LogWarning("场景名称未设置，无法切换场景");
+            }
+        }
+    }
+    
+    // 禁用所有门的highlight
+    private static void DisableDoorHighlights()
+    {
+        // 查找场景中所有带有Highlight脚本的对象
+        Highlight[] allHighlights = FindObjectsOfType<Highlight>();
+        
+        foreach (Highlight highlight in allHighlights)
+        {
+            if (highlight != null && highlight.letter == "门")
+            {
+                // 禁用门的Highlight组件
+                highlight.enabled = false;
+                Debug.Log($"禁用门的highlight: {highlight.gameObject.name}");
+            }
+        }
+    }
+    
+    // 公共方法：场景切换前的通用处理
+    public static void OnBeforeSceneTransition()
+    {
+        DisableDoorHighlights();
+    }
+    
+    // 重置目标完成状态（用于重新开始关卡）
+    public static void ResetTargetCompletion()
+    {
+        completedTargets.Clear();
+    }
+    
+    // 获取完成进度
+    public static float GetCompletionProgress()
+    {
+        if (targetList.Count == 0) return 0f;
+        return (float)completedTargets.Count / targetList.Count;
+    }
+    
+    // 获取未完成的目标列表
+    public static List<string> GetIncompleteTargets()
+    {
+        List<string> incomplete = new List<string>();
+        foreach (string target in targetList)
+        {
+            if (!completedTargets.Contains(target))
+            {
+                incomplete.Add(target);
+            }
+        }
+        return incomplete;
+    }
+}
+
+[System.Serializable]
+public class CharacterSpriteMapping
+{
+    [Tooltip("字符名称")]
+    public string character;
+    
+    [Tooltip("对应的Sprite图片")]
+    public Sprite sprite;
+}
+
+[System.Serializable]
+public class CharacterTransformMapping
+{
+    [Tooltip("字符名称")]
+    public string character;
+    
+    [Tooltip("对应的目标位置Transform")]
+    public Transform targetTransform;
+}
