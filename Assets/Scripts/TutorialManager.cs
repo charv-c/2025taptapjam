@@ -174,29 +174,6 @@ public class TutorialManager : MonoBehaviour
     {
         Debug.Log($"TutorialManager: 尝试从步骤 {currentStep} 跳转到下一步");
 
-        // 特殊检查：MoveToDog步骤需要玩家获得"伏"字才能继续
-        if (currentStep == TutorialStep.MoveToDog)
-        {
-            if (playerController != null && playerController.GetCurrentPlayer() != null)
-            {
-                Player currentPlayer = playerController.GetCurrentPlayer();
-                if (currentPlayer.CarryCharacter != "伏")
-                {
-                    Debug.Log($"TutorialManager: 玩家当前携带字符为 '{currentPlayer.CarryCharacter}'，需要获得'伏'字才能继续");
-                    return; // 不继续，等待玩家获得"伏"字
-                }
-                else
-                {
-                    Debug.Log("TutorialManager: 玩家已获得'伏'字，允许继续");
-                }
-            }
-            else
-            {
-                Debug.LogWarning("TutorialManager: 无法获取当前玩家信息，阻止继续");
-                return;
-            }
-        }
-
         if (stepTransitions.ContainsKey(currentStep))
         {
             TutorialStep nextStep = stepTransitions[currentStep];
@@ -216,6 +193,7 @@ public class TutorialManager : MonoBehaviour
     {
         DisablePlayerMovement();
         DisablePlayerSwitching();
+        DisableEnterKey();
         SetGuideExpression(exprNormal);
         hintText.text = "缘分的故事，始于同窗之谊...";
         continueButton.gameObject.SetActive(true);
@@ -225,6 +203,7 @@ public class TutorialManager : MonoBehaviour
     {
         DisablePlayerMovement();
         DisablePlayerSwitching();
+        DisableEnterKey();
         SetGuideExpression(exprNormal);
         hintText.text = "这里是万松书院，梁山伯与祝英台初遇之地。而你，将化身为【梁山伯】...";
         continueButton.gameObject.SetActive(true);
@@ -248,32 +227,58 @@ public class TutorialManager : MonoBehaviour
             PointAtTarget(dogObject.transform);
         }
         EnablePlayerMovement(0);
-
-        // 检查玩家是否已经获得"伏"字
+        
+        // 启用回车键响应，允许玩家与小狗交互
         if (playerController != null && playerController.GetCurrentPlayer() != null)
         {
             Player currentPlayer = playerController.GetCurrentPlayer();
-            if (currentPlayer.CarryCharacter == "伏")
+            currentPlayer.SetEnterKeyEnabled(true);
+            Debug.Log("TutorialManager: 已启用回车键响应，允许与小狗交互");
+        }
+
+        // 开始重复检查玩家是否获得"伏"字
+        StartCoroutine(CheckForFuCharacter());
+    }
+    
+    // 重复检查玩家是否获得"伏"字的协程
+    private IEnumerator CheckForFuCharacter()
+    {
+        Debug.Log("TutorialManager: 开始重复检查玩家是否获得'伏'字");
+        
+        while (true)
+        {
+            // 检查玩家是否已经获得"伏"字
+            if (playerController != null && playerController.GetCurrentPlayer() != null)
             {
-                Debug.Log("TutorialManager: 玩家已经获得'伏'字，直接显示继续按钮");
-                continueButton.gameObject.SetActive(true);
-                EnableUIInteraction();
+                Player currentPlayer = playerController.GetCurrentPlayer();
+                if (currentPlayer.CarryCharacter == "伏")
+                {
+                    Debug.Log("TutorialManager: 检测到玩家已获得'伏'字，自动进入下一步");
+                    // 禁用回车键响应
+                    currentPlayer.SetEnterKeyEnabled(false);
+                    // 自动进入下一步
+                    GoToNextStep();
+                    yield break; // 退出协程
+                }
+                else
+                {
+                    Debug.Log($"TutorialManager: 玩家当前携带字符为 '{currentPlayer.CarryCharacter}'，继续等待获得'伏'字");
+                }
             }
             else
             {
-                Debug.Log($"TutorialManager: 玩家当前携带字符为 '{currentPlayer.CarryCharacter}'，等待获得'伏'字");
-                // 不显示继续按钮，等待玩家获得"伏"字
+                Debug.LogWarning("TutorialManager: 无法获取当前玩家信息");
             }
-        }
-        else
-        {
-            Debug.LogWarning("TutorialManager: 无法获取当前玩家信息");
+            
+            // 等待0.5秒后再次检查
+            yield return new WaitForSeconds(0.5f);
         }
     }
 
     private void HandleAfterTransform()
     {
         DisablePlayerMovement();
+        DisableEnterKey();
         SetGuideExpression(exprHappy);
         hintText.text = "很好！你变成了\"伏\"字，获得了伏下身子的能力。";
 
@@ -291,14 +296,51 @@ public class TutorialManager : MonoBehaviour
             PointAtTarget(grassObject.transform);
         }
         EnablePlayerMovement(0);
+        EnableEnterKey(); // 启用回车键响应，允许与草丛交互
 
-        // 延迟一秒后显示继续按钮
-        StartCoroutine(DelayedShowContinueButton(1f));
+        // 开始重复检查玩家是否获得"虫"字
+        StartCoroutine(CheckForChongCharacter());
+    }
+    
+    // 重复检查玩家是否获得"虫"字的协程
+    private IEnumerator CheckForChongCharacter()
+    {
+        Debug.Log("TutorialManager: 开始重复检查玩家是否获得'虫'字");
+        
+        while (true)
+        {
+            // 检查玩家是否已经获得"虫"字
+            if (playerController != null && playerController.GetCurrentPlayer() != null)
+            {
+                Player currentPlayer = playerController.GetCurrentPlayer();
+                if (currentPlayer.CarryCharacter == "虫")
+                {
+                    Debug.Log("TutorialManager: 检测到玩家已获得'虫'字，自动进入下一步");
+                    // 禁用回车键响应
+                    currentPlayer.SetEnterKeyEnabled(false);
+                    // 自动进入下一步
+                    GoToNextStep();
+                    yield break; // 退出协程
+                }
+                else
+                {
+                    Debug.Log($"TutorialManager: 玩家当前携带字符为 '{currentPlayer.CarryCharacter}'，继续等待获得'虫'字");
+                }
+            }
+            else
+            {
+                Debug.LogWarning("TutorialManager: 无法获取当前玩家信息");
+            }
+            
+            // 等待0.5秒后再次检查
+            yield return new WaitForSeconds(0.5f);
+        }
     }
 
     private void HandleAfterGetChong()
     {
         DisablePlayerMovement();
+        DisableEnterKey();
         SetGuideExpression(exprHappy);
         hintText.text = "你获得了【虫】字！这是化蝶的关键。";
 
@@ -336,9 +378,45 @@ public class TutorialManager : MonoBehaviour
             PointAtTarget(dieObject.transform);
         }
         EnablePlayerMovement(1);
+        EnableEnterKey(); // 启用回车键响应，允许与文牒交互
 
-        // 延迟一秒后显示继续按钮
-        StartCoroutine(DelayedShowContinueButton(1f));
+        // 开始重复检查玩家是否获得"牒"字
+        StartCoroutine(CheckForDieCharacter());
+    }
+    
+    // 重复检查玩家是否获得"牒"字的协程
+    private IEnumerator CheckForDieCharacter()
+    {
+        Debug.Log("TutorialManager: 开始重复检查玩家是否获得'牒'字");
+        
+        while (true)
+        {
+            // 检查玩家是否已经获得"牒"字
+            if (playerController != null && playerController.GetCurrentPlayer() != null)
+            {
+                Player currentPlayer = playerController.GetCurrentPlayer();
+                if (currentPlayer.CarryCharacter == "牒")
+                {
+                    Debug.Log("TutorialManager: 检测到玩家已获得'牒'字，自动进入下一步");
+                    // 禁用回车键响应
+                    currentPlayer.SetEnterKeyEnabled(false);
+                    // 自动进入下一步
+                    GoToNextStep();
+                    yield break; // 退出协程
+                }
+                else
+                {
+                    Debug.Log($"TutorialManager: 玩家当前携带字符为 '{currentPlayer.CarryCharacter}'，继续等待获得'牒'字");
+                }
+            }
+            else
+            {
+                Debug.LogWarning("TutorialManager: 无法获取当前玩家信息");
+            }
+            
+            // 等待0.5秒后再次检查
+            yield return new WaitForSeconds(0.5f);
+        }
     }
 
     private void HandleAfterGetDie()
@@ -466,8 +544,9 @@ public class TutorialManager : MonoBehaviour
         // 禁止玩家移动，确保游戏开始时玩家无法移动
         DisablePlayerMovement();
         DisablePlayerSwitching(); // 禁用玩家切换
+        DisableEnterKey(); // 禁用回车键响应
         
-        Debug.Log("TutorialManager: 延迟禁用玩家移动完成");
+        Debug.Log("TutorialManager: 延迟禁用玩家移动和回车键响应完成");
     }
 
     public void OnPlayerTransformed()
@@ -697,6 +776,28 @@ public class TutorialManager : MonoBehaviour
         if (playerController != null)
         {
             playerController.EnablePlayerSwitching();
+        }
+    }
+    
+    // 禁用回车键响应
+    private void DisableEnterKey()
+    {
+        if (playerController != null && playerController.GetCurrentPlayer() != null)
+        {
+            Player currentPlayer = playerController.GetCurrentPlayer();
+            currentPlayer.SetEnterKeyEnabled(false);
+            Debug.Log("TutorialManager: 已禁用回车键响应");
+        }
+    }
+    
+    // 启用回车键响应
+    private void EnableEnterKey()
+    {
+        if (playerController != null && playerController.GetCurrentPlayer() != null)
+        {
+            Player currentPlayer = playerController.GetCurrentPlayer();
+            currentPlayer.SetEnterKeyEnabled(true);
+            Debug.Log("TutorialManager: 已启用回车键响应");
         }
     }
     #endregion

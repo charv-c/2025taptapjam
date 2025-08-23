@@ -19,6 +19,7 @@ public class Player : MonoBehaviour
     private bool inputEnabled = false; // 控制输入是否启用，默认禁用
     private float currentHorizontalInput = 0f;
     private float currentVerticalInput = 0f;
+    private bool enterKeyEnabled = true; // 控制回车键是否启用，默认启用
     public string CarryCharacter="人";
     
     void Start()
@@ -49,6 +50,12 @@ public class Player : MonoBehaviour
         if (Input.GetKeyDown(KeyCode.R))
         {
             OnRKeyPressed();
+        }
+        
+        // 检测回车键按下（只有在启用时才响应）
+        if (enterKeyEnabled && Input.GetKeyDown(KeyCode.Return))
+        {
+            OnEnterKeyPressed();
         }
     }
 
@@ -282,11 +289,86 @@ public class Player : MonoBehaviour
     {
         if (CarryCharacter != "人")
         {
-            CarryCharacter = "人";
+            SetCarryCharacter("人");
         }
         
         RestoreAllHighlightScripts();
         ShowRainObject();
+    }
+    
+    // 回车键按下时的处理
+    private void OnEnterKeyPressed()
+    {
+        // 查找附近的Highlight对象并触发交互
+        TriggerNearbyHighlightInteraction();
+    }
+    
+    // 触发附近的Highlight对象交互
+    private void TriggerNearbyHighlightInteraction()
+    {
+        // 查找场景中所有Highlight对象
+        Highlight[] allHighlights = FindObjectsOfType<Highlight>();
+        
+        foreach (Highlight highlight in allHighlights)
+        {
+            if (highlight != null && highlight.enabled)
+            {
+                // 检查是否在交互范围内
+                float distance = Vector3.Distance(transform.position, highlight.transform.position);
+                if (distance <= 2f) // 交互范围设为2个单位
+                {
+                    // 触发Highlight对象的交互
+                    highlight.TriggerInteraction();
+                    Debug.Log($"Player: 触发与Highlight对象 '{highlight.gameObject.name}' 的交互");
+                    break; // 只与第一个找到的对象交互
+                }
+            }
+        }
+    }
+    
+    // 设置携带字符并更新米字格图片
+    public void SetCarryCharacter(string newCharacter)
+    {
+        string oldCharacter = CarryCharacter;
+        Debug.Log($"Player.SetCarryCharacter: 开始设置携带字符，从 '{oldCharacter}' 更改为 '{newCharacter}'");
+        
+        CarryCharacter = newCharacter;
+        
+        // 更新对应的米字格图片
+        UpdateMiSquareForCarryCharacter(newCharacter);
+        
+        Debug.Log($"Player.SetCarryCharacter: 携带字符设置完成，当前携带字符为 '{CarryCharacter}'");
+    }
+    
+    // 更新米字格图片
+    private void UpdateMiSquareForCarryCharacter(string character)
+    {
+        Debug.Log($"Player.UpdateMiSquareForCarryCharacter: 开始更新米字格图片，字符='{character}'，isPlayer1={isPlayer1}");
+        
+        // 根据玩家类型确定对应的米字格
+        string targetMiSquareName = isPlayer1 ? "MiSquare1" : "MiSquare2";
+        Debug.Log($"Player.UpdateMiSquareForCarryCharacter: 查找米字格对象 '{targetMiSquareName}'");
+        
+        GameObject targetMiSquare = GameObject.Find(targetMiSquareName);
+        
+        if (targetMiSquare != null)
+        {
+            Debug.Log($"Player.UpdateMiSquareForCarryCharacter: 找到米字格对象 '{targetMiSquareName}'");
+            MiSquareController miSquareController = targetMiSquare.GetComponent<MiSquareController>();
+            if (miSquareController != null)
+            {
+                miSquareController.SetMiSquareSprite(character);
+                Debug.Log($"Player.UpdateMiSquareForCarryCharacter: 已更新米字格 '{targetMiSquareName}' 为字符 '{character}'");
+            }
+            else
+            {
+                Debug.LogWarning($"Player.UpdateMiSquareForCarryCharacter: 米字格 '{targetMiSquareName}' 没有MiSquareController组件");
+            }
+        }
+        else
+        {
+            Debug.LogWarning($"Player.UpdateMiSquareForCarryCharacter: 未找到米字格对象 '{targetMiSquareName}'");
+        }
     }
     
     // 显示雨对象
@@ -337,5 +419,32 @@ public class Player : MonoBehaviour
                 miSquare.SetMiSquareSprite("人");
             }
         }
+        
+        Debug.Log("Player: 已重置所有米字格为'人'字符");
+    }
+    
+    // 获取当前携带的字符
+    public string GetCarryCharacter()
+    {
+        return CarryCharacter;
+    }
+    
+    // 检查当前携带的字符是否为指定字符
+    public bool IsCarryingCharacter(string character)
+    {
+        return CarryCharacter == character;
+    }
+    
+    // 启用/禁用回车键响应
+    public void SetEnterKeyEnabled(bool enabled)
+    {
+        enterKeyEnabled = enabled;
+        Debug.Log($"Player: 回车键响应已{(enabled ? "启用" : "禁用")}");
+    }
+    
+    // 获取回车键响应状态
+    public bool IsEnterKeyEnabled()
+    {
+        return enterKeyEnabled;
     }
 } 

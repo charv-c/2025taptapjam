@@ -7,8 +7,19 @@ public class MiSquareController : MonoBehaviour
     [SerializeField] private SpriteRenderer spriteRenderer;
     [SerializeField] private bool enableLogging = true;
     
+    [Header("米字格类型")]
+    [SerializeField] private MiZiGeType miZiGeType = MiZiGeType.Default;
+    
     // 当前显示的字符
     private string currentCharacter = "";
+    
+    // 米字格类型枚举
+    public enum MiZiGeType
+    {
+        Default,    // 默认米字格
+        Left,       // 左米字格
+        Right       // 右米字格
+    }
     
     void Start()
     {
@@ -37,8 +48,22 @@ public class MiSquareController : MonoBehaviour
             return;
         }
         
-        // 获取字符对应的米字格Sprite
-        Sprite miZiGeSprite = PublicData.GetMiZiGeSprite(character);
+        // 根据米字格类型获取对应的Sprite
+        Sprite miZiGeSprite = null;
+        switch (miZiGeType)
+        {
+            case MiZiGeType.Left:
+                miZiGeSprite = PublicData.GetLeftMiZiGeSprite(character);
+                break;
+            case MiZiGeType.Right:
+                miZiGeSprite = PublicData.GetRightMiZiGeSprite(character);
+                break;
+            case MiZiGeType.Default:
+            default:
+                miZiGeSprite = PublicData.GetMiZiGeSprite(character);
+                break;
+        }
+        
         if (miZiGeSprite != null)
         {
             spriteRenderer.sprite = miZiGeSprite;
@@ -46,12 +71,12 @@ public class MiSquareController : MonoBehaviour
             
             if (enableLogging)
             {
-                Debug.Log($"MiSquareController: 已设置米字格sprite为字符 '{character}'");
+                Debug.Log($"MiSquareController: 已设置{miZiGeType}米字格sprite为字符 '{character}'");
             }
         }
         else
         {
-            Debug.LogWarning($"MiSquareController: 未找到字符 '{character}' 对应的米字格Sprite");
+            Debug.LogWarning($"MiSquareController: 未找到字符 '{character}' 对应的{miZiGeType}米字格Sprite");
         }
     }
     
@@ -120,5 +145,36 @@ public class MiSquareController : MonoBehaviour
     public SpriteRenderer GetSpriteRenderer()
     {
         return spriteRenderer;
+    }
+    
+    // 设置米字格类型
+    public void SetMiZiGeType(MiZiGeType type)
+    {
+        miZiGeType = type;
+        if (enableLogging)
+        {
+            Debug.Log($"MiSquareController: 米字格类型已设置为 {type}");
+        }
+    }
+    
+    // 获取米字格类型
+    public MiZiGeType GetMiZiGeType()
+    {
+        return miZiGeType;
+    }
+    
+    // 检查是否有对应类型的米字格Sprite
+    public bool HasMiZiGeSprite(string character)
+    {
+        switch (miZiGeType)
+        {
+            case MiZiGeType.Left:
+                return PublicData.HasLeftMiZiGeSprite(character);
+            case MiZiGeType.Right:
+                return PublicData.HasRightMiZiGeSprite(character);
+            case MiZiGeType.Default:
+            default:
+                return PublicData.HasMiZiGeSprite(character);
+        }
     }
 }

@@ -11,6 +11,12 @@ public class PublicData : MonoBehaviour
     [Header("米字格图片映射")]
     [SerializeField] private List<CharacterSpriteMapping> miZiGeSpriteMappings = new List<CharacterSpriteMapping>();
     
+    [Header("左米字格图片映射")]
+    [SerializeField] private List<CharacterSpriteMapping> leftMiZiGeSpriteMappings = new List<CharacterSpriteMapping>();
+    
+    [Header("右米字格图片映射")]
+    [SerializeField] private List<CharacterSpriteMapping> rightMiZiGeSpriteMappings = new List<CharacterSpriteMapping>();
+    
     [Header("目标字符列表")]
     [SerializeField] private List<string> target = new List<string>()
     {
@@ -54,6 +60,7 @@ public class PublicData : MonoBehaviour
         {"大", ("人", "一")},
         {"昌", ("日", "日")},
         {"侠", ("人", "夹")},
+        {"伏", ("人", "犬")},  // 添加伏字的映射
 
         {"金", ("全", "丷")},
         {"相", ("木", "目")},
@@ -63,7 +70,7 @@ public class PublicData : MonoBehaviour
     
     public static List<string> listofhua = new List<string>()
     {
-        "亭", "山", "火", "木", "夹", "日",
+        "亭", "山", "火", "木", "夹", "日", "犬",
     };
     
     public static Dictionary<string, string> stringKeyValuePairs = new Dictionary<string, string>()
@@ -77,6 +84,8 @@ public class PublicData : MonoBehaviour
     
     private static Dictionary<string, Sprite> characterSprites = new Dictionary<string, Sprite>();
     private static Dictionary<string, Sprite> miZiGeSprites = new Dictionary<string, Sprite>();
+    private static Dictionary<string, Sprite> leftMiZiGeSprites = new Dictionary<string, Sprite>();
+    private static Dictionary<string, Sprite> rightMiZiGeSprites = new Dictionary<string, Sprite>();
     
     void Awake()
     {
@@ -117,6 +126,26 @@ public class PublicData : MonoBehaviour
                 miZiGeSprites[mapping.character] = mapping.sprite;
             }
         }
+        
+        // 初始化左米字格图片映射
+        leftMiZiGeSprites.Clear();
+        foreach (var mapping in leftMiZiGeSpriteMappings)
+        {
+            if (!string.IsNullOrEmpty(mapping.character) && mapping.sprite != null)
+            {
+                leftMiZiGeSprites[mapping.character] = mapping.sprite;
+            }
+        }
+        
+        // 初始化右米字格图片映射
+        rightMiZiGeSprites.Clear();
+        foreach (var mapping in rightMiZiGeSpriteMappings)
+        {
+            if (!string.IsNullOrEmpty(mapping.character) && mapping.sprite != null)
+            {
+                rightMiZiGeSprites[mapping.character] = mapping.sprite;
+            }
+        }
     }
     
     public static Sprite GetCharacterSprite(string character)
@@ -137,14 +166,52 @@ public class PublicData : MonoBehaviour
         return null;
     }
     
+    public static Sprite GetLeftMiZiGeSprite(string character)
+    {
+        if (leftMiZiGeSprites.ContainsKey(character))
+        {
+            return leftMiZiGeSprites[character];
+        }
+        return null;
+    }
+    
+    public static Sprite GetRightMiZiGeSprite(string character)
+    {
+        if (rightMiZiGeSprites.ContainsKey(character))
+        {
+            return rightMiZiGeSprites[character];
+        }
+        return null;
+    }
+    
     public static bool HasMiZiGeSprite(string character)
     {
         return miZiGeSprites.ContainsKey(character);
     }
     
+    public static bool HasLeftMiZiGeSprite(string character)
+    {
+        return leftMiZiGeSprites.ContainsKey(character);
+    }
+    
+    public static bool HasRightMiZiGeSprite(string character)
+    {
+        return rightMiZiGeSprites.ContainsKey(character);
+    }
+    
     public static List<string> GetAllMiZiGeCharacters()
     {
         return new List<string>(miZiGeSprites.Keys);
+    }
+    
+    public static List<string> GetAllLeftMiZiGeCharacters()
+    {
+        return new List<string>(leftMiZiGeSprites.Keys);
+    }
+    
+    public static List<string> GetAllRightMiZiGeCharacters()
+    {
+        return new List<string>(rightMiZiGeSprites.Keys);
     }
     
     public static string EnsureLegal(string character, string operation)
@@ -308,6 +375,47 @@ public class PublicData : MonoBehaviour
             }
         }
         return incomplete;
+    }
+    
+    // 批量设置左米字格图片映射
+    public static void SetLeftMiZiGeSpriteMappings(Dictionary<string, Sprite> mappings)
+    {
+        leftMiZiGeSprites.Clear();
+        foreach (var kvp in mappings)
+        {
+            if (!string.IsNullOrEmpty(kvp.Key) && kvp.Value != null)
+            {
+                leftMiZiGeSprites[kvp.Key] = kvp.Value;
+            }
+        }
+    }
+    
+    // 批量设置右米字格图片映射
+    public static void SetRightMiZiGeSpriteMappings(Dictionary<string, Sprite> mappings)
+    {
+        rightMiZiGeSprites.Clear();
+        foreach (var kvp in mappings)
+        {
+            if (!string.IsNullOrEmpty(kvp.Key) && kvp.Value != null)
+            {
+                rightMiZiGeSprites[kvp.Key] = kvp.Value;
+            }
+        }
+    }
+    
+    // 获取所有米字格类型的字符列表
+    public static List<string> GetAllMiZiGeCharactersByType(string type)
+    {
+        switch (type.ToLower())
+        {
+            case "left":
+                return GetAllLeftMiZiGeCharacters();
+            case "right":
+                return GetAllRightMiZiGeCharacters();
+            case "default":
+            default:
+                return GetAllMiZiGeCharacters();
+        }
     }
 }
 

@@ -50,10 +50,7 @@ public class Highlight : MonoBehaviour
     {
         if (!enabled) return;
         
-        if (isHighlighted && Input.GetKeyDown(KeyCode.Return))
-        {
-            FunctionA();
-        }
+        // 移除回车键检测，现在由Player统一处理
     }
     
     private void OnTriggerEnter2D(Collider2D other)
@@ -87,27 +84,53 @@ public class Highlight : MonoBehaviour
     }
     
     void ChangeMi(){
+        Debug.Log($"ChangeMi: 开始处理字符合成，letter='{letter}'，canControlMisquare={canControlMisquare}");
+        
         if (!canControlMisquare)
         {
+            Debug.LogWarning($"ChangeMi: canControlMisquare为false，无法控制米字格");
             return;
         }
         
         string combinedCharacter = PublicData.FindOriginalString(letter, "人");
+        Debug.Log($"ChangeMi: 查找合成字符，letter='{letter}' + '人' = '{combinedCharacter}'");
+        
         if (combinedCharacter != null)
         {
+            Debug.Log($"ChangeMi: 找到合成字符 '{combinedCharacter}'，开始更新米字格和玩家状态");
+            
             if (misquare != null)
             {
                 MiSquareController miSquareController = misquare.GetComponent<MiSquareController>();
                 if (miSquareController != null)
                 {
                     miSquareController.SetMiSquareSprite(combinedCharacter);
+                    Debug.Log($"ChangeMi: 已更新米字格为字符 '{combinedCharacter}'");
                 }
+                else
+                {
+                    Debug.LogWarning($"ChangeMi: 米字格对象没有MiSquareController组件");
+                }
+            }
+            else
+            {
+                Debug.LogWarning($"ChangeMi: misquare对象为空");
             }
             
             if (player != null)
             {
-                player.CarryCharacter = combinedCharacter;
+                // 使用新的SetCarryCharacter方法，会自动更新米字格图片
+                player.SetCarryCharacter(combinedCharacter);
+                Debug.Log($"ChangeMi: 已设置玩家携带字符为 '{combinedCharacter}'");
             }
+            else
+            {
+                Debug.LogWarning($"ChangeMi: player对象为空");
+            }
+        }
+        else
+        {
+            Debug.LogWarning($"ChangeMi: 未找到合成字符，letter='{letter}' + '人' 无法合成");
         }
         
         if (light2d != null)
@@ -121,6 +144,8 @@ public class Highlight : MonoBehaviour
         {
             highlightComponent.enabled = false;
         }
+        
+        Debug.Log($"ChangeMi: 字符合成处理完成");
     }
     
     void AddLetterToAvailableList(){
@@ -155,19 +180,28 @@ public class Highlight : MonoBehaviour
     
     private void FunctionA()
     {
+        Debug.Log($"FunctionA: 开始处理交互，对象letter='{letter}'，玩家携带字符='{player?.CarryCharacter}'，collectable={collectable}");
+        
         if (player != null && !string.IsNullOrEmpty(player.CarryCharacter))
         {
             if (collectable)
             {
+                Debug.Log($"FunctionA: 对象 '{letter}' 是可收集的，调用AddLetterToAvailableList");
                 AddLetterToAvailableList();
                 return;
             }
             
             if (player.CarryCharacter == "人")
             {
+                Debug.Log($"FunctionA: 玩家携带'人'字符，检查 '{letter}' 是否在可化字列表中");
                 if (PublicData.listofhua.Contains(letter))
                 {
+                    Debug.Log($"FunctionA: '{letter}' 在可化字列表中，调用ChangeMi");
                     ChangeMi();
+                }
+                else
+                {
+                    Debug.LogWarning($"FunctionA: '{letter}' 不在可化字列表中: {string.Join(", ", PublicData.listofhua)}");
                 }
             }
             else
@@ -179,10 +213,15 @@ public class Highlight : MonoBehaviour
                 {
                     if (playerValue == letter)
                     {
+                        Debug.Log($"FunctionA: 玩家携带字符 '{player.CarryCharacter}' 与对象 '{letter}' 匹配，调用BroadcastCarryLetterValue");
                         BroadcastCarryLetterValue(player.CarryCharacter);
                     }
                 }
             }
+        }
+        else
+        {
+            Debug.LogWarning($"FunctionA: 玩家为空或携带字符为空，玩家={player}, CarryCharacter='{player?.CarryCharacter}'");
         }
     }
     
@@ -190,8 +229,8 @@ public class Highlight : MonoBehaviour
     {
         if (player != null)
         {
-            player.CarryCharacter = "人";
-            UpdateMiSquareForPlayer();
+            // 使用新的SetCarryCharacter方法，会自动更新米字格图片
+            player.SetCarryCharacter("人");
         }
         
         if (BroadcastManager.Instance != null)
@@ -200,26 +239,7 @@ public class Highlight : MonoBehaviour
         }
     }
     
-    private void UpdateMiSquareForPlayer()
-    {
-        bool isPlayer1 = player.IsPlayer1();
-        string targetMiSquareName = isPlayer1 ? "MiSquare1" : "MiSquare2";
-        
-        GameObject targetMiSquare = GameObject.Find(targetMiSquareName);
-        
-        if (targetMiSquare != null)
-        {
-            MiSquareController miSquareController = targetMiSquare.GetComponent<MiSquareController>();
-            if (miSquareController != null)
-            {
-                Sprite miZiGeSprite = PublicData.GetMiZiGeSprite("人");
-                if (miZiGeSprite != null)
-                {
-                    miSquareController.SetMiSquareSprite("人");
-                }
-            }
-        }
-    }
+
     
     public void ReceiveBroadcast(string broadcastedValue)
     {
@@ -304,6 +324,7 @@ public class Highlight : MonoBehaviour
                 AddLetterToAvailableList();
             }
         }
+        
     }
     
     private void HideObject()
@@ -452,5 +473,14 @@ public class Highlight : MonoBehaviour
     private void ExecuteSpecialLogic()
     {
         // 特殊逻辑实现
+    }
+    
+    // 公共方法：触发交互（由Player调用）
+    public void TriggerInteraction()
+    {
+        if (enabled && isHighlighted)
+        {
+            FunctionA();
+        }
     }
 }
