@@ -38,7 +38,7 @@ public class PublicData : MonoBehaviour
     public static Dictionary<string, string> stringKeyValuePairs = new Dictionary<string, string>()
     {
         {"停", "雨"},
-        {"再见", "告别语"},
+        {"休", "猎"},
         {"谢谢", "感谢语"},
         {"对不起", "道歉语"},
         {"没关系", "回应语"},

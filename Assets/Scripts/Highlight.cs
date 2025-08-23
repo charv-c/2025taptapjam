@@ -212,19 +212,17 @@ public class Highlight : MonoBehaviour
             }
             else
             {
-                // 如果不为"人"，比较自己的letter和player的carryletter的键对应的字典的值
+                // 如果不为"人"，比较player的carryletter对应的字典值与当前letter
                 string playerValue = PublicData.stringKeyValuePairs.ContainsKey(player.CarryCharacter) ? 
                                    PublicData.stringKeyValuePairs[player.CarryCharacter] : null;
-                string myValue = PublicData.stringKeyValuePairs.ContainsKey(letter) ? 
-                               PublicData.stringKeyValuePairs[letter] : null;
 
-                if (playerValue != null && myValue != null)
+                if (playerValue != null)
                 {
                     Debug.Log($"Player携带字符 '{player.CarryCharacter}' 对应值: {playerValue}");
-                    Debug.Log($"当前letter '{letter}' 对应值: {myValue}");
+                    Debug.Log($"当前letter: {letter}");
 
-                    // 比较两个值
-                    if (playerValue == myValue)
+                    // 比较playerValue与letter
+                    if (playerValue == letter)
                     {
                         // 全屏广播carryletter的值
                         BroadcastCarryLetterValue(player.CarryCharacter);
@@ -232,14 +230,7 @@ public class Highlight : MonoBehaviour
                 }
                 else
                 {
-                    if (playerValue == null)
-                    {
-                        Debug.LogWarning($"Player携带字符 '{player.CarryCharacter}' 在字典中未找到对应值");
-                    }
-                    if (myValue == null)
-                    {
-                        Debug.LogWarning($"当前letter '{letter}' 在字典中未找到对应值");
-                    }
+                    Debug.LogWarning($"Player携带字符 '{player.CarryCharacter}' 在字典中未找到对应值");
                 }
             }
         }
@@ -392,8 +383,15 @@ public class Highlight : MonoBehaviour
     // 接收广播的方法
     public void ReceiveBroadcast(string broadcastedValue)
     {
-        Debug.Log($"接收到广播: {broadcastedValue}, 当前对象: {gameObject.name}, 类型: {GetType().Name}");
+        Debug.Log($"接收到广播: {broadcastedValue}, 当前对象: {gameObject.name}, letter: {letter}");
         
+        // 根据对象名称和letter执行不同的逻辑
+        HandleBroadcastByObject(broadcastedValue);
+    }
+    
+    // 根据letter处理广播
+    private void HandleBroadcastByObject(string broadcastedValue)
+    {
         // 检查自己的letter是否在字典中，且值等于广播的值
         if (PublicData.stringKeyValuePairs.ContainsKey(letter))
         {
@@ -401,10 +399,52 @@ public class Highlight : MonoBehaviour
             if (myValue == broadcastedValue)
             {
                 Debug.Log($"当前对象的letter '{letter}' 值与广播值 '{broadcastedValue}' 匹配，执行特殊逻辑");
-                // 这里可以添加匹配时的特殊逻辑
                 ExecuteSpecialLogic();
             }
         }
+        
+        // 只有当广播值为"休"时才执行这些操作
+        if (broadcastedValue == "休")
+        {
+            // 根据letter执行特定逻辑
+            if (letter == "猎")
+            {
+                // 猎收到广播"休"以后隐藏
+                HideObject();
+            }
+            else if (letter == "王")
+            {
+                // 王收到广播"休"以后显示
+                ShowObject();
+            }
+            else if (letter == "夹")
+            {
+                // 夹收到广播"休"以后显示
+                ShowObject();
+            }
+            
+        }
+    }
+    
+    // 隐藏对象
+    private void HideObject()
+    {
+        gameObject.SetActive(false);
+        Debug.Log($"已隐藏对象: {gameObject.name} (letter: {letter})");
+    }
+    
+    // 显示对象
+    private void ShowObject()
+    {
+        gameObject.SetActive(true);
+        Debug.Log($"已显示对象: {gameObject.name} (letter: {letter})");
+    }
+    
+    // 删除对象
+    private void DeleteObject()
+    {
+        Debug.Log($"已删除对象: {gameObject.name} (letter: {letter})");
+        Destroy(gameObject);
     }
     
     // 执行特殊逻辑的方法
