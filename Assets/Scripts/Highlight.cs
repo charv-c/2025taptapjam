@@ -223,6 +223,69 @@ public class Highlight : MonoBehaviour
         {
             Debug.LogWarning($"FunctionA: 玩家为空或携带字符为空，玩家={player}, CarryCharacter='{player?.CarryCharacter}'");
         }
+        
+        // 特殊处理：草对象在教程步骤中的特殊逻辑
+        HandleSpecialTutorialLogic();
+    }
+    
+    // 处理教程中的特殊逻辑
+    private void HandleSpecialTutorialLogic()
+    {
+        // 检查是否在MoveToGrass步骤中
+        if (TutorialManager.Instance != null && TutorialManager.Instance.IsInMoveToGrassStep())
+        {
+            if (letter == "草" && player != null)
+            {
+                Debug.Log($"FunctionA: 在MoveToGrass步骤中，玩家与草交互，执行特殊逻辑。玩家当前携带字符: '{player.CarryCharacter}'");
+                
+                // 添加"虫"到可用字符串列表
+                AddChongToAvailableList();
+                
+                // 激活"虫"物体
+                ActivateChongObject();
+                
+                // 设置玩家携带字符为"虫"
+                player.SetCarryCharacter("虫");
+            }
+        }
+    }
+    
+    // 添加"虫"到可用字符串列表
+    private void AddChongToAvailableList()
+    {
+        if (ButtonController.Instance != null)
+        {
+            StringSelector stringSelector = ButtonController.Instance.GetStringSelector();
+            if (stringSelector != null)
+            {
+                Debug.Log("FunctionA: 正在添加字符 '虫' 到可用字符串列表");
+                stringSelector.AddAvailableString("虫");
+                Debug.Log("FunctionA: 字符 '虫' 已添加到可用字符串列表");
+            }
+            else
+            {
+                Debug.LogError("FunctionA: StringSelector为空，无法添加字符 '虫'");
+            }
+        }
+        else
+        {
+            Debug.LogError("FunctionA: ButtonController.Instance为空，无法添加字符 '虫'");
+        }
+    }
+    
+    // 激活"虫"物体
+    private void ActivateChongObject()
+    {
+        GameObject chongObject = GameObject.Find("虫");
+        if (chongObject != null)
+        {
+            chongObject.SetActive(true);
+            Debug.Log("FunctionA: 已激活'虫'物体");
+        }
+        else
+        {
+            Debug.LogWarning("FunctionA: 未找到名为'虫'的物体");
+        }
     }
     
     private void BroadcastCarryLetterValue(string carryLetter)

@@ -950,5 +950,11 @@ public class TutorialManager : MonoBehaviour
             highlightBox.sizeDelta = targetRect.sizeDelta + new Vector2(20, 20);
         }
     }
+    
+    // 检查是否在MoveToGrass步骤中
+    public bool IsInMoveToGrassStep()
+    {
+        return currentStep == TutorialStep.MoveToGrass;
+    }
     #endregion
 }

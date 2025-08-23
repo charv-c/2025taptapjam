@@ -313,9 +313,8 @@ public class Player : MonoBehaviour
         {
             if (highlight != null && highlight.enabled)
             {
-                // 检查是否在交互范围内
-                float distance = Vector3.Distance(transform.position, highlight.transform.position);
-                if (distance <= 2f) // 交互范围设为2个单位
+                // 检查是否与当前玩家有碰撞（通过碰撞箱判断）
+                if (IsPlayerCollidingWithHighlight(highlight))
                 {
                     // 触发Highlight对象的交互
                     highlight.TriggerInteraction();
@@ -324,6 +323,36 @@ public class Player : MonoBehaviour
                 }
             }
         }
+    }
+    
+    // 检查玩家是否与Highlight对象碰撞
+    private bool IsPlayerCollidingWithHighlight(Highlight highlight)
+    {
+        // 获取玩家的碰撞箱
+        Collider2D playerCollider = GetComponent<Collider2D>();
+        if (playerCollider == null)
+        {
+            Debug.LogWarning("Player: 玩家没有Collider2D组件");
+            return false;
+        }
+        
+        // 获取Highlight对象的碰撞箱
+        Collider2D highlightCollider = highlight.GetComponent<Collider2D>();
+        if (highlightCollider == null)
+        {
+            Debug.LogWarning($"Player: Highlight对象 '{highlight.gameObject.name}' 没有Collider2D组件");
+            return false;
+        }
+        
+        // 检查两个碰撞箱是否重叠
+        bool isColliding = playerCollider.IsTouching(highlightCollider);
+        
+        if (isColliding)
+        {
+            Debug.Log($"Player: 检测到与Highlight对象 '{highlight.gameObject.name}' 的碰撞");
+        }
+        
+        return isColliding;
     }
     
     // 设置携带字符并更新米字格图片
