@@ -43,11 +43,20 @@ public class BroadcastManager : MonoBehaviour
         MonoBehaviour[] allObjects = FindObjectsOfType<MonoBehaviour>();
         
         int receiverCount = 0;
+        int highlightCount = 0;
+        
         foreach (MonoBehaviour obj in allObjects)
         {
             // 检查对象是否有ReceiveBroadcast方法
             if (obj.GetType().GetMethod("ReceiveBroadcast") != null)
             {
+                // 特别检查Highlight组件
+                if (obj is Highlight highlight)
+                {
+                    highlightCount++;
+                    Debug.Log($"找到Highlight组件: {obj.gameObject.name}, letter={highlight.letter}, enabled={obj.enabled}, activeInHierarchy={obj.gameObject.activeInHierarchy}");
+                }
+                
                 // 调用对象的接收广播方法
                 obj.SendMessage("ReceiveBroadcast", broadcastedValue, SendMessageOptions.DontRequireReceiver);
                 receiverCount++;
@@ -56,7 +65,7 @@ public class BroadcastManager : MonoBehaviour
         
         if (enableBroadcastLogging)
         {
-            Debug.Log($"BroadcastManager: 广播完成，发送给 {receiverCount} 个对象");
+            Debug.Log($"BroadcastManager: 广播完成，发送给 {receiverCount} 个对象，其中 {highlightCount} 个Highlight组件");
         }
     }
     

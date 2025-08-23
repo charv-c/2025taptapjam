@@ -17,7 +17,11 @@ public class ButtonController : MonoBehaviour
     [Header("选择器引用")]
     [SerializeField] private StringSelector stringSelector;
     
+    // 单例模式，方便其他脚本访问
     public static ButtonController Instance { get; private set; }
+    
+    // 飞行动画状态
+    private bool isFlyingAnimationActive = false;
     
     private void Awake()
     {
@@ -54,6 +58,9 @@ public class ButtonController : MonoBehaviour
 
     private void OnSplitButtonClicked()
     {
+        // 飞行动画期间禁止操作
+        if (isFlyingAnimationActive) return;
+        
         if (AudioManager.Instance != null && AudioManager.Instance.sfxUIClick != null)
         {
             AudioManager.Instance.PlaySFX(AudioManager.Instance.sfxUIClick);
@@ -63,6 +70,9 @@ public class ButtonController : MonoBehaviour
     
     private void OnCombineButtonClicked()
     {
+        // 飞行动画期间禁止操作
+        if (isFlyingAnimationActive) return;
+        
         if (AudioManager.Instance != null && AudioManager.Instance.sfxUIClick != null)
         {
             AudioManager.Instance.PlaySFX(AudioManager.Instance.sfxUIClick);
@@ -81,6 +91,21 @@ public class ButtonController : MonoBehaviour
     
     public void UpdateButtonStates(int selectedCount)
     {
+        // 飞行动画期间禁用所有按钮
+        if (isFlyingAnimationActive)
+        {
+            if (splitButton != null)
+            {
+                splitButton.interactable = false;
+            }
+            
+            if (combineButton != null)
+            {
+                combineButton.interactable = false;
+            }
+            return;
+        }
+        
         if (splitButton != null)
         {
             splitButton.interactable = selectedCount == 1;
@@ -209,7 +234,12 @@ public class ButtonController : MonoBehaviour
                     Transform targetPosition = PublicData.GetTargetPositionForCharacter(originalString);
                     if (targetPosition != null)
                     {
-                        CreateFlyingCharacter(originalString, targetPosition);
+                        // 先添加到可用字符串列表
+                        stringSelector.AddAvailableString(originalString);
+                        stringSelector.RecreateAllButtonsPublic();
+                        
+                        // 延迟一秒后播放飞行动画
+                        StartCoroutine(DelayedFlyingAnimation(originalString, targetPosition));
                     }
                     else
                     {
@@ -269,35 +299,120 @@ public class ButtonController : MonoBehaviour
         return stringSelector;
     }
     
-    private void CreateFlyingCharacter(string character, Transform targetPosition)
+    // 检查飞行动画是否激活
+    public bool IsFlyingAnimationActive()
     {
-        Sprite characterSprite = PublicData.GetCharacterSprite(character);
-        if (characterSprite == null)
-        {
-            return;
-        }
-        
-        GameObject flyingCharacter = new GameObject($"Flying_{character}");
-        
-        SpriteRenderer spriteRenderer = flyingCharacter.AddComponent<SpriteRenderer>();
-        spriteRenderer.sprite = characterSprite;
-        spriteRenderer.sortingOrder = 100;
-        
-        Vector3 startPosition = Vector3.zero;
-        Player player = FindObjectOfType<Player>();
-        if (player != null)
-        {
-            startPosition = player.transform.position;
-        }
-        flyingCharacter.transform.position = startPosition;
-        
-        StartCoroutine(FlyToTarget(flyingCharacter, targetPosition.position, character));
+        return isFlyingAnimationActive;
     }
     
-    private IEnumerator FlyToTarget(GameObject flyingCharacter, Vector3 targetPosition, string character)
+    // 设置飞行动画状态
+    public void SetFlyingAnimationActive(bool active)
     {
-        Vector3 startPosition = flyingCharacter.transform.position;
-        float duration = 1.0f;
+        isFlyingAnimationActive = active;
+        
+        // 更新按钮状态
+        UpdateButtonStates(stringSelector != null ? stringSelector.GetSelectionCount() : 0);
+    }
+    
+    private void CreateFlyingCharacter(string character, Transform targetPosition)
+    {
+        // 从可用字符串列表中移除该字符
+        if (stringSelector != null)
+        {
+            stringSelector.RemoveAvailableString(character);
+            stringSelector.RecreateAllButtonsPublic();
+        }
+        
+        // 创建UI对象而不是GameObject
+        GameObject flyingCharacter = new GameObject($"Flying_{character}");
+        
+        // 添加Canvas组件（如果还没有）
+        Canvas canvas = FindObjectOfType<Canvas>();
+        if (canvas != null)
+        {
+            flyingCharacter.transform.SetParent(canvas.transform, false);
+        }
+        
+        // 添加RectTransform组件
+        RectTransform rectTransform = flyingCharacter.AddComponent<RectTransform>();
+        
+        // 添加TextMeshPro组件
+        TMPro.TextMeshProUGUI textMesh = flyingCharacter.AddComponent<TMPro.TextMeshProUGUI>();
+        textMesh.text = character;
+        textMesh.fontSize = 72;
+        textMesh.alignment = TMPro.TextAlignmentOptions.Center;
+        textMesh.color = Color.black; // 设置文字为黑色
+        
+        // 设置字体（如果有中文字体）
+        if (stringSelector != null && stringSelector.GetChineseFont() != null)
+        {
+            textMesh.font = stringSelector.GetChineseFont();
+        }
+        
+        // 强制更新文本网格
+        textMesh.ForceMeshUpdate();
+        
+        // 查找字符按钮的位置作为起点
+        Vector2 startPosition = FindCharacterButtonPosition(character);
+        rectTransform.anchoredPosition = startPosition;
+        
+        StartCoroutine(FlyToTargetUI(flyingCharacter, targetPosition, character));
+    }
+    
+    // 查找字符按钮的位置
+    private Vector2 FindCharacterButtonPosition(string character)
+    {
+        if (stringSelector != null)
+        {
+            Transform buttonContainer = stringSelector.GetButtonContainer();
+            if (buttonContainer != null)
+            {
+                Debug.Log($"查找字符按钮: {character}, 按钮容器子物体数量: {buttonContainer.childCount}");
+                
+                // 遍历所有按钮找到对应字符的按钮
+                for (int i = 0; i < buttonContainer.childCount; i++)
+                {
+                    Transform buttonTransform = buttonContainer.GetChild(i);
+                    if (buttonTransform != null)
+                    {
+                        // 检查按钮上的文本组件
+                        TMPro.TextMeshProUGUI buttonText = buttonTransform.GetComponentInChildren<TMPro.TextMeshProUGUI>();
+                        if (buttonText != null)
+                        {
+                            Debug.Log($"按钮 {i}: 文本={buttonText.text}");
+                            if (buttonText.text == character)
+                            {
+                                RectTransform buttonRectTransform = buttonTransform as RectTransform;
+                                if (buttonRectTransform != null)
+                                {
+                                    Vector2 position = buttonRectTransform.anchoredPosition;
+                                    Debug.Log($"找到字符按钮: {character}, 位置: {position}");
+                                    return position;
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+        
+        Debug.Log($"未找到字符按钮: {character}, 使用默认位置");
+        // 如果找不到按钮位置，使用屏幕中央
+        return Vector2.zero;
+    }
+
+    private IEnumerator FlyToTargetUI(GameObject flyingCharacter, Transform targetPosition, string character)
+    {
+        RectTransform rectTransform = flyingCharacter.GetComponent<RectTransform>();
+        Vector2 startPosition = rectTransform.anchoredPosition;
+        
+        // 获取目标位置的UI坐标
+        Vector2 targetUIPosition = GetTargetUIPosition(targetPosition);
+        
+        // 调试信息
+        Debug.Log($"飞行动画开始: 字符={character}, 起始位置={startPosition}, 目标位置={targetUIPosition}");
+        
+        float duration = 1.5f; // 增加动画时长
         float elapsedTime = 0f;
         
         if (AudioManager.Instance != null && AudioManager.Instance.sfxGoalFlyIn != null)
@@ -311,22 +426,88 @@ public class ButtonController : MonoBehaviour
             float progress = elapsedTime / duration;
             float easeProgress = Mathf.SmoothStep(0f, 1f, progress);
             
-            Vector3 newPosition = Vector3.Lerp(startPosition, targetPosition, easeProgress);
-            flyingCharacter.transform.position = newPosition;
+            // 螺旋轨迹计算
+            Vector2 spiralPosition = CalculateSpiralPosition(startPosition, targetUIPosition, progress);
+            rectTransform.anchoredPosition = spiralPosition;
             
-            float scale = 1f + Mathf.Sin(progress * Mathf.PI) * 0.2f;
-            flyingCharacter.transform.localScale = Vector3.one * scale;
+            // 缩放动画
+            float scale = 1f + Mathf.Sin(progress * Mathf.PI * 2) * 0.3f;
+            rectTransform.localScale = Vector3.one * scale;
             
             yield return null;
         }
         
-        flyingCharacter.transform.position = targetPosition;
-        flyingCharacter.transform.localScale = Vector3.one;
+        rectTransform.anchoredPosition = targetUIPosition;
+        rectTransform.localScale = Vector3.one;
+        
+        Debug.Log($"飞行动画完成: 字符={character}");
         
         // 标记目标字符为已完成
         PublicData.MarkTargetAsCompleted(character);
         
-        yield return new WaitForSeconds(0.5f);
-        Destroy(flyingCharacter);
+        // 字符保持在原地，不销毁
+        // Destroy(flyingCharacter); // 注释掉销毁代码
+        
+        // 飞行动画结束，解锁按钮
+        SetFlyingAnimationActive(false);
+    }
+    
+    // 计算螺旋轨迹位置
+    private Vector2 CalculateSpiralPosition(Vector2 startPos, Vector2 endPos, float progress)
+    {
+        // 基础直线插值
+        Vector2 linearPosition = Vector2.Lerp(startPos, endPos, progress);
+        
+        // 计算螺旋偏移
+        float spiralRadius = 50f; // 螺旋半径
+        float spiralTurns = 3f; // 螺旋圈数
+        float angle = progress * spiralTurns * 2f * Mathf.PI;
+        
+        // 螺旋偏移向量
+        Vector2 spiralOffset = new Vector2(
+            Mathf.Cos(angle) * spiralRadius * (1f - progress), // 半径随进度减小
+            Mathf.Sin(angle) * spiralRadius * (1f - progress)
+        );
+        
+        // 返回螺旋位置
+        return linearPosition + spiralOffset;
+    }
+    
+    // 获取目标位置的UI坐标
+    private Vector2 GetTargetUIPosition(Transform targetPosition)
+    {
+        Debug.Log($"获取目标位置: {targetPosition?.name}");
+        
+        // 如果目标位置是UI元素，直接获取其anchoredPosition
+        RectTransform targetRectTransform = targetPosition as RectTransform;
+        if (targetRectTransform != null)
+        {
+            Vector2 position = targetRectTransform.anchoredPosition;
+            Debug.Log($"目标位置是RectTransform: {position}");
+            return position;
+        }
+        
+        // 如果目标位置不是UI元素，尝试获取其子物体的RectTransform
+        RectTransform childRectTransform = targetPosition.GetComponentInChildren<RectTransform>();
+        if (childRectTransform != null)
+        {
+            Vector2 position = childRectTransform.anchoredPosition;
+            Debug.Log($"目标位置子物体是RectTransform: {position}");
+            return position;
+        }
+        
+        Debug.Log($"未找到有效的目标位置，使用默认位置");
+        // 如果都找不到，返回屏幕中央
+        return Vector2.zero;
+    }
+
+    private IEnumerator DelayedFlyingAnimation(string character, Transform targetPosition)
+    {
+        yield return new WaitForSeconds(1f); // 延迟一秒
+        
+        // 开始飞行动画，锁定按钮
+        SetFlyingAnimationActive(true);
+        
+        CreateFlyingCharacter(character, targetPosition);
     }
 }

@@ -58,7 +58,7 @@ public class LevelManager : MonoBehaviour
         if (progressText != null)
         {
             int completedCount = PublicData.completedTargets.Count;
-            int totalCount = PublicData.targetList.Count;
+            int totalCount = PublicData.completedTargets.Count + PublicData.targetList.Count;
             progressText.text = $"进度: {completedCount}/{totalCount}";
         }
     }
@@ -77,22 +77,19 @@ public class LevelManager : MonoBehaviour
             levelCompleteText.text = levelCompleteMessage;
         }
         
-        // 开始场景切换
-        StartCoroutine(TransitionToNextScene());
+        // 场景切换现在由PublicData处理，这里不需要额外处理
     }
     
-    private System.Collections.IEnumerator TransitionToNextScene()
-    {
-        yield return new WaitForSeconds(sceneTransitionDelay);
-        
-        // 加载下一个场景
-        SceneManager.LoadScene(nextSceneName);
-    }
+
     
     // 公共方法：手动触发关卡完成（用于测试）
     public void ForceLevelComplete()
     {
-        ShowLevelComplete();
+        // 标记所有目标为已完成
+        foreach (string target in PublicData.targetList.ToArray())
+        {
+            PublicData.MarkTargetAsCompleted(target);
+        }
     }
     
     // 公共方法：重新开始当前关卡

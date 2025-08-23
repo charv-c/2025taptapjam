@@ -20,6 +20,9 @@ public class PublicData : MonoBehaviour
     [Header("目标位置设置")]
     [SerializeField] private List<CharacterTransformMapping> targetPositionMappings = new List<CharacterTransformMapping>();
     
+    [Header("场景设置")]
+    [SerializeField] private string nextSceneName = "NextLevel";
+    
     public static List<string> targetList = new List<string>()
     {
         "金", "相", "便", "间"
@@ -29,6 +32,9 @@ public class PublicData : MonoBehaviour
     
     // 跟踪已合成的目标字符
     public static HashSet<string> completedTargets = new HashSet<string>();
+    
+    // 静态场景名称
+    public static string sceneName;
     
 
     
@@ -47,6 +53,7 @@ public class PublicData : MonoBehaviour
         {"目", ("日", "一")},
         {"大", ("人", "一")},
         {"昌", ("日", "日")},
+        {"侠", ("人", "夹")},
 
         {"金", ("全", "丷")},
         {"相", ("木", "目")},
@@ -75,6 +82,9 @@ public class PublicData : MonoBehaviour
     {
         targetList.Clear();
         targetList.AddRange(target);
+        
+        // 初始化场景名称
+        sceneName = nextSceneName;
         
         targetPositionDict.Clear();
         foreach (var mapping in targetPositionMappings)
@@ -217,6 +227,8 @@ public class PublicData : MonoBehaviour
         if (targetList.Contains(character))
         {
             completedTargets.Add(character);
+            // 从目标列表中移除已完成的字符
+            targetList.Remove(character);
             CheckAllTargetsCompleted();
         }
     }
@@ -230,7 +242,19 @@ public class PublicData : MonoBehaviour
     // 检查所有目标完成状态
     private static void CheckAllTargetsCompleted()
     {
-        // 目标完成检查由LevelManager处理
+        if (AreAllTargetsCompleted())
+        {
+            // 所有目标完成，切换到下一个场景
+            if (!string.IsNullOrEmpty(sceneName))
+            {
+                Debug.Log($"所有目标完成，切换到场景: {sceneName}");
+                SceneManager.LoadScene(sceneName);
+            }
+            else
+            {
+                Debug.LogWarning("场景名称未设置，无法切换场景");
+            }
+        }
     }
     
     // 重置目标完成状态（用于重新开始关卡）

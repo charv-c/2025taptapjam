@@ -24,7 +24,7 @@ public class StringSelector : MonoBehaviour
         // 拼字符串可能用到的额外字符
         "门", "女", "子", "言", "尔", "也",
         // 拼字符串后产生的新字符
-        "闪", "明", "林", "众", "好", "休", "信", "你", "他", "们"
+        "闪", "明", "林", "众", "好", "休", "信", "你", "他", "们", "侠"
     };
     
     [Header("游戏开始时可用字符串")]
@@ -177,8 +177,8 @@ public class StringSelector : MonoBehaviour
                 }
                 else
                 {
-                    Debug.LogError($"StringSelector: 未设置中文字体，无法创建按钮 '{str}'");
-                    return;
+                    Debug.LogWarning($"StringSelector: 未设置中文字体，使用默认字体创建按钮 '{str}'");
+                    // 继续创建按钮，使用默认字体
                 }
 
                 // 设置按钮点击事件，传递索引而不是字符串
@@ -220,6 +220,12 @@ public class StringSelector : MonoBehaviour
     // 字符串按钮点击事件
     private void OnStringButtonClicked(int index, Button button)
     {
+        // 飞行动画期间禁止选择
+        if (ButtonController.Instance != null && ButtonController.Instance.IsFlyingAnimationActive())
+        {
+            return;
+        }
+        
         string str = index < availableStrings.Count ? availableStrings[index] : "未知";
         
         // Debug输出被点击的字符串
@@ -415,7 +421,14 @@ public class StringSelector : MonoBehaviour
         // 清空当前选择
         ClearSelection();
         
-        // 直接添加字符串，不检查是否已存在
+        // 检查字符串是否已经存在
+        if (availableStrings.Contains(str))
+        {
+            Debug.Log($"StringSelector: 字符串 '{str}' 已存在于可用字符串列表中，跳过添加");
+            return;
+        }
+        
+        // 直接添加字符串
         availableStrings.Add(str);
         int index = availableStrings.Count - 1; // 获取新添加字符串的索引
         
@@ -434,6 +447,9 @@ public class StringSelector : MonoBehaviour
         {
             Debug.LogError($"StringSelector: 验证失败 - 按钮 '{str}' 创建失败");
         }
+        
+        // 重新创建所有按钮以确保UI正确更新
+        RecreateAllButtonsPublic();
     }
     
     // 公共方法：移除可用字符串
@@ -649,6 +665,18 @@ public class StringSelector : MonoBehaviour
         }
         
         return chineseFont.HasCharacter(character[0]);
+    }
+    
+    // 公共方法：获取按钮容器
+    public Transform GetButtonContainer()
+    {
+        return buttonContainer;
+    }
+    
+    // 公共方法：获取中文字体
+    public TMP_FontAsset GetChineseFont()
+    {
+        return chineseFont;
     }
     
     // 公共方法：获取当前字体名称
