@@ -1,5 +1,4 @@
 using UnityEngine;
-using System.Collections.Generic;
 
 public class Player : MonoBehaviour
 {
@@ -11,11 +10,6 @@ public class Player : MonoBehaviour
     [Header("初始位置设置")]
     [SerializeField] private bool useCustomStartPosition = false; // 是否使用自定义初始位置
     [SerializeField] private Vector3 customStartPosition = Vector3.zero; // 自定义初始位置
-    
-    [Header("高亮设置")]
-    [SerializeField] private float highlightIntensity = 2f; // 高亮时的Light2D强度
-    [SerializeField] private float normalIntensity = 0f; // 正常时的Light2D强度
-    [SerializeField] private float highlightTransitionSpeed = 5f; // 高亮过渡速度
 
     private Camera mainCamera;
     private float screenWidth;
@@ -25,12 +19,8 @@ public class Player : MonoBehaviour
     private bool inputEnabled = false; // 控制输入是否启用，默认禁用
     private float currentHorizontalInput = 0f;
     private float currentVerticalInput = 0f;
+    public string CarryCharacter="人";
     
-    // 高亮相关变量
-    private List<Component> nearbyLights = new List<Component>();
-    private Dictionary<Component, float> originalIntensities = new Dictionary<Component, float>();
-    private bool isHighlighting = false;
-
     void Start()
     {
         // 获取主摄像机
@@ -52,8 +42,9 @@ public class Player : MonoBehaviour
     {
         HandleMovement();
         ClampToScreen();
-        HandleHighlightTransition();
     }
+
+    
 
     void HandleMovement()
     {
@@ -168,116 +159,6 @@ public class Player : MonoBehaviour
         defaultPosition.z = transform.position.z; // 保持原有的Z坐标
         transform.position = defaultPosition;
     }
-    
-    // 高亮相关方法
-    void HandleHighlightTransition()
-    {
-        if (nearbyLights.Count > 0)
-        {
-            // 有附近的Light2D，进行高亮过渡
-            foreach (var lightComponent in nearbyLights)
-            {
-                if (lightComponent != null)
-                {
-                    // 使用反射获取intensity属性
-                    var intensityProperty = lightComponent.GetType().GetProperty("intensity");
-                    if (intensityProperty != null)
-                    {
-                        float currentIntensity = (float)intensityProperty.GetValue(lightComponent);
-                        float targetIntensity = highlightIntensity;
-                        float newIntensity = Mathf.Lerp(currentIntensity, targetIntensity, highlightTransitionSpeed * Time.deltaTime);
-                        intensityProperty.SetValue(lightComponent, newIntensity);
-                    }
-                }
-            }
-            isHighlighting = true;
-        }
-        else if (isHighlighting)
-        {
-            // 没有附近的Light2D，恢复原始强度
-            RestoreOriginalIntensities();
-            isHighlighting = false;
-        }
-    }
-    
-    void RestoreOriginalIntensities()
-    {
-        foreach (var kvp in originalIntensities)
-        {
-            if (kvp.Key != null)
-            {
-                var intensityProperty = kvp.Key.GetType().GetProperty("intensity");
-                if (intensityProperty != null)
-                {
-                    float targetIntensity = kvp.Value;
-                    float currentIntensity = (float)intensityProperty.GetValue(kvp.Key);
-                    float newIntensity = Mathf.Lerp(currentIntensity, targetIntensity, highlightTransitionSpeed * Time.deltaTime);
-                    intensityProperty.SetValue(kvp.Key, newIntensity);
-                }
-            }
-        }
-    }
-    
-    // 碰撞检测方法
-    void OnTriggerStay2D(Collider2D other)
-    {
-        // 检查碰撞的物体是否有Light2D子物体
-        try
-        {
-            // 查找所有子物体中的Light2D组件
-            Component[] allComponents = other.GetComponentsInChildren<Component>();
-            
-            foreach (var component in allComponents)
-            {
-                if (component != null && component.GetType().Name == "Light2D")
-                {
-                    if (!nearbyLights.Contains(component))
-                    {
-                        // 记录原始强度
-                        var intensityProperty = component.GetType().GetProperty("intensity");
-                        if (intensityProperty != null && !originalIntensities.ContainsKey(component))
-                        {
-                            float originalIntensity = (float)intensityProperty.GetValue(component);
-                            originalIntensities[component] = originalIntensity;
-                        }
-                        
-                        // 添加到附近光源列表
-                        nearbyLights.Add(component);
-                    }
-                }
-            }
-        }
-        catch (System.Exception e)
-        {
-            Debug.LogWarning($"Light2D组件访问失败: {e.Message}");
-        }
-    }
-    
-    void OnTriggerExit2D(Collider2D other)
-    {
-        // 检查碰撞的物体是否有Light2D子物体
-        try
-        {
-            // 查找所有子物体中的Light2D组件
-            Component[] allComponents = other.GetComponentsInChildren<Component>();
-            
-            foreach (var component in allComponents)
-            {
-                if (component != null && component.GetType().Name == "Light2D")
-                {
-                    if (nearbyLights.Contains(component))
-                    {
-                        // 从附近光源列表中移除
-                        nearbyLights.Remove(component);
-                    }
-                }
-            }
-        }
-        catch (System.Exception e)
-        {
-            Debug.LogWarning($"Light2D组件访问失败: {e.Message}");
-        }
-    }
 
         // 可选：在编辑器中显示边界
     void OnDrawGizmosSelected()
@@ -388,49 +269,5 @@ public class Player : MonoBehaviour
         {
             SetDefaultStartPosition();
         }
-    }
-    
-    // 高亮相关公共方法
-    public void SetHighlightIntensity(float intensity)
-    {
-        highlightIntensity = intensity;
-    }
-    
-    public void SetNormalIntensity(float intensity)
-    {
-        normalIntensity = intensity;
-    }
-    
-    public void SetHighlightTransitionSpeed(float speed)
-    {
-        highlightTransitionSpeed = speed;
-    }
-    
-    public bool IsHighlighting()
-    {
-        return isHighlighting;
-    }
-    
-    public int GetNearbyLightsCount()
-    {
-        return nearbyLights.Count;
-    }
-    
-    public void ForceRestoreAllLights()
-    {
-        // 强制恢复所有光源的原始强度
-        foreach (var kvp in originalIntensities)
-        {
-            if (kvp.Key != null)
-            {
-                var intensityProperty = kvp.Key.GetType().GetProperty("intensity");
-                if (intensityProperty != null)
-                {
-                    intensityProperty.SetValue(kvp.Key, kvp.Value);
-                }
-            }
-        }
-        nearbyLights.Clear();
-        isHighlighting = false;
     }
 } 
