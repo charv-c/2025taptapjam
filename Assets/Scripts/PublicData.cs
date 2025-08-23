@@ -10,22 +10,48 @@ public class PublicData : MonoBehaviour
     [Header("米字格图片映射")]
     [SerializeField] private List<CharacterSpriteMapping> miZiGeSpriteMappings = new List<CharacterSpriteMapping>();
     
+    [Header("目标字符列表")]
+    [SerializeField] private List<string> target = new List<string>()
+    {
+        "金", "相", "便", "间"
+    };
+    
+    // 静态target列表，供其他脚本直接访问
+    public static List<string> targetList = new List<string>()
+    {
+        "金", "相", "便", "间"
+    };
+    
+    [Header("目标位置设置")]
+    // 目标位置字典，键是字符，值是transform
+    [SerializeField] private List<CharacterTransformMapping> targetPositionMappings = new List<CharacterTransformMapping>();
+    
+    // 静态目标位置字典，供其他脚本直接访问
+    public static Dictionary<string, Transform> targetPositionDict = new Dictionary<string, Transform>();
+    
 
     
     // 字符串分割映射字典，存储分割前的字符串和分割后的两部分
     public static Dictionary<string, (string, string)> stringSplitMappings = new Dictionary<string, (string, string)>()
     {
         {"闪", ("门", "人")},
+        {"休", ("人", "木")},
         {"停", ("亭", "人")},
         {"丛", ("从", "一")},
         {"仙", ("人", "山")},
         {"伙", ("人", "火")},
-        {"好", ("女", "子")},
-        {"休", ("人", "木")},
-        {"侠", ("人", "夹")},
-        {"你", ("人", "尔")},
-        {"他", ("人", "也")},
-        {"们", ("人", "门")}
+        {"粳", ("米", "更")},
+        {"米", ("丷", "木")},
+        {"从", ("人", "人")},
+        {"全", ("王", "人")},
+        {"目", ("日", "一")},
+        {"大", ("人", "一")},
+        {"昌", ("日", "日")},
+
+        {"金", ("全", "丷")},
+        {"相", ("木", "目")},
+        {"便", ("人", "更")},
+        {"间", ("门", "日")},
     };
     
     // 花相关的字符列表
@@ -41,11 +67,7 @@ public class PublicData : MonoBehaviour
         {"休", "猎"},
         {"侠", "王"},
         {"伙", "孩"},
-        {"没关系", "回应语"},
-        {"请", "礼貌语"},
-        {"可以", "同意语"},
-        {"好的", "确认语"},
-        {"不行", "否定语"}
+        {"仙", "日"},
     };
     
     // 运行时字典，用于快速查找字符对应的Sprite
@@ -56,6 +78,21 @@ public class PublicData : MonoBehaviour
     
     void Awake()
     {
+        // 同步Inspector中的target列表到静态列表
+        targetList.Clear();
+        targetList.AddRange(target);
+        
+        // 初始化目标位置字典
+        targetPositionDict.Clear();
+        foreach (var mapping in targetPositionMappings)
+        {
+            if (!string.IsNullOrEmpty(mapping.character) && mapping.targetTransform != null)
+            {
+                targetPositionDict[mapping.character] = mapping.targetTransform;
+                Debug.Log($"已添加目标位置映射: '{mapping.character}' -> {mapping.targetTransform.name}");
+            }
+        }
+        
         // 初始化sprite字典
         InitializeSpriteDictionary();
     }
@@ -197,6 +234,30 @@ public class PublicData : MonoBehaviour
         Debug.LogWarning($"未找到由 '{part1}' 和 '{part2}' 组成的原始字符串（包括交换顺序）");
         return null;
     }
+    
+    // 公共方法：检查字符是否在target列表中
+    public static bool IsCharacterInTargetList(string character)
+    {
+        return targetList.Contains(character);
+    }
+    
+    // 静态方法：获取字符对应的目标位置
+    public static Transform GetTargetPositionForCharacter(string character)
+    {
+        if (targetPositionDict.ContainsKey(character))
+        {
+            return targetPositionDict[character];
+        }
+        return null;
+    }
+    
+
+    
+    // 公共方法：获取target列表
+    public List<string> GetTargetList()
+    {
+        return new List<string>(target);
+    }
 }
 
 // 用于在Inspector中可视化的字符-Sprite映射结构
@@ -208,4 +269,15 @@ public class CharacterSpriteMapping
     
     [Tooltip("对应的Sprite图片")]
     public Sprite sprite;
+}
+
+// 用于在Inspector中可视化的字符-Transform映射结构
+[System.Serializable]
+public class CharacterTransformMapping
+{
+    [Tooltip("字符名称")]
+    public string character;
+    
+    [Tooltip("对应的目标位置Transform")]
+    public Transform targetTransform;
 }

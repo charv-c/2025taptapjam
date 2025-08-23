@@ -288,8 +288,36 @@ public class ButtonController : MonoBehaviour
                 stringSelector.RemoveAvailableString(firstString);
                 stringSelector.RemoveAvailableString(secondString);
                 
-                // 最后添加合并后的新字符串
-                stringSelector.AddAvailableString(originalString);
+                // 检查合并结果是否在target列表中
+                if (PublicData.IsCharacterInTargetList(originalString))
+                {
+                    Debug.Log($"合并结果 '{originalString}' 在target列表中，准备飞向目标位置");
+                    
+                    // 获取目标位置
+                    Transform targetPosition = PublicData.GetTargetPositionForCharacter(originalString);
+                    Debug.Log($"获取到的目标位置: {(targetPosition != null ? targetPosition.name : "null")}");
+                    
+                    if (targetPosition != null)
+                    {
+                        Debug.Log($"目标位置有效，开始创建飞行动画");
+                        // 创建飞向目标位置的字符
+                        CreateFlyingCharacter(originalString, targetPosition);
+                        Debug.Log($"已创建飞向目标位置的字符: {originalString}");
+                    }
+                    else
+                    {
+                        Debug.LogError($"目标位置为空！字符 '{originalString}' 没有配置对应的目标位置Transform");
+                        Debug.LogError("请在PublicData的Inspector中为target字符配置对应的目标位置");
+                        stringSelector.AddAvailableString(originalString);
+                    }
+                }
+                else
+                {
+                    Debug.Log($"合并结果 '{originalString}' 不在target列表中，添加到可用字符串列表");
+                    Debug.Log($"当前target列表: [{string.Join(", ", PublicData.targetList)}]");
+                    // 最后添加合并后的新字符串
+                    stringSelector.AddAvailableString(originalString);
+                }
                 
                 // 重新创建所有按钮以确保索引正确
                 stringSelector.RecreateAllButtonsPublic();
@@ -300,7 +328,7 @@ public class ButtonController : MonoBehaviour
                 // 清空选择
                 stringSelector.ClearSelection();
                 
-                Debug.Log($"已移除原本的字符串: {firstString} 和 {secondString}，添加新字符串: {originalString}，并重新创建按钮");
+                Debug.Log($"已移除原本的字符串: {firstString} 和 {secondString}，处理新字符串: {originalString}，并重新创建按钮");
             }
             else
             {
@@ -357,5 +385,118 @@ public class ButtonController : MonoBehaviour
     public StringSelector GetStringSelector()
     {
         return stringSelector;
+    }
+    
+    // 创建飞向目标位置的字符
+    private void CreateFlyingCharacter(string character, Transform targetPosition)
+    {
+        Debug.Log($"=== 开始创建飞向目标位置的字符 ===");
+        Debug.Log($"字符: '{character}'");
+        Debug.Log($"目标位置: {targetPosition.name} at {targetPosition.position}");
+        
+        // 获取字符对应的Sprite
+        Sprite characterSprite = PublicData.GetCharacterSprite(character);
+        if (characterSprite == null)
+        {
+            Debug.LogError($"未找到字符 '{character}' 对应的Sprite");
+            Debug.LogError("请检查PublicData中的characterSpriteMappings是否包含该字符");
+            return;
+        }
+        Debug.Log($"成功获取字符Sprite: {characterSprite.name}");
+        
+        // 创建GameObject
+        GameObject flyingCharacter = new GameObject($"Flying_{character}");
+        Debug.Log($"创建了GameObject: {flyingCharacter.name}");
+        
+        // 添加SpriteRenderer组件
+        SpriteRenderer spriteRenderer = flyingCharacter.AddComponent<SpriteRenderer>();
+        spriteRenderer.sprite = characterSprite;
+        spriteRenderer.sortingOrder = 100; // 确保在最前面显示
+        Debug.Log($"添加了SpriteRenderer组件，sortingOrder: {spriteRenderer.sortingOrder}");
+        
+        // 设置初始位置（在屏幕中央或玩家位置）
+        Vector3 startPosition = Vector3.zero;
+        Player player = FindObjectOfType<Player>();
+        if (player != null)
+        {
+            startPosition = player.transform.position;
+            Debug.Log($"使用玩家位置作为起始位置: {startPosition}");
+        }
+        else
+        {
+            Debug.LogWarning("未找到Player对象，使用原点作为起始位置");
+        }
+        flyingCharacter.transform.position = startPosition;
+        
+        // 开始飞行动画
+        Debug.Log($"开始启动飞行动画协程");
+        StartCoroutine(FlyToTarget(flyingCharacter, targetPosition.position, character));
+        
+        Debug.Log($"=== 飞向目标位置的字符创建完成 ===");
+    }
+    
+    // 飞向目标的协程
+    private IEnumerator FlyToTarget(GameObject flyingCharacter, Vector3 targetPosition, string character)
+    {
+        Debug.Log($"=== 开始飞行动画协程 ===");
+        Debug.Log($"字符: '{character}'");
+        Debug.Log($"起始位置: {flyingCharacter.transform.position}");
+        Debug.Log($"目标位置: {targetPosition}");
+        
+        Vector3 startPosition = flyingCharacter.transform.position;
+        float duration = 1.0f; // 飞行时间1秒
+        float elapsedTime = 0f;
+        
+        Debug.Log($"动画持续时间: {duration}秒");
+        
+        // 播放飞行动画音效
+        if (AudioManager.Instance != null && AudioManager.Instance.sfxGoalFlyIn != null)
+        {
+            AudioManager.Instance.PlaySFX(AudioManager.Instance.sfxGoalFlyIn);
+            Debug.Log("播放了飞行动画音效");
+        }
+        else
+        {
+            Debug.LogWarning("AudioManager或飞行动画音效为空");
+        }
+        
+        Debug.Log("开始动画循环...");
+        while (elapsedTime < duration)
+        {
+            elapsedTime += Time.deltaTime;
+            float progress = elapsedTime / duration;
+            
+            // 使用缓动函数使动画更自然
+            float easeProgress = Mathf.SmoothStep(0f, 1f, progress);
+            
+            // 更新位置
+            Vector3 newPosition = Vector3.Lerp(startPosition, targetPosition, easeProgress);
+            flyingCharacter.transform.position = newPosition;
+            
+            // 添加一些缩放效果
+            float scale = 1f + Mathf.Sin(progress * Mathf.PI) * 0.2f;
+            flyingCharacter.transform.localScale = Vector3.one * scale;
+            
+            // 每0.2秒输出一次进度
+            if (Mathf.FloorToInt(progress * 5) != Mathf.FloorToInt((progress - Time.deltaTime / duration) * 5))
+            {
+                Debug.Log($"动画进度: {progress:P0}, 位置: {newPosition}, 缩放: {scale:F2}");
+            }
+            
+            yield return null;
+        }
+        
+        // 确保最终位置准确
+        flyingCharacter.transform.position = targetPosition;
+        flyingCharacter.transform.localScale = Vector3.one;
+        
+        Debug.Log($"飞行动画完成，最终位置: {flyingCharacter.transform.position}");
+        
+        // 延迟后销毁飞行的字符对象
+        Debug.Log("等待0.5秒后销毁对象...");
+        yield return new WaitForSeconds(0.5f);
+        Destroy(flyingCharacter);
+        
+        Debug.Log($"=== 飞行动画协程结束，已销毁对象: {character} ===");
     }
 }
