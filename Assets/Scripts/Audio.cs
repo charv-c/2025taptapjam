@@ -1,48 +1,48 @@
 using UnityEngine;
 using System.Collections;
 
-// åŸºäºéŸ³æ•ˆè®¾è®¡æ–‡æ¡£
+// »ùÓÚÒôĞ§Éè¼ÆÎÄµµ
 public class AudioManager : MonoBehaviour
 {
-    // å•ä¾‹æ¨¡å¼ï¼Œæ–¹ä¾¿ä»ä»»ä½•è„šæœ¬ä¸­è®¿é—®
+    // µ¥ÀıÄ£Ê½£¬·½±ã´ÓÈÎºÎ½Å±¾ÖĞ·ÃÎÊ
     public static AudioManager Instance;
 
     [Header("Audio Sources")]
-    [Tooltip("èƒŒæ™¯éŸ³ä¹æ’­æ”¾å™¨")]
+    [Tooltip("±³¾°ÒôÀÖ²¥·ÅÆ÷")]
     [SerializeField] private AudioSource bgmSource;
-    [Tooltip("éŸ³æ•ˆæ’­æ”¾å™¨")]
+    [Tooltip("ÒôĞ§²¥·ÅÆ÷")]
     [SerializeField] private AudioSource sfxSource;
-    [Tooltip("ç¯å¢ƒéŸ³æ’­æ”¾å™¨")]
+    [Tooltip("»·¾³Òô²¥·ÅÆ÷")]
     [SerializeField] private AudioSource ambientSource;
 
-    [Header("éŸ³é‡æ§åˆ¶")]
+    [Header("ÒôÁ¿¿ØÖÆ")]
     [Range(0f, 1f)]
-    public float initialBgmVolume = 0.5f; // BGMçš„åˆå§‹éŸ³é‡ï¼Œé»˜è®¤50%
+    public float initialBgmVolume = 0.5f; // BGMµÄ³õÊ¼ÒôÁ¿£¬Ä¬ÈÏ50%
     [Range(0f, 1f)]
-    public float initialAmbientVolume = 1f; // ç¯å¢ƒéŸ³çš„åˆå§‹éŸ³é‡
+    public float initialAmbientVolume = 1f; // »·¾³ÒôµÄ³õÊ¼ÒôÁ¿
 
-    [Header("èƒŒæ™¯éŸ³ä¹ (BGM)")]
-    public AudioClip bgmMenu;       // ç”¨äºä¸»èœå•çš„BGM [cite: 8]
-    public AudioClip bgmRainy;      // ç”¨äºå…³å¡ä¸‹é›¨é˜¶æ®µçš„BGM [cite: 8]
-    public AudioClip bgmSunny;      // é›¨åœåçš„BGM [cite: 8]
-    public AudioClip bgmTutorial;   // æ•™ç¨‹é˜¶æ®µçš„BGM [cite: 8]
+    [Header("±³¾°ÒôÀÖ (BGM)")]
+    public AudioClip bgmMenu;       // ÓÃÓÚÖ÷²Ëµ¥µÄBGM [cite: 8]
+    public AudioClip bgmRainy;      // ÓÃÓÚ¹Ø¿¨ÏÂÓê½×¶ÎµÄBGM [cite: 8]
+    public AudioClip bgmSunny;      // ÓêÍ£ºóµÄBGM [cite: 8]
+    public AudioClip bgmTutorial;   // ½Ì³Ì½×¶ÎµÄBGM [cite: 8]
 
-    [Header("éŸ³æ•ˆ (SFX)")]
-    public AudioClip sfxUIClick;             // UIæŒ‰é’®äº¤äº’éŸ³æ•ˆ [cite: 12]
-    public AudioClip sfxTransform;           // â€œåŒ–å­—â€éŸ³æ•ˆ [cite: 12]
-    public AudioClip sfxAcquire;             // â€œå–å­—â€éŸ³æ•ˆ [cite: 12]
-    public AudioClip sfxSplitSuccess;        // æˆåŠŸâ€œæ‹†å­—â€ [cite: 12]
-    public AudioClip sfxCombineSuccess;      // æˆåŠŸâ€œæ‹¼å­—â€ [cite: 12]
-    public AudioClip sfxOperationFailure;    // â€œæ‹†/æ‹¼â€æ“ä½œå¤±è´¥ [cite: 12]
-    public AudioClip sfxSelectWord;          // åœ¨è§£å­—å°é€‰ä¸­æ–‡å­— [cite: 12]
-    public AudioClip sfxGoalFlyIn;           // ç›®æ ‡å­—é£å…¥è¯—å¥çš„æ ¸å¿ƒå¥–åŠ±éŸ³æ•ˆ [cite: 12]
+    [Header("ÒôĞ§ (SFX)")]
+    public AudioClip sfxUIClick;             // UI°´Å¥½»»¥ÒôĞ§ [cite: 12]
+    public AudioClip sfxTransform;           // ¡°»¯×Ö¡±ÒôĞ§ [cite: 12]
+    public AudioClip sfxAcquire;             // ¡°È¡×Ö¡±ÒôĞ§ [cite: 12]
+    public AudioClip sfxSplitSuccess;        // ³É¹¦¡°²ğ×Ö¡± [cite: 12]
+    public AudioClip sfxCombineSuccess;      // ³É¹¦¡°Æ´×Ö¡± [cite: 12]
+    public AudioClip sfxOperationFailure;    // ¡°²ğ/Æ´¡±²Ù×÷Ê§°Ü [cite: 12]
+    public AudioClip sfxSelectWord;          // ÔÚ½â×ÖÌ¨Ñ¡ÖĞÎÄ×Ö [cite: 12]
+    public AudioClip sfxGoalFlyIn;           // Ä¿±ê×Ö·ÉÈëÊ«¾äµÄºËĞÄ½±ÀøÒôĞ§ [cite: 12]
 
-    [Header("ç¯å¢ƒéŸ³ (Ambient)")]
-    public AudioClip ambientRain;            // å¾ªç¯æ’­æ”¾çš„èƒŒæ™¯é›¨å£° [cite: 12]
+    [Header("»·¾³Òô (Ambient)")]
+    public AudioClip ambientRain;            // Ñ­»·²¥·ÅµÄ±³¾°ÓêÉù [cite: 12]
 
     private void Awake()
     {
-        // å®ç°å•ä¾‹æ¨¡å¼ï¼Œç¡®ä¿å…¨å±€å”¯ä¸€
+        // ÊµÏÖµ¥ÀıÄ£Ê½£¬È·±£È«¾ÖÎ¨Ò»
         if (Instance == null)
         {
             Instance = this;
@@ -53,12 +53,12 @@ public class AudioManager : MonoBehaviour
             Destroy(gameObject);
         }
 
-        // åº”ç”¨åˆå§‹éŸ³é‡è®¾ç½®
+        // Ó¦ÓÃ³õÊ¼ÒôÁ¿ÉèÖÃ
         bgmSource.volume = initialBgmVolume;
         ambientSource.volume = initialAmbientVolume;
     }
 
-    // --- BGM æ§åˆ¶ ---
+    // --- BGM ¿ØÖÆ ---
 
     public void PlayBGM(AudioClip clip)
     {
@@ -66,7 +66,7 @@ public class AudioManager : MonoBehaviour
         bgmSource.Play();
     }
 
-    // æ¸å˜åˆ‡æ¢åˆ°æ–°çš„BGM
+    // ½¥±äÇĞ»»µ½ĞÂµÄBGM
     public void CrossfadeToBGM(AudioClip newClip, float fadeDuration)
     {
         StartCoroutine(FadeBGMCoroutine(newClip, fadeDuration));
@@ -76,7 +76,7 @@ public class AudioManager : MonoBehaviour
     {
         float startVolume = bgmSource.volume;
 
-        // æ·¡å‡º
+        // µ­³ö
         while (bgmSource.volume > 0)
         {
             bgmSource.volume -= startVolume * Time.deltaTime / duration;
@@ -84,8 +84,8 @@ public class AudioManager : MonoBehaviour
         }
 
         bgmSource.Stop();
-        
-        // åˆ‡æ¢å¹¶æ·¡å…¥
+
+        // ÇĞ»»²¢µ­Èë
         bgmSource.clip = newClip;
         bgmSource.Play();
         bgmSource.volume = 0f;
@@ -97,9 +97,9 @@ public class AudioManager : MonoBehaviour
         bgmSource.volume = initialBgmVolume;
     }
 
-    // --- SFX æ§åˆ¶ ---
+    // --- SFX ¿ØÖÆ ---
 
-    // æ’­æ”¾ä¸€æ¬¡éŸ³æ•ˆï¼ŒPlayOneShotå¯ä»¥å¤„ç†å¤šä¸ªéŸ³æ•ˆåŒæ—¶æ’­æ”¾è€Œä¸ä¼šæ‰“æ–­å½¼æ­¤
+    // ²¥·ÅÒ»´ÎÒôĞ§£¬PlayOneShot¿ÉÒÔ´¦Àí¶à¸öÒôĞ§Í¬Ê±²¥·Å¶ø²»»á´ò¶Ï±Ë´Ë
     public void PlaySFX(AudioClip clip)
     {
         if (clip != null)
@@ -108,14 +108,14 @@ public class AudioManager : MonoBehaviour
         }
     }
 
-    // --- ç¯å¢ƒéŸ³æ§åˆ¶ ---
+    // --- »·¾³Òô¿ØÖÆ ---
 
     public void PlayAmbient(AudioClip clip)
     {
         ambientSource.clip = clip;
         ambientSource.Play();
     }
-    
+
     public void StopAmbient(float fadeDuration)
     {
         StartCoroutine(FadeOutAmbientCoroutine(fadeDuration));
@@ -130,6 +130,6 @@ public class AudioManager : MonoBehaviour
             yield return null;
         }
         ambientSource.Stop();
-        ambientSource.volume = initialAmbientVolume; // æ¢å¤éŸ³é‡ä»¥ä¾¿ä¸‹æ¬¡æ’­æ”¾
+        ambientSource.volume = initialAmbientVolume; // »Ö¸´ÒôÁ¿ÒÔ±ãÏÂ´Î²¥·Å
     }
 }
