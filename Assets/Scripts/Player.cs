@@ -36,6 +36,9 @@ public class Player : MonoBehaviour
         
         // 设置初始位置
         SetInitialPosition();
+        
+        // 确保初始位置符合移动限制
+        ClampToScreen();
     }
 
     void Update()
@@ -80,34 +83,38 @@ public class Player : MonoBehaviour
         // 获取玩家在世界坐标中的位置
         Vector3 playerPosition = transform.position;
 
-        // 将世界坐标转换为屏幕坐标
-        Vector3 screenPosition = mainCamera.WorldToScreenPoint(playerPosition);
-
-        // 根据玩家类型限制移动范围
-        if (isPlayer1)
+        // 检查CarryCharacter是否为"仙"
+        if (CarryCharacter == "仙")
         {
-            // 玩家1只能在屏幕左半边移动
-            float leftBoundary = playerWidth / 2 + screenBoundaryOffset;
-            float rightBoundary = screenWidth / 2 - playerWidth / 2 - screenBoundaryOffset;
-            screenPosition.x = Mathf.Clamp(screenPosition.x, leftBoundary, rightBoundary);
+            // 仙状态：使用世界坐标限制，左上(-8.9, 4.6)，右下(8.9, -2.4)
+            float clampedX = Mathf.Clamp(playerPosition.x, -8.9f, 8.9f);
+            float clampedY = Mathf.Clamp(playerPosition.y, -2.4f, 4.6f);
+            
+            Vector3 clampedPosition = new Vector3(clampedX, clampedY, playerPosition.z);
+            transform.position = clampedPosition;
         }
         else
         {
-            // 玩家2只能在屏幕右半边移动
-            float leftBoundary = screenWidth / 2 + playerWidth / 2 + screenBoundaryOffset;
-            float rightBoundary = screenWidth - playerWidth / 2 - screenBoundaryOffset;
-            screenPosition.x = Mathf.Clamp(screenPosition.x, leftBoundary, rightBoundary);
+            // 正常状态：根据玩家类型限制移动范围
+            float clampedX, clampedY;
+            
+            if (isPlayer1)
+            {
+                // 玩家1只能在左半边移动（X轴限制在-8.9到0）
+                clampedX = Mathf.Clamp(playerPosition.x, -8.9f, 0.5f);
+            }
+            else
+            {
+                // 玩家2只能在右半边移动（X轴限制在0到8.9）
+                clampedX = Mathf.Clamp(playerPosition.x, 0.5f, 8.9f);
+            }
+
+            // Y轴移动范围限制在-2.4到2.4（使用世界坐标）
+            clampedY = Mathf.Clamp(playerPosition.y, -2.4f, 2.4f);
+            
+            Vector3 clampedPosition = new Vector3(clampedX, clampedY, playerPosition.z);
+            transform.position = clampedPosition;
         }
-
-        // 将屏幕坐标转换回世界坐标
-        Vector3 clampedWorldPosition = mainCamera.ScreenToWorldPoint(screenPosition);
-        clampedWorldPosition.z = transform.position.z; // 保持原有的Z坐标
-        
-        // Y轴移动范围限制在-2.6到2.4
-        clampedWorldPosition.y = Mathf.Clamp(clampedWorldPosition.y, -2.6f, 2.4f);
-
-        // 应用限制后的位置
-        transform.position = clampedWorldPosition;
     }
 
     void CalculateScreenBounds()
@@ -137,12 +144,16 @@ public class Player : MonoBehaviour
         {
             // 使用自定义初始位置
             transform.position = customStartPosition;
+            Debug.Log($"使用自定义初始位置: {customStartPosition}");
         }
         else
         {
             // 使用默认的智能初始位置
             SetDefaultStartPosition();
         }
+        
+        // 验证初始位置
+        Debug.Log($"最终初始位置: {transform.position}");
     }
     
     void SetDefaultStartPosition()
@@ -152,68 +163,22 @@ public class Player : MonoBehaviour
         
         if (isPlayer1)
         {
-            // Player1默认在左半边中央
-            defaultPosition = mainCamera.ScreenToWorldPoint(new Vector3(screenWidth * 0.25f, screenHeight * 0.5f, 0f));
+            // Player1默认在左半边中央（X轴-4.45，Y轴0）
+            defaultPosition = new Vector3(-4.45f, 0f, transform.position.z);
         }
         else
         {
-            // Player2默认在右半边中央
-            defaultPosition = mainCamera.ScreenToWorldPoint(new Vector3(screenWidth * 0.75f, screenHeight * 0.5f, 0f));
+            // Player2默认在右半边中央（X轴4.45，Y轴0）
+            defaultPosition = new Vector3(4.45f, 0f, transform.position.z);
         }
-        
-        defaultPosition.z = transform.position.z; // 保持原有的Z坐标
-        
-        // 确保初始位置在Y轴限制范围内
-        defaultPosition.y = Mathf.Clamp(defaultPosition.y, -2.6f, 2.4f);
         
         transform.position = defaultPosition;
+        
+        Debug.Log($"设置默认初始位置: {defaultPosition}, 玩家类型: {(isPlayer1 ? "Player1" : "Player2")}");
     }
 
-        // 可选：在编辑器中显示边界
-    void OnDrawGizmosSelected()
-    {
-        if (mainCamera != null)
-        {
-            // 根据玩家类型设置不同的颜色
-            Gizmos.color = isPlayer1 ? Color.blue : Color.red;
 
-            // 计算移动边界的世界坐标
-            float leftBoundary, rightBoundary;
-            
-            if (isPlayer1)
-            {
-                // 玩家1的边界（左半边）
-                leftBoundary = playerWidth / 2 + screenBoundaryOffset;
-                rightBoundary = screenWidth / 2 - playerWidth / 2 - screenBoundaryOffset;
-            }
-            else
-            {
-                // 玩家2的边界（右半边）
-                leftBoundary = screenWidth / 2 + playerWidth / 2 + screenBoundaryOffset;
-                rightBoundary = screenWidth - playerWidth / 2 - screenBoundaryOffset;
-            }
-
-            // 计算四个角的世界坐标
-            Vector3 topLeft = mainCamera.ScreenToWorldPoint(new Vector3(leftBoundary,
-                                                                       screenHeight - playerHeight / 2 - screenBoundaryOffset,
-                                                                       transform.position.z));
-            Vector3 topRight = mainCamera.ScreenToWorldPoint(new Vector3(rightBoundary,
-                                                                         screenHeight - playerHeight / 2 - screenBoundaryOffset,
-                                                                         transform.position.z));
-            Vector3 bottomLeft = mainCamera.ScreenToWorldPoint(new Vector3(leftBoundary,
-                                                                           playerHeight / 2 + screenBoundaryOffset,
-                                                                           transform.position.z));
-            Vector3 bottomRight = mainCamera.ScreenToWorldPoint(new Vector3(rightBoundary,
-                                                                            playerHeight / 2 + screenBoundaryOffset,
-                                                                            transform.position.z));
-
-            // 绘制边界线
-            Gizmos.DrawLine(topLeft, topRight);
-            Gizmos.DrawLine(topRight, bottomRight);
-            Gizmos.DrawLine(bottomRight, bottomLeft);
-            Gizmos.DrawLine(bottomLeft, topLeft);
-        }
-    }
+    
         // 公共方法：设置输入是否启用
         public void SetInputEnabled(bool enabled)
         {
@@ -293,7 +258,7 @@ public class Player : MonoBehaviour
     // 公共方法：获取Y轴限制范围
     public (float min, float max) GetYAxisLimits()
     {
-        return (-2.6f, 2.4f);
+        return (-2.4f, 2.4f);
     }
     
     // 公共方法：设置Y轴限制范围
@@ -307,14 +272,14 @@ public class Player : MonoBehaviour
     public bool IsWithinYAxisLimits()
     {
         float currentY = transform.position.y;
-        return currentY >= -2.6f && currentY <= 2.4f;
+        return currentY >= -2.4f && currentY <= 2.4f;
     }
     
     // 公共方法：强制将位置限制在Y轴范围内
     public void ClampToYAxisLimits()
     {
         Vector3 position = transform.position;
-        position.y = Mathf.Clamp(position.y, -2.6f, 2.4f);
+        position.y = Mathf.Clamp(position.y, -2.4f, 2.4f);
         transform.position = position;
     }
     
@@ -357,7 +322,7 @@ public class Player : MonoBehaviour
         ResetAllMiSquares();
     }
     
-    // 将所有米字格设置为默认sprite
+    // 将所有米字格设置为"人"对应的图片
     private void ResetAllMiSquares()
     {
         // 查找场景中所有带有MiSquareController脚本的对象
@@ -369,11 +334,12 @@ public class Player : MonoBehaviour
         {
             if (miSquare != null)
             {
-                miSquare.ClearSprite(); // 清除sprite，恢复默认状态
-                Debug.Log($"已重置米字格: {miSquare.gameObject.name}");
+                // 设置为"人"对应的米字格图片
+                miSquare.SetMiSquareSprite("人");
+                Debug.Log($"已将米字格 {miSquare.gameObject.name} 设置为'人'对应的图片");
             }
         }
         
-        Debug.Log("所有米字格重置完成");
+        Debug.Log("所有米字格已设置为'人'对应的图片");
     }
 } 

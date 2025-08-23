@@ -153,6 +153,11 @@ public class Highlight : MonoBehaviour
         }
     }
     void AddLetterToAvailableList(){
+        Debug.Log($"=== 开始执行AddLetterToAvailableList ===");
+        Debug.Log($"当前对象: {gameObject.name}");
+        Debug.Log($"Letter值: '{letter}'");
+        Debug.Log($"Collectable值: {collectable}");
+        
         // 检查是否可以被收集
         if (!collectable)
         {
@@ -160,12 +165,18 @@ public class Highlight : MonoBehaviour
             return;
         }
         
+        Debug.Log($"Collectable检查通过，继续执行...");
+        
         // 把自己的letter添加到可用字列表
         if (ButtonController.Instance != null)
         {
+            Debug.Log($"ButtonController实例存在");
             StringSelector stringSelector = ButtonController.Instance.GetStringSelector();
             if (stringSelector != null)
             {
+                Debug.Log($"StringSelector引用获取成功");
+                Debug.Log($"准备添加letter '{letter}' 到可用字列表");
+                
                 stringSelector.AddAvailableString(letter);
                 Debug.Log($"已将letter '{letter}' 添加到可用字列表");
                 
@@ -175,33 +186,49 @@ public class Highlight : MonoBehaviour
             }
             else
             {
-                Debug.LogWarning("StringSelector引用为空，无法添加letter到可用字列表");
+                Debug.LogError("StringSelector引用为空，无法添加letter到可用字列表");
+                Debug.LogError("请检查ButtonController中的StringSelector引用是否正确设置");
             }
         }
         else
         {
-            Debug.LogWarning("未找到ButtonController实例，无法添加letter到可用字列表");
+            Debug.LogError("未找到ButtonController实例，无法添加letter到可用字列表");
+            Debug.LogError("请检查场景中是否存在ButtonController对象，并且单例模式正常工作");
         }
+        
+        Debug.Log($"=== AddLetterToAvailableList执行完成 ===");
     }
     // 函数A的实现
     private void FunctionA()
     {
+        Debug.Log($"=== 开始执行FunctionA ===");
+        Debug.Log($"当前对象: {gameObject.name}");
+        Debug.Log($"Letter值: '{letter}'");
+        Debug.Log($"Collectable值: {collectable}");
+        
         // 检查player是否存在且有CarryCharacter属性
         if (player != null && !string.IsNullOrEmpty(player.CarryCharacter))
         {
+            Debug.Log($"Player存在，CarryCharacter: '{player.CarryCharacter}'");
+            
             // 优先级1：如果collectable为true，直接执行收集功能
             if (collectable)
             {
+                Debug.Log($"Collectable为true，执行收集功能");
                 AddLetterToAvailableList();
                 return;
             }
             
+            Debug.Log($"Collectable为false，继续检查其他条件");
+            
             // 优先级2：检查player的CarryCharacter是否等于"人"
             if (player.CarryCharacter == "人")
             {
+                Debug.Log($"Player携带'人'，检查letter是否在花列表中");
                 // 检查自己的letter是否在listofhua中
                 if (PublicData.listofhua.Contains(letter))
                 {
+                    Debug.Log($"Letter '{letter}' 在花列表中，执行ChangeMi");
                     ChangeMi();
                 }
                 else
@@ -212,6 +239,7 @@ public class Highlight : MonoBehaviour
             }
             else
             {
+                Debug.Log($"Player携带的不是'人'，而是 '{player.CarryCharacter}'");
                 // 如果不为"人"，比较player的carryletter对应的字典值与当前letter
                 string playerValue = PublicData.stringKeyValuePairs.ContainsKey(player.CarryCharacter) ? 
                                    PublicData.stringKeyValuePairs[player.CarryCharacter] : null;
@@ -224,8 +252,13 @@ public class Highlight : MonoBehaviour
                     // 比较playerValue与letter
                     if (playerValue == letter)
                     {
+                        Debug.Log($"匹配成功，执行广播");
                         // 全屏广播carryletter的值
                         BroadcastCarryLetterValue(player.CarryCharacter);
+                    }
+                    else
+                    {
+                        Debug.Log($"匹配失败，playerValue: '{playerValue}', letter: '{letter}'");
                     }
                 }
                 else
@@ -237,7 +270,17 @@ public class Highlight : MonoBehaviour
         else
         {
             Debug.LogWarning("Player不存在或CarryCharacter为空");
+            if (player == null)
+            {
+                Debug.LogWarning("Player引用为空");
+            }
+            else
+            {
+                Debug.LogWarning($"Player存在但CarryCharacter为空或空字符串: '{player.CarryCharacter}'");
+            }
         }
+        
+        Debug.Log($"=== FunctionA执行完成 ===");
     }
 
     private void RefreshSprite()
@@ -369,14 +412,69 @@ public class Highlight : MonoBehaviour
     // 全屏广播carryletter的值
     private void BroadcastCarryLetterValue(string carryLetter)
     {
+        // 在发送广播前，将player的CarryCharacter重置为"人"
+        if (player != null)
+        {
+            Debug.Log($"广播前将player的CarryCharacter从 '{player.CarryCharacter}' 重置为 '人'");
+            player.CarryCharacter = "人";
+            
+            // 更新对应的米字格
+            UpdateMiSquareForPlayer();
+        }
+        else
+        {
+            Debug.LogWarning("Player引用为空，无法重置CarryCharacter");
+        }
+        
         // 使用BroadcastManager进行全屏广播
         if (BroadcastManager.Instance != null)
         {
             BroadcastManager.Instance.BroadcastToAll(carryLetter);
+            Debug.Log($"已发送广播: {carryLetter}");
         }
         else
         {
             Debug.LogWarning("BroadcastManager实例不存在，无法进行广播");
+        }
+    }
+    
+    // 更新玩家对应的米字格
+    private void UpdateMiSquareForPlayer()
+    {
+        // 获取玩家的类型（player1或player2）
+        bool isPlayer1 = player.IsPlayer1();
+        
+        // 根据玩家类型查找对应的米字格
+        string targetMiSquareName = isPlayer1 ? "米字格1" : "米字格2";
+        
+        // 查找指定名称的米字格
+        GameObject targetMiSquare = GameObject.Find(targetMiSquareName);
+        
+        if (targetMiSquare != null)
+        {
+            MiSquareController miSquareController = targetMiSquare.GetComponent<MiSquareController>();
+            if (miSquareController != null)
+            {
+                // 使用PublicData中的米字格字典，以"人"作为键获取对应的米字格图片
+                Sprite miZiGeSprite = PublicData.GetMiZiGeSprite("人");
+                if (miZiGeSprite != null)
+                {
+                    miSquareController.SetMiSquareSprite("人");
+                    Debug.Log($"已更新{targetMiSquareName}: {targetMiSquare.name} 为'人'对应的米字格图片");
+                }
+                else
+                {
+                    Debug.LogWarning("PublicData中未找到'人'对应的米字格图片");
+                }
+            }
+            else
+            {
+                Debug.LogWarning($"{targetMiSquareName}没有MiSquareController组件");
+            }
+        }
+        else
+        {
+            Debug.LogWarning($"未找到{targetMiSquareName}");
         }
     }
     
@@ -426,18 +524,58 @@ public class Highlight : MonoBehaviour
         }
     }
     
-    // 隐藏对象
+    // 隐藏对象（不涉及SetActive，保持对象活跃以接收广播）
     private void HideObject()
     {
-        gameObject.SetActive(false);
-        Debug.Log($"已隐藏对象: {gameObject.name} (letter: {letter})");
+        // 禁用SpriteRenderer来隐藏对象
+        SpriteRenderer spriteRenderer = GetComponent<SpriteRenderer>();
+        if (spriteRenderer != null)
+        {
+            spriteRenderer.enabled = false;
+        }
+        
+        // 禁用Collider2D来防止交互
+        Collider2D collider = GetComponent<Collider2D>();
+        if (collider != null)
+        {
+            collider.enabled = false;
+        }
+        
+        // 禁用所有Light2D组件（包括子物体）
+        Light2D[] allLights = GetComponentsInChildren<Light2D>();
+        foreach (Light2D light in allLights)
+        {
+            light.enabled = false;
+        }
+        
+        Debug.Log($"已隐藏对象: {gameObject.name} (letter: {letter}) - 使用组件禁用方式，包括 {allLights.Length} 个Light2D组件");
     }
     
-    // 显示对象
+    // 显示对象（不涉及SetActive，保持对象活跃以接收广播）
     private void ShowObject()
     {
-        gameObject.SetActive(true);
-        Debug.Log($"已显示对象: {gameObject.name} (letter: {letter})");
+        // 启用SpriteRenderer来显示对象
+        SpriteRenderer spriteRenderer = GetComponent<SpriteRenderer>();
+        if (spriteRenderer != null)
+        {
+            spriteRenderer.enabled = true;
+        }
+        
+        // 启用Collider2D来恢复交互
+        Collider2D collider = GetComponent<Collider2D>();
+        if (collider != null)
+        {
+            collider.enabled = true;
+        }
+        
+        // 启用所有Light2D组件（包括子物体）
+        Light2D[] allLights = GetComponentsInChildren<Light2D>();
+        foreach (Light2D light in allLights)
+        {
+            light.enabled = true;
+        }
+        
+        Debug.Log($"已显示对象: {gameObject.name} (letter: {letter}) - 使用组件启用方式，包括 {allLights.Length} 个Light2D组件");
     }
     
     // 删除对象
@@ -453,5 +591,44 @@ public class Highlight : MonoBehaviour
         Debug.Log($"执行特殊逻辑，当前对象: {gameObject.name}, letter: {letter}");
         // 在这里添加具体的特殊逻辑
         // 比如改变颜色、播放音效、触发动画等
+    }
+    
+    // 公共方法：检查对象是否可见
+    public bool IsVisible()
+    {
+        SpriteRenderer spriteRenderer = GetComponent<SpriteRenderer>();
+        return spriteRenderer != null && spriteRenderer.enabled;
+    }
+    
+    // 公共方法：检查对象是否可以交互
+    public bool IsInteractable()
+    {
+        Collider2D collider = GetComponent<Collider2D>();
+        return collider != null && collider.enabled;
+    }
+    
+    // 公共方法：检查Light2D状态
+    public bool HasActiveLights()
+    {
+        Light2D[] allLights = GetComponentsInChildren<Light2D>();
+        foreach (Light2D light in allLights)
+        {
+            if (light.enabled)
+            {
+                return true;
+            }
+        }
+        return false;
+    }
+    
+    // 公共方法：获取对象的完整状态信息
+    public string GetObjectStatus()
+    {
+        bool visible = IsVisible();
+        bool interactable = IsInteractable();
+        bool hasLights = HasActiveLights();
+        bool scriptEnabled = enabled;
+        
+        return $"对象: {gameObject.name}, Letter: {letter}, 可见: {visible}, 可交互: {interactable}, 灯光: {hasLights}, 脚本启用: {scriptEnabled}";
     }
 }
