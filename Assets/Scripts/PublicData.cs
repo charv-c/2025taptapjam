@@ -305,7 +305,10 @@ public class PublicData : MonoBehaviour
     // 检查是否所有目标都已完成
     public static bool AreAllTargetsCompleted()
     {
-        return completedTargets.Count >= targetList.Count;
+        // 计算总目标数量（已完成 + 未完成）
+        int totalTargets = completedTargets.Count + targetList.Count;
+        // 检查是否所有目标都已完成（已完成数量等于总目标数量）
+        return completedTargets.Count == totalTargets && totalTargets > 0;
     }
     
     // 检查所有目标完成状态
@@ -361,8 +364,9 @@ public class PublicData : MonoBehaviour
     // 获取完成进度
     public static float GetCompletionProgress()
     {
-        if (targetList.Count == 0) return 0f;
-        return (float)completedTargets.Count / targetList.Count;
+        int totalTargets = completedTargets.Count + targetList.Count;
+        if (totalTargets == 0) return 0f;
+        return (float)completedTargets.Count / totalTargets;
     }
     
     // 获取未完成的目标列表

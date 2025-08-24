@@ -57,6 +57,13 @@ public class Highlight : MonoBehaviour
     {
         if (!enabled) return;
         
+        // 如果是门对象，检查孩子是否隐藏
+        if (letter == "门" && !IsChildHidden())
+        {
+            Debug.Log("门对象：孩子未隐藏，不允许激活高亮");
+            return;
+        }
+        
         if (other.CompareTag("Player"))
         {
             player = other.GetComponent<Player>();
@@ -83,6 +90,36 @@ public class Highlight : MonoBehaviour
         }
     }
     
+    // 检查孩子是否隐藏
+    private bool IsChildHidden()
+    {
+        // 查找场景中所有带有Highlight脚本的对象
+        Highlight[] allHighlights = FindObjectsOfType<Highlight>();
+        
+        foreach (Highlight highlight in allHighlights)
+        {
+            if (highlight != null && highlight.letter == "孩")
+            {
+                // 检查孩子的SpriteRenderer是否被禁用
+                SpriteRenderer childSpriteRenderer = highlight.GetComponent<SpriteRenderer>();
+                if (childSpriteRenderer != null && !childSpriteRenderer.enabled)
+                {
+                    Debug.Log("门对象：检测到孩子已隐藏，允许激活高亮");
+                    return true;
+                }
+                else
+                {
+                    Debug.Log("门对象：检测到孩子未隐藏，不允许激活高亮");
+                    return false;
+                }
+            }
+        }
+        
+        // 如果没有找到孩子对象，默认不允许激活
+        Debug.Log("门对象：未找到孩子对象，不允许激活高亮");
+        return false;
+    }
+    
     void ChangeMi(){
         Debug.Log($"ChangeMi: 开始处理字符合成，letter='{letter}'，canControlMisquare={canControlMisquare}");
         
@@ -98,6 +135,13 @@ public class Highlight : MonoBehaviour
         if (combinedCharacter != null)
         {
             Debug.Log($"ChangeMi: 找到合成字符 '{combinedCharacter}'，开始更新米字格和玩家状态");
+            
+            // 播放化字音效
+            if (AudioManager.Instance != null && AudioManager.Instance.sfxTransform != null)
+            {
+                AudioManager.Instance.PlaySFX(AudioManager.Instance.sfxTransform);
+                Debug.Log("Highlight: 播放化字音效");
+            }
             
             if (misquare != null)
             {
@@ -157,6 +201,13 @@ public class Highlight : MonoBehaviour
             return;
         }
         
+        // 播放取字音效
+        if (AudioManager.Instance != null && AudioManager.Instance.sfxAcquire != null)
+        {
+            AudioManager.Instance.PlaySFX(AudioManager.Instance.sfxAcquire);
+            Debug.Log("Highlight: 播放取字音效");
+        }
+        
         if (ButtonController.Instance != null)
         {
             StringSelector stringSelector = ButtonController.Instance.GetStringSelector();
@@ -181,14 +232,24 @@ public class Highlight : MonoBehaviour
     {
         Debug.Log($"FunctionA: 开始处理交互，对象letter='{letter}'，玩家携带字符='{player?.CarryCharacter}'，collectable={collectable}");
         
+        // collectable优先于carryletter逻辑
+        if (collectable)
+        {
+            Debug.Log($"FunctionA: 对象 '{letter}' 是可收集的，优先添加到可用字符串列表");
+            AddLetterToAvailableList();
+            
+            // 特殊处理：草对象在教程步骤中的特殊逻辑
+            HandleSpecialTutorialLogic();
+            
+            // 销毁可收集的对象
+            Debug.Log($"FunctionA: 销毁可收集对象 '{letter}'");
+            Destroy(gameObject);
+            return; // 直接返回，不执行后续的carryletter逻辑
+        }
+        
+        // 只有在对象不可收集时才执行carryletter逻辑
         if (player != null && !string.IsNullOrEmpty(player.CarryCharacter))
         {
-            if (collectable)
-            {
-                Debug.Log($"FunctionA: 对象 '{letter}' 是可收集的，先执行特殊逻辑，再调用AddLetterToAvailableList");
-                // 先执行特殊逻辑，再销毁对象
-            }
-            
             if (player.CarryCharacter == "人")
             {
                 Debug.Log($"FunctionA: 玩家携带'人'字符，检查 '{letter}' 是否在可化字列表中");
@@ -222,15 +283,8 @@ public class Highlight : MonoBehaviour
             Debug.LogWarning($"FunctionA: 玩家为空或携带字符为空，玩家={player}, CarryCharacter='{player?.CarryCharacter}'");
         }
         
-        // 特殊处理：草对象在教程步骤中的特殊逻辑
+        // 特殊处理：草对象在教程步骤中的特殊逻辑（仅对不可收集对象）
         HandleSpecialTutorialLogic();
-        
-        // 如果是可收集的对象，在特殊逻辑执行完后销毁对象
-        if (collectable)
-        {
-            Debug.Log($"FunctionA: 特殊逻辑执行完成，销毁对象 '{letter}'");
-            Destroy(gameObject);
-        }
     }
     
     // 处理教程中的特殊逻辑
@@ -322,6 +376,13 @@ public class Highlight : MonoBehaviour
     // 添加"虫"到可用字符串列表
     private void AddChongToAvailableList()
     {
+        // 播放取字音效
+        if (AudioManager.Instance != null && AudioManager.Instance.sfxAcquire != null)
+        {
+            AudioManager.Instance.PlaySFX(AudioManager.Instance.sfxAcquire);
+            Debug.Log("Highlight: 播放取字音效（虫）");
+        }
+        
         if (ButtonController.Instance != null)
         {
             StringSelector stringSelector = ButtonController.Instance.GetStringSelector();
@@ -345,6 +406,13 @@ public class Highlight : MonoBehaviour
     // 添加"牒"到可用字符串列表
     private void AddDieToAvailableList()
     {
+        // 播放取字音效
+        if (AudioManager.Instance != null && AudioManager.Instance.sfxAcquire != null)
+        {
+            AudioManager.Instance.PlaySFX(AudioManager.Instance.sfxAcquire);
+            Debug.Log("Highlight: 播放取字音效（牒）");
+        }
+        
         if (ButtonController.Instance != null)
         {
             StringSelector stringSelector = ButtonController.Instance.GetStringSelector();
@@ -362,6 +430,36 @@ public class Highlight : MonoBehaviour
         else
         {
             Debug.LogError("FunctionA: ButtonController.Instance为空，无法添加字符 '牒'");
+        }
+    }
+    
+    // 添加"门"到可用字符串列表
+    private void AddDoorToAvailableList()
+    {
+        // 播放取字音效
+        if (AudioManager.Instance != null && AudioManager.Instance.sfxAcquire != null)
+        {
+            AudioManager.Instance.PlaySFX(AudioManager.Instance.sfxAcquire);
+            Debug.Log("Highlight: 播放取字音效（门）");
+        }
+        
+        if (ButtonController.Instance != null)
+        {
+            StringSelector stringSelector = ButtonController.Instance.GetStringSelector();
+            if (stringSelector != null)
+            {
+                Debug.Log("Highlight: 正在添加字符 '门' 到可用字符串列表");
+                stringSelector.AddAvailableString("门");
+                Debug.Log("Highlight: 字符 '门' 已添加到可用字符串列表");
+            }
+            else
+            {
+                Debug.LogError("Highlight: StringSelector为空，无法添加字符 '门'");
+            }
+        }
+        else
+        {
+            Debug.LogError("Highlight: ButtonController.Instance为空，无法添加字符 '门'");
         }
     }
     
@@ -463,7 +561,11 @@ public class Highlight : MonoBehaviour
             {
                 Debug.Log($"处理'王'对象，开始隐藏对象并添加到可用列表");
                 HideObject();
-                AddLetterToAvailableList();
+                // 如果对象是可收集的，添加到可用字符串列表
+                if (collectable)
+                {
+                    AddLetterToAvailableList();
+                }
             }
         }
         
@@ -500,10 +602,24 @@ public class Highlight : MonoBehaviour
                 renderer.enabled = false;
             }
         }
+        
+        // 如果是门对象被隐藏，添加"门"到可用字符串列表
+        if (letter == "门")
+        {
+            Debug.Log("门对象被隐藏，添加'门'到可用字符串列表");
+            AddDoorToAvailableList();
+        }
     }
     
     public void ShowObject()
     {
+        // 如果是门对象，检查孩子是否隐藏
+        if (letter == "门" && !IsChildHidden())
+        {
+            Debug.Log($"门对象：孩子未隐藏，不允许显示和激活高亮: {gameObject.name}");
+            return;
+        }
+        
         // 确保Highlight组件被激活
         if (!enabled)
         {
@@ -615,6 +731,14 @@ public class Highlight : MonoBehaviour
     private void ExecuteSpecialLogic()
     {
         // 特殊逻辑实现
+        Debug.Log($"ExecuteSpecialLogic: 执行特殊逻辑，对象letter='{letter}'，collectable={collectable}");
+        
+        // 如果对象是可收集的，添加到可用字符串列表
+        if (collectable)
+        {
+            Debug.Log($"ExecuteSpecialLogic: 对象 '{letter}' 是可收集的，添加到可用字符串列表");
+            AddLetterToAvailableList();
+        }
     }
     
     // 公共方法：触发交互（由Player调用）
@@ -622,6 +746,13 @@ public class Highlight : MonoBehaviour
     {
         if (enabled && isHighlighted)
         {
+            // 如果是门对象，检查孩子是否隐藏
+            if (letter == "门" && !IsChildHidden())
+            {
+                Debug.Log("门对象：孩子未隐藏，不允许交互");
+                return;
+            }
+            
             FunctionA();
         }
     }

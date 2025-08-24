@@ -300,8 +300,50 @@ public class Player : MonoBehaviour
     // 回车键按下时的处理
     private void OnEnterKeyPressed()
     {
+        // 检查当前玩家是否为当前控制角色
+        if (!IsCurrentControlledPlayer())
+        {
+            Debug.Log($"Player: 当前玩家不是控制角色，忽略回车键输入");
+            return;
+        }
+        
+        Debug.Log($"Player: 当前玩家是控制角色，执行回车键交互逻辑");
         // 查找附近的Highlight对象并触发交互
         TriggerNearbyHighlightInteraction();
+    }
+    
+    // 检查当前玩家是否为当前控制角色
+    private bool IsCurrentControlledPlayer()
+    {
+        // 获取PlayerController实例
+        PlayerController playerController = FindObjectOfType<PlayerController>();
+        if (playerController == null)
+        {
+            Debug.LogWarning("Player: 未找到PlayerController，默认允许交互");
+            return true;
+        }
+        
+        // 获取当前控制角色
+        Player currentControlledPlayer = playerController.GetCurrentPlayer();
+        if (currentControlledPlayer == null)
+        {
+            Debug.LogWarning("Player: 当前控制角色为空，默认允许交互");
+            return true;
+        }
+        
+        // 检查当前玩家是否为当前控制角色
+        bool isCurrentControlled = (currentControlledPlayer == this);
+        
+        if (isCurrentControlled)
+        {
+            Debug.Log($"Player: 当前玩家是控制角色，允许执行交互");
+        }
+        else
+        {
+            Debug.Log($"Player: 当前玩家不是控制角色，禁止执行交互");
+        }
+        
+        return isCurrentControlled;
     }
     
     // 触发附近的Highlight对象交互

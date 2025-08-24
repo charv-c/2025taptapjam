@@ -54,6 +54,13 @@ public class ButtonController : MonoBehaviour
         {
             combineButton.onClick.AddListener(OnCombineButtonClicked);
         }
+        
+        // 订阅StringSelector的可用字符串变化事件
+        if (stringSelector != null)
+        {
+            stringSelector.OnAvailableStringsChanged += OnAvailableStringsChanged;
+            Debug.Log("ButtonController: 已订阅StringSelector的可用字符串变化事件");
+        }
     }
 
     private void OnSplitButtonClicked()
@@ -403,7 +410,20 @@ public class ButtonController : MonoBehaviour
     
     public void SetStringSelector(StringSelector selector)
     {
+        // 如果之前有订阅，先取消订阅
+        if (stringSelector != null)
+        {
+            stringSelector.OnAvailableStringsChanged -= OnAvailableStringsChanged;
+        }
+        
         stringSelector = selector;
+        
+        // 订阅新的事件
+        if (stringSelector != null)
+        {
+            stringSelector.OnAvailableStringsChanged += OnAvailableStringsChanged;
+            Debug.Log("ButtonController: 已订阅新的StringSelector的可用字符串变化事件");
+        }
     }
     
     public StringSelector GetStringSelector()
@@ -424,6 +444,40 @@ public class ButtonController : MonoBehaviour
         
         // 更新按钮状态
         UpdateButtonStates(stringSelector != null ? stringSelector.GetSelectionCount() : 0);
+    }
+    
+    // 处理可用字符串变化事件
+    private void OnAvailableStringsChanged()
+    {
+        Debug.Log("ButtonController: 收到可用字符串变化事件，刷新按钮显示");
+        
+        // 刷新按钮显示
+        RefreshButtonDisplay();
+    }
+    
+    // 刷新按钮显示
+    private void RefreshButtonDisplay()
+    {
+        if (stringSelector != null)
+        {
+            // 重新创建所有按钮
+            stringSelector.RecreateAllButtonsPublic();
+            
+            // 更新按钮状态
+            UpdateButtonStates(stringSelector.GetSelectionCount());
+            
+            Debug.Log($"ButtonController: 按钮显示已刷新，当前可用字符串数量: {stringSelector.GetAvailableStringCount()}");
+        }
+    }
+    
+    // 在销毁时取消订阅事件
+    private void OnDestroy()
+    {
+        if (stringSelector != null)
+        {
+            stringSelector.OnAvailableStringsChanged -= OnAvailableStringsChanged;
+            Debug.Log("ButtonController: 已取消订阅StringSelector的可用字符串变化事件");
+        }
     }
     
     private void CreateFlyingCharacter(string character, Transform targetPosition)
@@ -530,6 +584,7 @@ public class ButtonController : MonoBehaviour
         if (AudioManager.Instance != null && AudioManager.Instance.sfxGoalFlyIn != null)
         {
             AudioManager.Instance.PlaySFX(AudioManager.Instance.sfxGoalFlyIn);
+            Debug.Log("ButtonController: 播放目标飞入音效");
         }
         
         while (elapsedTime < duration)
