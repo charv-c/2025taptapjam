@@ -17,11 +17,22 @@ public class ButtonController : MonoBehaviour
     [Header("选择器引用")]
     [SerializeField] private StringSelector stringSelector;
     
+    [Header("飞行动画设置")]
+    [SerializeField] private float spiralTurns = 3f; // 螺旋圈数
+    [SerializeField] private Transform targetPosition; // 目标位置
+    [SerializeField] private Canvas targetCanvas; // 目标Canvas
+    [SerializeField] private float flyDuration = 1.5f; // 飞行时长
+    [SerializeField] private float spiralRadius = 50f; // 螺旋半径
+    
+    [Header("字体设置")]
+    [SerializeField] private TMP_FontAsset chineseFont; // 中文字体
+    
     // 单例模式，方便其他脚本访问
     public static ButtonController Instance { get; private set; }
     
     // 飞行动画状态
     private bool isFlyingAnimationActive = false;
+    private bool isLevel1Flying = false; // Level1飞舞状态
     
     private void Awake()
     {
@@ -505,7 +516,7 @@ public class ButtonController : MonoBehaviour
         // 添加TextMeshPro组件
         TMPro.TextMeshProUGUI textMesh = flyingCharacter.AddComponent<TMPro.TextMeshProUGUI>();
         textMesh.text = character;
-        textMesh.fontSize = 72;
+        textMesh.fontSize = 69;
         textMesh.alignment = TMPro.TextAlignmentOptions.Center;
         textMesh.color = Color.black; // 设置文字为黑色
         
@@ -627,7 +638,6 @@ public class ButtonController : MonoBehaviour
         
         // 计算螺旋偏移
         float spiralRadius = 50f; // 螺旋半径
-        float spiralTurns = 3f; // 螺旋圈数
         float angle = progress * spiralTurns * 2f * Mathf.PI;
         
         // 螺旋偏移向量
@@ -677,4 +687,232 @@ public class ButtonController : MonoBehaviour
         
         CreateFlyingCharacter(character, targetPosition);
     }
+    
+    #region Level1 飞舞功能
+    
+    /// <summary>
+    /// 开始Level1字符飞舞动画
+    /// </summary>
+    /// <param name="character">要飞舞的字符</param>
+    /// <param name="startPosition">起始位置</param>
+    /// <param name="endPosition">终点位置</param>
+    public void StartLevel1CharacterFly(string character, Vector2 startPosition, Vector2 endPosition)
+    {
+        if (isLevel1Flying)
+        {
+            Debug.LogWarning("ButtonController: 已有Level1字符在飞行中，忽略新的飞行请求");
+            return;
+        }
+        
+        StartCoroutine(Level1FlyCharacterCoroutine(character, startPosition, endPosition));
+    }
+    
+    /// <summary>
+    /// 开始Level1字符飞舞动画（使用Inspector中设置的目标位置）
+    /// </summary>
+    /// <param name="character">要飞舞的字符</param>
+    /// <param name="startPosition">起始位置</param>
+    public void StartLevel1CharacterFly(string character, Vector2 startPosition)
+    {
+        if (isLevel1Flying)
+        {
+            Debug.LogWarning("ButtonController: 已有Level1字符在飞行中，忽略新的飞行请求");
+            return;
+        }
+        
+        if (targetPosition == null)
+        {
+            Debug.LogError("ButtonController: 目标位置未设置");
+            return;
+        }
+        
+        Vector2 endPosition = GetLevel1TargetUIPosition();
+        StartCoroutine(Level1FlyCharacterCoroutine(character, startPosition, endPosition));
+    }
+    
+    /// <summary>
+    /// Level1字符飞舞协程
+    /// </summary>
+    private IEnumerator Level1FlyCharacterCoroutine(string character, Vector2 startPosition, Vector2 endPosition)
+    {
+        isLevel1Flying = true;
+        
+        // 创建飞舞的字符对象
+        GameObject flyingCharacter = CreateLevel1FlyingCharacter(character);
+        RectTransform rectTransform = flyingCharacter.GetComponent<RectTransform>();
+        
+        // 设置起始位置
+        rectTransform.anchoredPosition = startPosition;
+        
+        Debug.Log($"ButtonController: 开始Level1飞舞动画 - 字符={character}, 起始位置={startPosition}, 目标位置={endPosition}");
+        
+        // 播放音效
+        if (AudioManager.Instance != null && AudioManager.Instance.sfxGoalFlyIn != null)
+        {
+            AudioManager.Instance.PlaySFX(AudioManager.Instance.sfxGoalFlyIn);
+            Debug.Log("ButtonController: 播放Level1目标飞入音效");
+        }
+        
+        float elapsedTime = 0f;
+        
+        // 飞行动画
+        while (elapsedTime < flyDuration)
+        {
+            elapsedTime += Time.deltaTime;
+            float progress = elapsedTime / flyDuration;
+            float easeProgress = Mathf.SmoothStep(0f, 1f, progress);
+            
+            // 螺旋轨迹计算
+            Vector2 spiralPosition = CalculateLevel1SpiralPosition(startPosition, endPosition, progress);
+            rectTransform.anchoredPosition = spiralPosition;
+            
+            // 缩放动画
+            float scale = 1f + Mathf.Sin(progress * Mathf.PI * 2) * 0.3f;
+            rectTransform.localScale = Vector3.one * scale;
+            
+            yield return null;
+        }
+        
+        // 动画完成，设置最终位置
+        rectTransform.anchoredPosition = endPosition;
+        rectTransform.localScale = Vector3.one;
+        
+        Debug.Log($"ButtonController: Level1飞舞动画完成 - 字符={character}");
+        
+        // 延迟一段时间后销毁飞舞的字符
+        yield return new WaitForSeconds(2f);
+        Destroy(flyingCharacter);
+        
+        isLevel1Flying = false;
+    }
+    
+    /// <summary>
+    /// 创建Level1飞舞的字符对象
+    /// </summary>
+    private GameObject CreateLevel1FlyingCharacter(string character)
+    {
+        // 创建UI对象
+        GameObject flyingCharacter = new GameObject($"Level1Flying_{character}");
+        
+        // 设置父对象为Canvas
+        if (targetCanvas != null)
+        {
+            flyingCharacter.transform.SetParent(targetCanvas.transform, false);
+        }
+        else
+        {
+            Debug.LogWarning("ButtonController: 未设置目标Canvas，使用默认Canvas");
+            Canvas defaultCanvas = FindObjectOfType<Canvas>();
+            if (defaultCanvas != null)
+            {
+                flyingCharacter.transform.SetParent(defaultCanvas.transform, false);
+            }
+        }
+        
+        // 添加RectTransform组件
+        RectTransform rectTransform = flyingCharacter.AddComponent<RectTransform>();
+        
+        // 添加TextMeshPro组件
+        TMPro.TextMeshProUGUI textMesh = flyingCharacter.AddComponent<TMPro.TextMeshProUGUI>();
+        textMesh.text = character;
+        textMesh.fontSize = 69; // 调小三个字号：从72改为69
+        textMesh.alignment = TMPro.TextAlignmentOptions.Center;
+        textMesh.color = Color.black; // 设置文字为黑色
+        
+        // 设置字体
+        if (chineseFont != null)
+        {
+            textMesh.font = chineseFont;
+        }
+        else
+        {
+            // 尝试从StringSelector获取字体
+            if (stringSelector != null && stringSelector.GetChineseFont() != null)
+            {
+                textMesh.font = stringSelector.GetChineseFont();
+            }
+        }
+        
+        // 强制更新文本网格
+        textMesh.ForceMeshUpdate();
+        
+        return flyingCharacter;
+    }
+    
+    /// <summary>
+    /// 计算Level1螺旋轨迹位置
+    /// </summary>
+    private Vector2 CalculateLevel1SpiralPosition(Vector2 startPos, Vector2 endPos, float progress)
+    {
+        // 基础直线插值
+        Vector2 linearPosition = Vector2.Lerp(startPos, endPos, progress);
+        
+        // 计算螺旋偏移
+        float angle = progress * spiralTurns * 2f * Mathf.PI;
+        
+        // 螺旋偏移向量
+        Vector2 spiralOffset = new Vector2(
+            Mathf.Cos(angle) * spiralRadius * (1f - progress), // 半径随进度减小
+            Mathf.Sin(angle) * spiralRadius * (1f - progress)
+        );
+        
+        // 返回螺旋位置
+        return linearPosition + spiralOffset;
+    }
+    
+    /// <summary>
+    /// 获取Level1目标位置的UI坐标
+    /// </summary>
+    private Vector2 GetLevel1TargetUIPosition()
+    {
+        Debug.Log($"ButtonController: 获取Level1目标位置: {targetPosition?.name}");
+        
+        // 如果目标位置是UI元素，直接获取其anchoredPosition
+        RectTransform targetRectTransform = targetPosition as RectTransform;
+        if (targetRectTransform != null)
+        {
+            Vector2 position = targetRectTransform.anchoredPosition;
+            Debug.Log($"ButtonController: Level1目标位置是RectTransform: {position}");
+            return position;
+        }
+        
+        // 如果目标位置不是UI元素，尝试获取其子物体的RectTransform
+        RectTransform childRectTransform = targetPosition.GetComponentInChildren<RectTransform>();
+        if (childRectTransform != null)
+        {
+            Vector2 position = childRectTransform.anchoredPosition;
+            Debug.Log($"ButtonController: Level1目标位置子物体是RectTransform: {position}");
+            return position;
+        }
+        
+        Debug.Log($"ButtonController: 未找到有效的Level1目标位置，使用默认位置");
+        // 如果都找不到，返回屏幕中央
+        return Vector2.zero;
+    }
+    
+    /// <summary>
+    /// 检查Level1是否正在飞行
+    /// </summary>
+    public bool IsLevel1Flying()
+    {
+        return isLevel1Flying;
+    }
+    
+    /// <summary>
+    /// 设置Level1目标位置
+    /// </summary>
+    public void SetLevel1TargetPosition(Transform target)
+    {
+        targetPosition = target;
+    }
+    
+    /// <summary>
+    /// 设置Level1目标Canvas
+    /// </summary>
+    public void SetLevel1TargetCanvas(Canvas canvas)
+    {
+        targetCanvas = canvas;
+    }
+    
+    #endregion
 }

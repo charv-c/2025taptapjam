@@ -52,7 +52,7 @@ public class TutorialManager : MonoBehaviour
     #endregion
 
     #region Private State
-    private enum TutorialStep { Welcome_Part1, Welcome_Part2, Welcome_Part3, MoveToDog, AfterTransform, MoveToGrass, AfterGetChong, SwitchPlayer_Part1, SwitchPlayer_Part2, MoveToDie, AfterGetDie, SelectAndSplit, AfterSplit, SelectAndCombine, AfterCombine, End_Part1, End_Part2, End_Part3 }
+    private enum TutorialStep { Welcome_Part1, Welcome_Part2, Welcome_Part3, MoveToDog, AfterTransform, MoveToGrass, AfterGetChong, SwitchPlayer_Part1, SwitchPlayer_Part2, MoveToDie, AfterGetDie, SelectAndSplit, AfterSplit, SelectAndCombine, AfterCombine, CharacterFly, End_Part1, End_Part2, End_Part3 }
     private TutorialStep currentStep;
     private PlayerController playerController; // 引用PlayerController来控制玩家移动
 
@@ -85,6 +85,9 @@ public class TutorialManager : MonoBehaviour
         // 检查组件引用
         CheckComponentReferences();
 
+        // 设置Level1的BGM
+        SetupLevel1BGM();
+
         // 延迟一帧后禁止玩家移动，确保PlayerController已完全初始化
         StartCoroutine(DelayedDisablePlayerMovement());
 
@@ -93,6 +96,48 @@ public class TutorialManager : MonoBehaviour
         ExecuteCurrentStep();
         continueButton.onClick.AddListener(GoToNextStep);
 
+    }
+    #endregion
+
+    #region Audio Setup
+    // 设置Level1的BGM
+    private void SetupLevel1BGM()
+    {
+        if (AudioManager.Instance != null)
+        {
+            // 播放教学关卡BGM
+            if (AudioManager.Instance.bgmTutorial != null)
+            {
+                AudioManager.Instance.PlayBGM(AudioManager.Instance.bgmTutorial);
+                Debug.Log("TutorialManager: 已设置Level1 BGM为bgmTutorial");
+            }
+            else
+            {
+                Debug.LogWarning("TutorialManager: bgmTutorial音频片段未设置");
+            }
+            
+            // 停止雨声环境音
+            AudioManager.Instance.StopAmbient(1f);
+            Debug.Log("TutorialManager: 已停止雨声环境音");
+        }
+        else
+        {
+            Debug.LogWarning("TutorialManager: 未找到AudioManager实例");
+        }
+    }
+
+    // 播放UI交互音效
+    private void PlayUIClickSound()
+    {
+        if (AudioManager.Instance != null && AudioManager.Instance.sfxUIClick != null)
+        {
+            AudioManager.Instance.PlaySFX(AudioManager.Instance.sfxUIClick);
+            Debug.Log("TutorialManager: 播放UI交互音效");
+        }
+        else
+        {
+            Debug.LogWarning("TutorialManager: 无法播放UI交互音效，AudioManager或sfxUIClick为空");
+        }
     }
     #endregion
 
@@ -126,6 +171,7 @@ public class TutorialManager : MonoBehaviour
         stepHandlers[TutorialStep.AfterSplit] = HandleAfterSplit;
         stepHandlers[TutorialStep.SelectAndCombine] = HandleSelectAndCombine;
         stepHandlers[TutorialStep.AfterCombine] = HandleAfterCombine;
+        stepHandlers[TutorialStep.CharacterFly] = HandleCharacterFly;
         stepHandlers[TutorialStep.End_Part1] = HandleEndPart1;
         stepHandlers[TutorialStep.End_Part2] = HandleEndPart2;
         stepHandlers[TutorialStep.End_Part3] = HandleEndPart3;
@@ -152,7 +198,8 @@ public class TutorialManager : MonoBehaviour
         stepTransitions[TutorialStep.SelectAndSplit] = TutorialStep.AfterSplit;
         stepTransitions[TutorialStep.AfterSplit] = TutorialStep.SelectAndCombine;
         stepTransitions[TutorialStep.SelectAndCombine] = TutorialStep.AfterCombine;
-        stepTransitions[TutorialStep.AfterCombine] = TutorialStep.End_Part1;
+        stepTransitions[TutorialStep.AfterCombine] = TutorialStep.CharacterFly;
+        stepTransitions[TutorialStep.CharacterFly] = TutorialStep.End_Part1;
         stepTransitions[TutorialStep.End_Part1] = TutorialStep.End_Part2;
         stepTransitions[TutorialStep.End_Part2] = TutorialStep.End_Part3;
     }
@@ -199,6 +246,9 @@ public class TutorialManager : MonoBehaviour
     {
         Debug.Log($"TutorialManager: 尝试从步骤 {currentStep} 跳转到下一步");
         Debug.Log($"TutorialManager: GoToNextStep - 调用堆栈: {System.Environment.StackTrace}");
+
+        // 播放UI交互音效
+        PlayUIClickSound();
 
         if (stepTransitions.ContainsKey(currentStep))
         {
@@ -558,7 +608,7 @@ public class TutorialManager : MonoBehaviour
         Debug.Log("TutorialManager: HandleSelectAndCombine - 第一行代码执行");
         Debug.Log("TutorialManager: HandleSelectAndCombine - 立即输出测试");
         SetGuideExpression(exprSideEye);
-        hintText.text = "testtest,化蝶的部件已齐。请选中【虫】和【枼】，然后点击【拼】按钮。";
+        hintText.text = "化蝶的部件已齐。请选中【虫】和【枼】，然后点击【拼】按钮。";
         if (combineButton != null)
         {
             Debug.Log($"TutorialManager: HandleSelectAndCombine - 调用HighlightUITarget，目标: {combineButton.name}");
@@ -593,11 +643,92 @@ public class TutorialManager : MonoBehaviour
         EnableUIInteraction(); // 启用UI交互以便继续按钮可用
     }
 
+    private void HandleCharacterFly()
+    {
+        SetGuideExpression(exprHappy);
+        hintText.text = "蝴蝶破茧而出，翩翩起舞...";
+        
+        // 禁用玩家移动
+        DisablePlayerMovement();
+        
+        // 隐藏继续按钮，使用自动检测
+        continueButton.gameObject.SetActive(false);
+        
+        // 开始文字飞舞动画
+        StartCoroutine(CharacterFlySequence());
+    }
+    
+    private IEnumerator CharacterFlySequence()
+    {
+        Debug.Log("TutorialManager: 开始文字飞舞序列");
+        
+        if (ButtonController.Instance != null)
+        {
+            // 等待一小段时间让玩家看到提示文字
+            yield return new WaitForSeconds(1f);
+            
+            // 获取"蝶"字的目标位置
+            Transform targetTransform = PublicData.GetTargetPositionForCharacter("蝶");
+            Vector2 endPosition = Vector2.zero;
+            
+            if (targetTransform != null)
+            {
+                // 直接获取UI坐标
+                RectTransform targetRectTransform = targetTransform as RectTransform;
+                if (targetRectTransform != null)
+                {
+                    endPosition = targetRectTransform.anchoredPosition;
+                }
+                else
+                {
+                    // 如果不是UI元素，尝试获取其子物体的RectTransform
+                    RectTransform childRectTransform = targetTransform.GetComponentInChildren<RectTransform>();
+                    if (childRectTransform != null)
+                    {
+                        endPosition = childRectTransform.anchoredPosition;
+                    }
+                }
+                Debug.Log($"TutorialManager: 获取到'蝶'字目标位置: {endPosition}");
+            }
+            else
+            {
+                Debug.LogWarning("TutorialManager: 未找到'蝶'字的目标位置，使用默认位置");
+            }
+            
+            // 从可用字符串列表中删除"蝶"字
+            StringSelector stringSelector = ButtonController.Instance.GetStringSelector();
+            if (stringSelector != null)
+            {
+                stringSelector.RemoveAvailableString("蝶");
+                Debug.Log("TutorialManager: 从可用字符串列表中删除'蝶'字");
+            }
+            
+            // 开始"蝶"字飞舞动画，起点为屏幕正中间
+            ButtonController.Instance.StartLevel1CharacterFly("蝶", Vector2.zero, endPosition);
+            
+            // 等待飞舞动画完成
+            while (ButtonController.Instance.IsLevel1Flying())
+            {
+                yield return new WaitForSeconds(0.1f);
+            }
+            
+            Debug.Log("TutorialManager: 文字飞舞动画完成");
+        }
+        else
+        {
+            Debug.LogWarning("TutorialManager: 未找到 ButtonController 实例，跳过飞舞动画");
+        }
+        
+        // 动画完成后自动进入下一步
+        yield return new WaitForSeconds(0.5f);
+        GoToNextStep();
+    }
+
     private void HandleEndPart1()
     {
         DisablePlayerMovement();
         SetGuideExpression(exprHappy);
-        hintText.text = "蝴蝶破茧而出，翩翩起舞。你成功让梁祝的缘分，在这此刻凝结。";
+        hintText.text = "你成功让梁祝的缘分，在此刻凝结。";
         continueButton.gameObject.SetActive(true);
     }
 

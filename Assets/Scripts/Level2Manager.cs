@@ -12,6 +12,9 @@ public class Level2Manager : MonoBehaviour
     {
         Debug.Log("Level2Manager: 开始初始化level2场景");
         
+        // 设置Level2的BGM
+        SetupLevel2BGM();
+        
         // 延迟一帧后启用所有操作，确保PlayerController已完全初始化
         StartCoroutine(DelayedEnableAllOperations());
     }
@@ -31,6 +34,39 @@ public class Level2Manager : MonoBehaviour
         else
         {
             Debug.LogError("Level2Manager: 未找到PlayerController");
+        }
+    }
+    
+    // 设置Level2的BGM
+    private void SetupLevel2BGM()
+    {
+        if (AudioManager.Instance != null)
+        {
+            // 播放雨天BGM
+            if (AudioManager.Instance.bgmRainy != null)
+            {
+                AudioManager.Instance.PlayBGM(AudioManager.Instance.bgmRainy);
+                Debug.Log("Level2Manager: 已设置Level2 BGM为bgmRainy");
+            }
+            else
+            {
+                Debug.LogWarning("Level2Manager: bgmRainy音频片段未设置");
+            }
+            
+            // 播放雨声环境音
+            if (AudioManager.Instance.ambientRain != null)
+            {
+                AudioManager.Instance.PlayAmbient(AudioManager.Instance.ambientRain);
+                Debug.Log("Level2Manager: 已播放雨声环境音");
+            }
+            else
+            {
+                Debug.LogWarning("Level2Manager: ambientRain音频片段未设置");
+            }
+        }
+        else
+        {
+            Debug.LogWarning("Level2Manager: 未找到AudioManager实例");
         }
     }
     

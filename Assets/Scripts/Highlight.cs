@@ -232,14 +232,38 @@ public class Highlight : MonoBehaviour
     {
         Debug.Log($"FunctionA: 开始处理交互，对象letter='{letter}'，玩家携带字符='{player?.CarryCharacter}'，collectable={collectable}");
         
-        // collectable优先于carryletter逻辑
+        // 特殊处理：草对象和牒对象在教程步骤中的特殊逻辑
+        bool handledByTutorial = HandleSpecialTutorialLogic();
+        
+        // 如果已经被教程逻辑处理，直接返回
+        if (handledByTutorial)
+        {
+            return;
+        }
+        
+        // collectable优先于carryletter逻辑，但"王"对象有特殊处理
         if (collectable)
         {
+            // 特殊处理："王"对象只能被携带"侠"字符的玩家收集
+            if (letter == "王")
+            {
+                if (player != null && player.CarryCharacter == "侠")
+                {
+                    Debug.Log($"FunctionA: 玩家携带'侠'字符，可以收集'王'对象");
+                    AddLetterToAvailableList();
+                    Destroy(gameObject);
+                    return;
+                }
+                else
+                {
+                    Debug.Log($"FunctionA: 玩家携带字符'{player?.CarryCharacter}'，不能收集'王'对象，无反应");
+                    return; // 无反应，直接返回
+                }
+            }
+            
+            // 其他可收集对象的正常处理
             Debug.Log($"FunctionA: 对象 '{letter}' 是可收集的，优先添加到可用字符串列表");
             AddLetterToAvailableList();
-            
-            // 特殊处理：草对象在教程步骤中的特殊逻辑
-            HandleSpecialTutorialLogic();
             
             // 销毁可收集的对象
             Debug.Log($"FunctionA: 销毁可收集对象 '{letter}'");
@@ -263,8 +287,25 @@ public class Highlight : MonoBehaviour
                     Debug.LogWarning($"FunctionA: '{letter}' 不在可化字列表中: {string.Join(", ", PublicData.listofhua)}");
                 }
             }
+            else if (player.CarryCharacter == "侠")
+            {
+                // 侠字符的特殊处理
+                string playerValue = PublicData.stringKeyValuePairs.ContainsKey(player.CarryCharacter) ? 
+                                   PublicData.stringKeyValuePairs[player.CarryCharacter] : null;
+
+                if (playerValue != null && playerValue == letter)
+                {
+                    Debug.Log($"FunctionA: 玩家携带'侠'字符与对象 '{letter}' 匹配，调用BroadcastCarryLetterValue");
+                    BroadcastCarryLetterValue(player.CarryCharacter);
+                }
+                else
+                {
+                    Debug.Log($"FunctionA: 玩家携带'侠'字符，但对象 '{letter}' 不匹配，无反应");
+                }
+            }
             else
             {
+                // 其他字符的处理
                 string playerValue = PublicData.stringKeyValuePairs.ContainsKey(player.CarryCharacter) ? 
                                    PublicData.stringKeyValuePairs[player.CarryCharacter] : null;
 
@@ -282,13 +323,10 @@ public class Highlight : MonoBehaviour
         {
             Debug.LogWarning($"FunctionA: 玩家为空或携带字符为空，玩家={player}, CarryCharacter='{player?.CarryCharacter}'");
         }
-        
-        // 特殊处理：草对象在教程步骤中的特殊逻辑（仅对不可收集对象）
-        HandleSpecialTutorialLogic();
     }
     
     // 处理教程中的特殊逻辑
-    private void HandleSpecialTutorialLogic()
+    private bool HandleSpecialTutorialLogic()
     {
         Debug.Log($"FunctionA: HandleSpecialTutorialLogic - letter='{letter}', TutorialManager.Instance={TutorialManager.Instance != null}");
         
@@ -308,6 +346,8 @@ public class Highlight : MonoBehaviour
                 
                 // 通知TutorialManager虫已显示，可以进入下一步
                 NotifyTutorialManagerChongShown();
+                
+                return true; // 已处理
             }
         }
         
@@ -325,8 +365,13 @@ public class Highlight : MonoBehaviour
                 // 添加"牒"到可用字符串列表
                 AddDieToAvailableList();
                 
+                // 隐藏"牒"对象
+                HideObject();
+                
                 // 通知TutorialManager牒已显示，可以进入下一步
                 NotifyTutorialManagerDieShown();
+                
+                return true; // 已处理
             }
             else
             {
@@ -337,6 +382,8 @@ public class Highlight : MonoBehaviour
         {
             Debug.Log("FunctionA: 不在MoveToDie步骤中");
         }
+        
+        return false; // 未处理
     }
     
     // 通知TutorialManager虫已显示
@@ -552,6 +599,8 @@ public class Highlight : MonoBehaviour
             }
             if(letter == "雨"){
                 HideObject();
+                // 雨停后切换BGM为bgmSunny并停止雨声环境音
+                SwitchToSunnyBGM();
             }
         }
         else if (broadcastedValue == "侠")
@@ -571,6 +620,32 @@ public class Highlight : MonoBehaviour
         
     }
     
+    // 切换到晴天BGM并停止雨声
+    private void SwitchToSunnyBGM()
+    {
+        if (AudioManager.Instance != null)
+        {
+            // 切换到晴天BGM
+            if (AudioManager.Instance.bgmSunny != null)
+            {
+                AudioManager.Instance.CrossfadeToBGM(AudioManager.Instance.bgmSunny, 2f);
+                Debug.Log("Highlight: 雨停后切换到bgmSunny");
+            }
+            else
+            {
+                Debug.LogWarning("Highlight: bgmSunny音频片段未设置");
+            }
+            
+            // 停止雨声环境音
+            AudioManager.Instance.StopAmbient(2f);
+            Debug.Log("Highlight: 雨停后停止雨声环境音");
+        }
+        else
+        {
+            Debug.LogWarning("Highlight: 未找到AudioManager实例");
+        }
+    }
+
     private void HideObject()
     {
         SpriteRenderer spriteRenderer = GetComponent<SpriteRenderer>();
