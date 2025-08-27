@@ -815,7 +815,7 @@ public class ButtonController : MonoBehaviour
         // 添加TextMeshPro组件
         TMPro.TextMeshProUGUI textMesh = flyingCharacter.AddComponent<TMPro.TextMeshProUGUI>();
         textMesh.text = character;
-        textMesh.fontSize = 69; // 调小三个字号：从72改为69
+        textMesh.fontSize = 55; // 调小三个字号：从72改为69
         textMesh.alignment = TMPro.TextAlignmentOptions.Center;
         textMesh.color = Color.black; // 设置文字为黑色
         

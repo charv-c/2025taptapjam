@@ -30,7 +30,7 @@ public class TutorialManager : MonoBehaviour
     public Sprite exprSideEye;    // 斜眼表情 (替代了“惊讶”)
 
     [Header("指示器元素")]
-    public RectTransform highlightBox;
+    // public RectTransform highlightBox;
     public Image arrowImage;       // 箭头的Image组件
     public Sprite arrowLeft;       // 向左的箭头图片
     public Sprite arrowDownLeft;   // 向左下的箭头图片
@@ -651,68 +651,166 @@ public class TutorialManager : MonoBehaviour
         // 禁用玩家移动
         DisablePlayerMovement();
         
-        // 隐藏继续按钮，使用自动检测
+        // 隐藏继续按钮，使用自动触发
         continueButton.gameObject.SetActive(false);
         
-        // 开始文字飞舞动画
-        StartCoroutine(CharacterFlySequence());
+        // 自动触发CharacterFlyButton的点击事件
+        StartCoroutine(AutoTriggerCharacterFlyButton());
     }
     
-    private IEnumerator CharacterFlySequence()
+    // 删除CharacterFlySequence协程，因为现在通过CharacterFlyButton点击事件来触发
+    
+    /// <summary>
+    /// 自动触发CharacterFlyButton的点击事件
+    /// </summary>
+    private IEnumerator AutoTriggerCharacterFlyButton()
     {
-        Debug.Log("TutorialManager: 开始文字飞舞序列");
+        Debug.Log("TutorialManager: 开始自动触发CharacterFlyButton点击事件");
         
-        if (ButtonController.Instance != null)
+        // 等待一小段时间让玩家看到提示文字
+        yield return new WaitForSeconds(1f);
+        
+        // 查找CharacterFlyButton组件
+        CharacterFlyButton characterFlyButton = FindObjectOfType<CharacterFlyButton>();
+        if (characterFlyButton != null)
         {
-            // 等待一小段时间让玩家看到提示文字
-            yield return new WaitForSeconds(1f);
+            Debug.Log("TutorialManager: 找到CharacterFlyButton，自动触发点击事件");
             
-            // 获取"蝶"字的目标位置
-            Transform targetTransform = PublicData.GetTargetPositionForCharacter("蝶");
-            Vector2 endPosition = Vector2.zero;
+            // 通过反射调用私有方法OnFlyButtonClicked
+            var method = typeof(CharacterFlyButton).GetMethod("OnFlyButtonClicked", 
+                System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
             
-            if (targetTransform != null)
+            if (method != null)
             {
-                // 直接获取UI坐标
-                RectTransform targetRectTransform = targetTransform as RectTransform;
-                if (targetRectTransform != null)
-                {
-                    endPosition = targetRectTransform.anchoredPosition;
-                }
-                else
-                {
-                    // 如果不是UI元素，尝试获取其子物体的RectTransform
-                    RectTransform childRectTransform = targetTransform.GetComponentInChildren<RectTransform>();
-                    if (childRectTransform != null)
-                    {
-                        endPosition = childRectTransform.anchoredPosition;
-                    }
-                }
-                Debug.Log($"TutorialManager: 获取到'蝶'字目标位置: {endPosition}");
+                method.Invoke(characterFlyButton, null);
+                Debug.Log("TutorialManager: 成功触发CharacterFlyButton的点击事件");
             }
             else
             {
-                Debug.LogWarning("TutorialManager: 未找到'蝶'字的目标位置，使用默认位置");
+                Debug.LogError("TutorialManager: 无法找到CharacterFlyButton的OnFlyButtonClicked方法");
+                // 如果无法通过反射调用，则直接调用TutorialManager的方法
+                OnCharacterFlyButtonClicked();
             }
+        }
+        else
+        {
+            Debug.LogWarning("TutorialManager: 未找到CharacterFlyButton组件，直接调用飞舞逻辑");
+            // 如果没有找到CharacterFlyButton，则直接调用飞舞逻辑
+            OnCharacterFlyButtonClicked();
+        }
+    }
+    
+    /// <summary>
+    /// 处理CharacterFlyButton的点击事件
+    /// 当玩家点击CharacterFlyButton时调用此方法
+    /// </summary>
+    public void OnCharacterFlyButtonClicked()
+    {
+        if (currentStep == TutorialStep.CharacterFly)
+        {
+            Debug.Log("TutorialManager: CharacterFlyButton被点击，开始文字飞舞动画");
             
-            // 从可用字符串列表中删除"蝶"字
-            StringSelector stringSelector = ButtonController.Instance.GetStringSelector();
-            if (stringSelector != null)
+            // 隐藏继续按钮，防止重复点击
+            continueButton.gameObject.SetActive(false);
+            
+            // 开始文字飞舞动画
+            StartCoroutine(CharacterFlyButtonSequence());
+        }
+        else
+        {
+            Debug.Log($"TutorialManager: CharacterFlyButton被点击，但当前步骤不是CharacterFly，当前步骤: {currentStep}");
+        }
+    }
+    
+    /// <summary>
+    /// CharacterFlyButton点击后的文字飞舞序列
+    /// </summary>
+    private IEnumerator CharacterFlyButtonSequence()
+    {
+        Debug.Log("TutorialManager: 开始CharacterFlyButton文字飞舞序列");
+        
+        if (ButtonController.Instance != null)
+        {
+            // 查找CharacterFlyButton组件
+            CharacterFlyButton characterFlyButton = FindObjectOfType<CharacterFlyButton>();
+            if (characterFlyButton != null)
             {
-                stringSelector.RemoveAvailableString("蝶");
-                Debug.Log("TutorialManager: 从可用字符串列表中删除'蝶'字");
+                // 获取起始位置（按钮位置）和目标位置
+                Vector2 startPosition = characterFlyButton.GetButtonPosition();
+                Vector2 endPosition = characterFlyButton.GetTargetPosition();
+                
+                Debug.Log($"TutorialManager: 使用CharacterFlyButton位置 - 起始位置={startPosition}, 目标位置={endPosition}");
+                
+                // 从可用字符串列表中删除"蝶"字
+                StringSelector stringSelector = ButtonController.Instance.GetStringSelector();
+                if (stringSelector != null)
+                {
+                    stringSelector.RemoveAvailableString("蝶");
+                    Debug.Log("TutorialManager: 从可用字符串列表中删除'蝶'字");
+                }
+                
+                // 开始"蝶"字飞舞动画，起点为按钮位置
+                ButtonController.Instance.StartLevel1CharacterFly("蝶", startPosition, endPosition);
+                
+                // 等待飞舞动画完成
+                while (ButtonController.Instance.IsLevel1Flying())
+                {
+                    yield return new WaitForSeconds(0.1f);
+                }
+                
+                Debug.Log("TutorialManager: CharacterFlyButton文字飞舞动画完成");
             }
-            
-            // 开始"蝶"字飞舞动画，起点为屏幕正中间
-            ButtonController.Instance.StartLevel1CharacterFly("蝶", Vector2.zero, endPosition);
-            
-            // 等待飞舞动画完成
-            while (ButtonController.Instance.IsLevel1Flying())
+            else
             {
-                yield return new WaitForSeconds(0.1f);
+                Debug.LogWarning("TutorialManager: 未找到CharacterFlyButton组件，使用默认逻辑");
+                
+                // 获取"蝶"字的目标位置
+                Transform targetTransform = PublicData.GetTargetPositionForCharacter("蝶");
+                Vector2 endPosition = Vector2.zero;
+                
+                if (targetTransform != null)
+                {
+                    // 直接获取UI坐标
+                    RectTransform targetRectTransform = targetTransform as RectTransform;
+                    if (targetRectTransform != null)
+                    {
+                        endPosition = targetRectTransform.anchoredPosition;
+                    }
+                    else
+                    {
+                        // 如果不是UI元素，尝试获取其子物体的RectTransform
+                        RectTransform childRectTransform = targetTransform.GetComponentInChildren<RectTransform>();
+                        if (childRectTransform != null)
+                        {
+                            endPosition = childRectTransform.anchoredPosition;
+                        }
+                    }
+                    Debug.Log($"TutorialManager: 获取到'蝶'字目标位置: {endPosition}");
+                }
+                else
+                {
+                    Debug.LogWarning("TutorialManager: 未找到'蝶'字的目标位置，使用默认位置");
+                }
+                
+                // 从可用字符串列表中删除"蝶"字
+                StringSelector stringSelector = ButtonController.Instance.GetStringSelector();
+                if (stringSelector != null)
+                {
+                    stringSelector.RemoveAvailableString("蝶");
+                    Debug.Log("TutorialManager: 从可用字符串列表中删除'蝶'字");
+                }
+                
+                // 开始"蝶"字飞舞动画，起点为屏幕正中间
+                ButtonController.Instance.StartLevel1CharacterFly("蝶", Vector2.zero, endPosition);
+                
+                // 等待飞舞动画完成
+                while (ButtonController.Instance.IsLevel1Flying())
+                {
+                    yield return new WaitForSeconds(0.1f);
+                }
+                
+                Debug.Log("TutorialManager: 默认文字飞舞动画完成");
             }
-            
-            Debug.Log("TutorialManager: 文字飞舞动画完成");
         }
         else
         {
@@ -755,7 +853,7 @@ public class TutorialManager : MonoBehaviour
     {
         tutorialPanel.SetActive(true);
         continueButton.gameObject.SetActive(false);
-        highlightBox.gameObject.SetActive(false);
+        // highlightBox.gameObject.SetActive(false);
         arrowImage.gameObject.SetActive(false);
 
         // 默认禁用UI交互，除非特定步骤需要
@@ -926,10 +1024,10 @@ public class TutorialManager : MonoBehaviour
     // 清理高亮UI元素
     private void ClearHighlightUI()
     {
-        if (highlightBox != null)
-        {
-            highlightBox.gameObject.SetActive(false);
-        }
+        // if (highlightBox != null)
+        // {
+        //     highlightBox.gameObject.SetActive(false);
+        // }
         if (arrowImage != null)
         {
             arrowImage.gameObject.SetActive(false);
@@ -1335,15 +1433,15 @@ public class TutorialManager : MonoBehaviour
         }
         
         // 特别处理highlightBox（高亮圈）
-        if (highlightBox != null)
-        {
-            UnityEngine.UI.Image highlightImage = highlightBox.GetComponent<UnityEngine.UI.Image>();
-            if (highlightImage != null)
-            {
-                highlightImage.raycastTarget = false;
-                Debug.Log("TutorialManager: 已禁用highlightBox的Raycast Target");
-            }
-        }
+        // if (highlightBox != null)
+        // {
+        //     UnityEngine.UI.Image highlightImage = highlightBox.GetComponent<UnityEngine.UI.Image>();
+        //     if (highlightImage != null)
+        //     {
+        //         highlightImage.raycastTarget = false;
+        //         Debug.Log("TutorialManager: 已禁用highlightBox的Raycast Target");
+        //     }
+        // }
         
         // 特别处理arrowImage（箭头）
         if (arrowImage != null)
@@ -1373,15 +1471,15 @@ public class TutorialManager : MonoBehaviour
         }
         
         // 特别处理highlightBox（高亮圈）
-        if (highlightBox != null)
-        {
-            UnityEngine.UI.Image highlightImage = highlightBox.GetComponent<UnityEngine.UI.Image>();
-            if (highlightImage != null)
-            {
-                highlightImage.raycastTarget = true;
-                Debug.Log("TutorialManager: 已恢复highlightBox的Raycast Target");
-            }
-        }
+        // if (highlightBox != null)
+        // {
+        //     UnityEngine.UI.Image highlightImage = highlightBox.GetComponent<UnityEngine.UI.Image>();
+        //     if (highlightImage != null)
+        //     {
+        //         highlightImage.raycastTarget = true;
+        //         Debug.Log("TutorialManager: 已恢复highlightBox的Raycast Target");
+        //     }
+        // }
         
         // 特别处理arrowImage（箭头）
         if (arrowImage != null)
@@ -1466,8 +1564,8 @@ public class TutorialManager : MonoBehaviour
         if (arrowImage == null)
             Debug.LogError("TutorialManager: arrowImage 未设置!");
             
-        if (highlightBox == null)
-            Debug.LogError("TutorialManager: highlightBox 未设置!");
+        // if (highlightBox == null)
+        //     Debug.LogError("TutorialManager: highlightBox 未设置!");
             
         if (guideCharacterImage == null)
             Debug.LogError("TutorialManager: guideCharacterImage 未设置!");
@@ -1507,7 +1605,7 @@ public class TutorialManager : MonoBehaviour
         }
 
         // 首先显示高亮圈在目标物体上
-        HighlightUITarget(target);
+        // HighlightUITarget(target);
         
         arrowImage.gameObject.SetActive(true);
         
@@ -1525,7 +1623,7 @@ public class TutorialManager : MonoBehaviour
 
         // 将箭头放置在目标附近，紧挨着高亮圈
         // 根据方向计算箭头的偏移位置，指向高亮圈的边缘
-        float arrowOffset = 80f; // 箭头距离目标的偏移距离，增大以指向高亮圈边缘
+        float arrowOffset = 80f*2; // 箭头距离目标的偏移距离，增大以指向高亮圈边缘
         Vector3 arrowPosition = targetScreenPos + direction * arrowOffset;
         arrowImage.transform.position = arrowPosition;
 
@@ -1556,13 +1654,13 @@ public class TutorialManager : MonoBehaviour
     // 高亮UI元素或世界物体
     private void HighlightUITarget(Transform target)
     {
-        if (highlightBox == null || target == null)
-        {
-            Debug.LogWarning("TutorialManager: HighlightUITarget - 缺少必要的组件引用");
-            return;
-        }
+        // if (highlightBox == null || target == null)
+        // {
+        //     Debug.LogWarning("TutorialManager: HighlightUITarget - 缺少必要的组件引用");
+        //     return;
+        // }
 
-        highlightBox.gameObject.SetActive(true);
+        // highlightBox.gameObject.SetActive(true);
         arrowImage.gameObject.SetActive(true);
         
         // 检查目标是否是UI元素
@@ -1570,9 +1668,9 @@ public class TutorialManager : MonoBehaviour
         if (targetRect != null)
         {
             // UI元素：直接使用RectTransform位置
-            highlightBox.position = target.position;
-            Vector2 size = targetRect.sizeDelta + new Vector2(20, 20);
-            highlightBox.sizeDelta = size;
+            // highlightBox.position = target.position;
+            // Vector2 size = targetRect.sizeDelta + new Vector2(20, 20);
+            // highlightBox.sizeDelta = size;
             
             // 为UI元素设置箭头位置
             SetupArrowForUI(targetRect);
@@ -1581,11 +1679,11 @@ public class TutorialManager : MonoBehaviour
         {
             // 世界物体：转换为屏幕坐标
             Vector3 targetScreenPos = Camera.main.WorldToScreenPoint(target.position);
-            highlightBox.position = targetScreenPos;
+            // highlightBox.position = targetScreenPos;
             
             // 为世界物体设置默认大小
-            Vector2 defaultSize = new Vector2(150, 150); // 增大默认高亮框大小
-            highlightBox.sizeDelta = defaultSize;
+            // Vector2 defaultSize = new Vector2(150, 150); // 增大默认高亮框大小
+            // highlightBox.sizeDelta = defaultSize;
             
             // 为世界物体设置箭头位置
             SetupArrowForWorldObject(targetScreenPos);

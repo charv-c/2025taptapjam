@@ -681,8 +681,41 @@ public class Highlight : MonoBehaviour
         // 如果是门对象被隐藏，添加"门"到可用字符串列表
         if (letter == "门")
         {
-            Debug.Log("门对象被隐藏，添加'门'到可用字符串列表");
+            Debug.Log("门对象被收集，添加'门'到可用字符串列表");
             AddDoorToAvailableList();
+            
+            // 门的特殊逻辑：不隐藏对象，但永久删除Highlight脚本
+            Debug.Log("门对象：不隐藏对象，但永久删除Highlight脚本");
+            
+            // 恢复对象的显示状态（因为上面的代码已经隐藏了）
+            if (spriteRenderer != null)
+            {
+                spriteRenderer.enabled = true;
+            }
+            
+            if (collider != null)
+            {
+                collider.enabled = true;
+            }
+            
+            foreach (Light2D light in allLights)
+            {
+                if (light != null)
+                {
+                    light.gameObject.SetActive(true);
+                }
+            }
+            
+            foreach (Renderer renderer in allRenderers)
+            {
+                if (renderer != null && renderer != spriteRenderer)
+                {
+                    renderer.enabled = true;
+                }
+            }
+            
+            // 永久删除Highlight脚本
+            Destroy(this);
         }
     }
     

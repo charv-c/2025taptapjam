@@ -64,48 +64,43 @@ public class CharacterFlyButton : MonoBehaviour
     /// </summary>
     private void OnFlyButtonClicked()
     {
-        if (ButtonController.Instance == null)
-        {
-            Debug.LogError("CharacterFlyButton: ButtonController实例为空");
-            return;
-        }
-        
-        if (ButtonController.Instance.IsLevel1Flying())
-        {
-            Debug.Log("CharacterFlyButton: 已有字符在飞行中，忽略点击");
-            return;
-        }
-        
-        // 获取目标位置
-        Vector2 endPosition = Vector2.zero;
-        if (targetPosition != null)
-        {
-            // 直接获取UI坐标
-            RectTransform targetRectTransform = targetPosition as RectTransform;
-            if (targetRectTransform != null)
-            {
-                endPosition = targetRectTransform.anchoredPosition;
-            }
-            else
-            {
-                // 如果不是UI元素，尝试获取其子物体的RectTransform
-                RectTransform childRectTransform = targetPosition.GetComponentInChildren<RectTransform>();
-                if (childRectTransform != null)
-                {
-                    endPosition = childRectTransform.anchoredPosition;
-                }
-            }
-        }
-        
-        Debug.Log($"CharacterFlyButton: 开始飞舞动画 - 字符={characterToFly}, 目标位置={endPosition}");
-        
-        // 开始飞舞动画
-        ButtonController.Instance.StartLevel1CharacterFly(characterToFly, Vector2.zero, endPosition);
-        
         // 播放按钮点击音效
         if (AudioManager.Instance != null && AudioManager.Instance.sfxUIClick != null)
         {
             AudioManager.Instance.PlaySFX(AudioManager.Instance.sfxUIClick);
+        }
+        
+        // 检查是否有TutorialManager，如果有则调用其方法
+        if (TutorialManager.Instance != null)
+        {
+            Debug.Log("CharacterFlyButton: 调用TutorialManager的OnCharacterFlyButtonClicked方法");
+            TutorialManager.Instance.OnCharacterFlyButtonClicked();
+        }
+        else
+        {
+            // 如果没有TutorialManager，则使用原来的逻辑
+            Debug.Log("CharacterFlyButton: 未找到TutorialManager，使用默认飞舞逻辑");
+            
+            if (ButtonController.Instance == null)
+            {
+                Debug.LogError("CharacterFlyButton: ButtonController实例为空");
+                return;
+            }
+            
+            if (ButtonController.Instance.IsLevel1Flying())
+            {
+                Debug.Log("CharacterFlyButton: 已有字符在飞行中，忽略点击");
+                return;
+            }
+            
+            // 获取起始位置（按钮位置）和目标位置
+            Vector2 startPosition = GetButtonPosition();
+            Vector2 endPosition = GetTargetPosition();
+            
+            Debug.Log($"CharacterFlyButton: 开始飞舞动画 - 字符={characterToFly}, 起始位置={startPosition}, 目标位置={endPosition}");
+            
+            // 开始飞舞动画
+            ButtonController.Instance.StartLevel1CharacterFly(characterToFly, startPosition, endPosition);
         }
     }
     
@@ -162,5 +157,47 @@ public class CharacterFlyButton : MonoBehaviour
     public bool IsFlying()
     {
         return ButtonController.Instance != null && ButtonController.Instance.IsLevel1Flying();
+    }
+    
+    /// <summary>
+    /// 获取按钮的位置
+    /// </summary>
+    public Vector2 GetButtonPosition()
+    {
+        if (flyButton != null)
+        {
+            RectTransform buttonRect = flyButton.GetComponent<RectTransform>();
+            if (buttonRect != null)
+            {
+                return buttonRect.anchoredPosition;
+            }
+        }
+        return Vector2.zero;
+    }
+    
+    /// <summary>
+    /// 获取目标位置
+    /// </summary>
+    public Vector2 GetTargetPosition()
+    {
+        if (targetPosition != null)
+        {
+            // 直接获取UI坐标
+            RectTransform targetRectTransform = targetPosition as RectTransform;
+            if (targetRectTransform != null)
+            {
+                return targetRectTransform.anchoredPosition;
+            }
+            else
+            {
+                // 如果不是UI元素，尝试获取其子物体的RectTransform
+                RectTransform childRectTransform = targetPosition.GetComponentInChildren<RectTransform>();
+                if (childRectTransform != null)
+                {
+                    return childRectTransform.anchoredPosition;
+                }
+            }
+        }
+        return Vector2.zero;
     }
 }
