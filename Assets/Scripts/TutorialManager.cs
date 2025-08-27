@@ -47,6 +47,9 @@ public class TutorialManager : MonoBehaviour
     [Header("教学关卡蒙层")]
     public GameObject tutorialMask;
 
+    [Header("遮罩控制器")]
+    public MaskController maskController; // 遮罩控制器引用
+
     [Header("需要禁用的UI元素")]
     public Button[] uiButtonsToDisable; // 需要禁用的UI按钮数组
     #endregion
@@ -91,6 +94,9 @@ public class TutorialManager : MonoBehaviour
         // 延迟一帧后禁止玩家移动，确保PlayerController已完全初始化
         StartCoroutine(DelayedDisablePlayerMovement());
 
+        // 初始化遮罩控制器
+        InitializeMaskController();
+
         tutorialMask.SetActive(true); // 在教程开始时激活蒙层
         currentStep = TutorialStep.Welcome_Part1;
         ExecuteCurrentStep();
@@ -100,6 +106,26 @@ public class TutorialManager : MonoBehaviour
     #endregion
 
     #region Audio Setup
+    // 初始化遮罩控制器
+    private void InitializeMaskController()
+    {
+        // 如果没有手动设置maskController，尝试在场景中查找
+        if (maskController == null)
+        {
+            maskController = FindObjectOfType<MaskController>();
+        }
+        
+        // 检查遮罩控制器是否已正确挂载
+        if (maskController != null)
+        {
+            Debug.Log("TutorialManager: 遮罩控制器初始化完成");
+        }
+        else
+        {
+            Debug.LogWarning("TutorialManager: 遮罩控制器为空，请确保MaskController已挂载到遮罩对象上");
+        }
+    }
+
     // 设置Level1的BGM
     private void SetupLevel1BGM()
     {
@@ -298,7 +324,7 @@ public class TutorialManager : MonoBehaviour
         hintText.text = "请使用【WASD】键，在书院中自由走动，熟悉一下环境吧。";
         continueButton.gameObject.SetActive(true);
         EnablePlayerMovement();
-        EnableUIInteraction();
+        // EnableUIInteraction();
     }
 
     private void HandleMoveToDog()
@@ -310,6 +336,13 @@ public class TutorialManager : MonoBehaviour
             PointAtTarget(dogObject.transform);
         }
         EnablePlayerMovement(0);
+        
+        // 设置遮罩位置
+        if (maskController != null)
+        {
+            maskController.SetMaskToRight();
+            Debug.Log("TutorialManager: 已设置遮罩到右边位置");
+        }
         
         // 启用回车键响应，允许玩家与小狗交互
         if (playerController != null && playerController.GetCurrentPlayer() != null)
@@ -367,7 +400,7 @@ public class TutorialManager : MonoBehaviour
 
         // 显示继续按钮，等待玩家点击
         continueButton.gameObject.SetActive(true);
-        EnableUIInteraction(); // 启用UI交互以便继续按钮可用
+        //EnableUIInteraction(); // 启用UI交互以便继续按钮可用
     }
 
     private void HandleMoveToGrass()
@@ -379,6 +412,7 @@ public class TutorialManager : MonoBehaviour
             PointAtTarget(grassObject.transform);
         }
         EnablePlayerMovement(0);
+        
         EnableEnterKey(); // 启用回车键响应，允许与草丛交互
 
         // 重置虫显示标志
@@ -462,6 +496,11 @@ public class TutorialManager : MonoBehaviour
                     
                     // 切换到人物2并启用移动
                     EnablePlayerMovement(1);
+                    if (maskController != null)
+                    {
+                        maskController.SetMaskToLeft();
+                        Debug.Log("TutorialManager: 已设置遮罩到左边位置");
+                    }
                     
                     // 自动进入下一步
                     GoToNextStep();
@@ -492,12 +531,13 @@ public class TutorialManager : MonoBehaviour
 
     private void HandleSwitchPlayerPart1()
     {
+        DisableUIInteraction();
         DisablePlayerMovement();
         DisablePlayerSwitching();
         SetGuideExpression(exprSideEye);
         hintText.text = "与此同时，那位女扮男装的同窗【祝英台】，又在做什么呢？";
         continueButton.gameObject.SetActive(true);
-        EnableUIInteraction();
+        
     }
 
     private void HandleSwitchPlayerPart2()
@@ -507,7 +547,7 @@ public class TutorialManager : MonoBehaviour
         continueButton.gameObject.SetActive(false); // 隐藏继续按钮，使用自动检测
         DisablePlayerMovement(); // 先禁用移动，等待空格键
         EnablePlayerSwitching(); // 启用切换功能
-        EnableUIInteraction();
+        //EnableUIInteraction();
         
         // 开始重复检查玩家是否按下空格键
         StartCoroutine(CheckForSpaceKeyPressInPart2());
@@ -529,6 +569,7 @@ public class TutorialManager : MonoBehaviour
         }
         
         EnablePlayerMovement(1);
+        
         EnableEnterKey(); // 启用回车键响应，允许与文牒交互
 
         // 重置牒显示标志
@@ -647,10 +688,13 @@ public class TutorialManager : MonoBehaviour
     {
         SetGuideExpression(exprHappy);
         hintText.text = "蝴蝶破茧而出，翩翩起舞...";
-        
+        if (maskController != null)
+        {
+            maskController.DisableMask();
+        }
         // 禁用玩家移动
         DisablePlayerMovement();
-        
+        EnableUIInteraction();
         // 隐藏继续按钮，使用自动触发
         continueButton.gameObject.SetActive(false);
         
@@ -1156,6 +1200,8 @@ public class TutorialManager : MonoBehaviour
         {
             Debug.LogWarning("TutorialManager: PlayerController 为 null，无法禁用玩家移动");
         }
+        
+
     }
 
     // 恢复玩家移动
