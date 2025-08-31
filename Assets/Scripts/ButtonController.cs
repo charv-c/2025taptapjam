@@ -375,8 +375,6 @@ public class ButtonController : MonoBehaviour
                     Debug.Log("ButtonController: 发送组合成功广播");
                 }
                 Debug.Log($"合成结果: {originalString}");
-                stringSelector.AddAvailableString(originalString);
-                stringSelector.RecreateAllButtonsPublic();
                 Debug.Log("ButtonController: 组合操作完成");
             }
             else
