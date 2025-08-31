@@ -82,13 +82,6 @@ public class MiZiGeExample : MonoBehaviour
     // 获取所有可用的米字格字符
     public void ListAllAvailableCharacters()
     {
-        Debug.Log("=== 默认米字格字符 ===");
-        var defaultChars = PublicData.GetAllMiZiGeCharacters();
-        foreach (string character in defaultChars)
-        {
-            Debug.Log($"默认: {character}");
-        }
-        
         Debug.Log("=== 左米字格字符 ===");
         var leftChars = PublicData.GetAllLeftMiZiGeCharacters();
         foreach (string character in leftChars)

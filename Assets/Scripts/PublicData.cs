@@ -8,8 +8,7 @@ public class PublicData : MonoBehaviour
     [Header("字符图片映射")]
     [SerializeField] private List<CharacterSpriteMapping> characterSpriteMappings = new List<CharacterSpriteMapping>();
     
-    [Header("米字格图片映射")]
-    [SerializeField] private List<CharacterSpriteMapping> miZiGeSpriteMappings = new List<CharacterSpriteMapping>();
+
     
     [Header("左米字格图片映射")]
     [SerializeField] private List<CharacterSpriteMapping> leftMiZiGeSpriteMappings = new List<CharacterSpriteMapping>();
@@ -85,7 +84,6 @@ public class PublicData : MonoBehaviour
     };
     
     private static Dictionary<string, Sprite> characterSprites = new Dictionary<string, Sprite>();
-    private static Dictionary<string, Sprite> miZiGeSprites = new Dictionary<string, Sprite>();
     private static Dictionary<string, Sprite> leftMiZiGeSprites = new Dictionary<string, Sprite>();
     private static Dictionary<string, Sprite> rightMiZiGeSprites = new Dictionary<string, Sprite>();
     
@@ -120,15 +118,7 @@ public class PublicData : MonoBehaviour
             }
         }
         
-        miZiGeSprites.Clear();
-        foreach (var mapping in miZiGeSpriteMappings)
-        {
-            if (!string.IsNullOrEmpty(mapping.character) && mapping.sprite != null)
-            {
-                miZiGeSprites[mapping.character] = mapping.sprite;
-            }
-        }
-        
+
         // 初始化左米字格图片映射
         leftMiZiGeSprites.Clear();
         foreach (var mapping in leftMiZiGeSpriteMappings)
@@ -159,15 +149,7 @@ public class PublicData : MonoBehaviour
         return null;
     }
     
-    public static Sprite GetMiZiGeSprite(string character)
-    {
-        if (miZiGeSprites.ContainsKey(character))
-        {
-            return miZiGeSprites[character];
-        }
-        return null;
-    }
-    
+
     public static Sprite GetLeftMiZiGeSprite(string character)
     {
         if (leftMiZiGeSprites.ContainsKey(character))
@@ -186,11 +168,7 @@ public class PublicData : MonoBehaviour
         return null;
     }
     
-    public static bool HasMiZiGeSprite(string character)
-    {
-        return miZiGeSprites.ContainsKey(character);
-    }
-    
+
     public static bool HasLeftMiZiGeSprite(string character)
     {
         return leftMiZiGeSprites.ContainsKey(character);
@@ -201,11 +179,7 @@ public class PublicData : MonoBehaviour
         return rightMiZiGeSprites.ContainsKey(character);
     }
     
-    public static List<string> GetAllMiZiGeCharacters()
-    {
-        return new List<string>(miZiGeSprites.Keys);
-    }
-    
+
     public static List<string> GetAllLeftMiZiGeCharacters()
     {
         return new List<string>(leftMiZiGeSprites.Keys);
@@ -420,7 +394,7 @@ public class PublicData : MonoBehaviour
                 return GetAllRightMiZiGeCharacters();
             case "default":
             default:
-                return GetAllMiZiGeCharacters();
+                return GetAllLeftMiZiGeCharacters(); // 默认返回左米字格字符
         }
     }
 }

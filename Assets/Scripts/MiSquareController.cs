@@ -8,7 +8,7 @@ public class MiSquareController : MonoBehaviour
     [SerializeField] private bool enableLogging = true;
     
     [Header("米字格类型")]
-    [SerializeField] private MiZiGeType miZiGeType = MiZiGeType.Default;
+    [SerializeField] private MiZiGeType miZiGeType = MiZiGeType.Left;
     
     // 当前显示的字符
     private string currentCharacter = "";
@@ -16,7 +16,6 @@ public class MiSquareController : MonoBehaviour
     // 米字格类型枚举
     public enum MiZiGeType
     {
-        Default,    // 默认米字格
         Left,       // 左米字格
         Right       // 右米字格
     }
@@ -58,9 +57,9 @@ public class MiSquareController : MonoBehaviour
             case MiZiGeType.Right:
                 miZiGeSprite = PublicData.GetRightMiZiGeSprite(character);
                 break;
-            case MiZiGeType.Default:
             default:
-                miZiGeSprite = PublicData.GetMiZiGeSprite(character);
+                // 默认使用左米字格
+                miZiGeSprite = PublicData.GetLeftMiZiGeSprite(character);
                 break;
         }
         
@@ -172,9 +171,9 @@ public class MiSquareController : MonoBehaviour
                 return PublicData.HasLeftMiZiGeSprite(character);
             case MiZiGeType.Right:
                 return PublicData.HasRightMiZiGeSprite(character);
-            case MiZiGeType.Default:
             default:
-                return PublicData.HasMiZiGeSprite(character);
+                // 默认检查左米字格
+                return PublicData.HasLeftMiZiGeSprite(character);
         }
     }
 }

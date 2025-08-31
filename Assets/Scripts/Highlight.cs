@@ -148,8 +148,26 @@ public class Highlight : MonoBehaviour
                 MiSquareController miSquareController = misquare.GetComponent<MiSquareController>();
                 if (miSquareController != null)
                 {
-                    miSquareController.SetMiSquareSprite(combinedCharacter);
-                    Debug.Log($"ChangeMi: 已更新米字格为字符 '{combinedCharacter}'");
+                    // 根据米字格类型设置对应的sprite
+                    MiSquareController.MiZiGeType miZiGeType = miSquareController.GetMiZiGeType();
+                    Debug.Log($"ChangeMi: 米字格类型为 {miZiGeType}");
+                    
+                    // 检查是否有对应类型的米字格sprite
+                    bool hasMiZiGeSprite = miSquareController.HasMiZiGeSprite(combinedCharacter);
+                    Debug.Log($"ChangeMi: 字符 '{combinedCharacter}' 是否有对应类型的米字格sprite: {hasMiZiGeSprite}");
+                    
+                    if (hasMiZiGeSprite)
+                    {
+                        // 使用对应类型的米字格sprite
+                        miSquareController.SetMiSquareSprite(combinedCharacter);
+                        Debug.Log($"ChangeMi: 已更新米字格为字符 '{combinedCharacter}'，使用{miZiGeType}米字格sprite");
+                    }
+                    else
+                    {
+                        // 如果没有对应类型的米字格sprite，使用普通sprite
+                        miSquareController.SetNormalSprite(combinedCharacter);
+                        Debug.Log($"ChangeMi: 字符 '{combinedCharacter}' 没有{miZiGeType}米字格sprite，使用普通sprite");
+                    }
                 }
                 else
                 {
@@ -643,6 +661,27 @@ public class Highlight : MonoBehaviour
         else
         {
             Debug.LogWarning("Highlight: 未找到AudioManager实例");
+        }
+        
+        // 切换到晴天背景
+        SwitchToSunnyBackground();
+    }
+    
+    /// <summary>
+    /// 切换到晴天背景
+    /// </summary>
+    private void SwitchToSunnyBackground()
+    {
+        // 查找场景中的BackgroundManager
+        BackgroundManager backgroundManager = FindObjectOfType<BackgroundManager>();
+        if (backgroundManager != null)
+        {
+            backgroundManager.SwitchToSunnyBackground();
+            Debug.Log("Highlight: 雨停后切换到晴天背景");
+        }
+        else
+        {
+            Debug.LogWarning("Highlight: 未找到BackgroundManager实例");
         }
     }
 

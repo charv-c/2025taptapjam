@@ -134,6 +134,9 @@ public class ButtonController : MonoBehaviour
         {
             combineButton.interactable = selectedCount == 2;
         }
+        
+        // 通知TutorialManager字符选择发生变化
+        NotifyTutorialManagerOfSelectionChange();
     }
     
     private void HideAllButtons()
@@ -457,6 +460,19 @@ public class ButtonController : MonoBehaviour
         UpdateButtonStates(stringSelector != null ? stringSelector.GetSelectionCount() : 0);
     }
     
+    /// <summary>
+    /// 通知TutorialManager字符选择发生变化
+    /// </summary>
+    private void NotifyTutorialManagerOfSelectionChange()
+    {
+        // 查找场景中的TutorialManager
+        TutorialManager tutorialManager = FindObjectOfType<TutorialManager>();
+        if (tutorialManager != null)
+        {
+            tutorialManager.OnCharacterSelectionChanged();
+        }
+    }
+    
     // 处理可用字符串变化事件
     private void OnAvailableStringsChanged()
     {
@@ -464,6 +480,9 @@ public class ButtonController : MonoBehaviour
         
         // 刷新按钮显示
         RefreshButtonDisplay();
+        
+        // 通知TutorialManager字符选择发生变化
+        NotifyTutorialManagerOfSelectionChange();
     }
     
     // 刷新按钮显示

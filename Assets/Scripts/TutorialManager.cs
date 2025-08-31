@@ -648,17 +648,29 @@ public class TutorialManager : MonoBehaviour
         Debug.Log("TutorialManager: HandleSelectAndCombine - 开始执行");
         Debug.Log("TutorialManager: HandleSelectAndCombine - 第一行代码执行");
         Debug.Log("TutorialManager: HandleSelectAndCombine - 立即输出测试");
-        SetGuideExpression(exprSideEye);
-        hintText.text = "化蝶的部件已齐。请选中【虫】和【枼】，然后点击【拼】按钮。";
+        
+        // 先禁用拼按钮，确保在显示提示之前就禁用
         if (combineButton != null)
         {
-            Debug.Log($"TutorialManager: HandleSelectAndCombine - 调用HighlightUITarget，目标: {combineButton.name}");
-            HighlightUITarget(combineButton.transform);
+            combineButton.interactable = false;
+            Debug.Log("TutorialManager: HandleSelectAndCombine - 已禁用拼按钮");
         }
         else
         {
             Debug.LogError("TutorialManager: HandleSelectAndCombine - combineButton为空!");
         }
+        
+        // 设置表情和提示文本
+        SetGuideExpression(exprSideEye);
+        hintText.text = "化蝶的部件已齐。请选中【虫】和【枼】，然后点击【拼】按钮。";
+        
+        // 高亮拼按钮（即使它是禁用的）
+        if (combineButton != null)
+        {
+            Debug.Log($"TutorialManager: HandleSelectAndCombine - 调用HighlightUITarget，目标: {combineButton.name}");
+            HighlightUITarget(combineButton.transform);
+        }
+        
         DisablePlayerMovement();
         EnableUIInteraction();
 
@@ -1000,6 +1012,43 @@ public class TutorialManager : MonoBehaviour
         else
         {
             Debug.Log($"TutorialManager: OnCombineSuccess - 条件不满足，resultWord: {resultWord}, currentStep: {currentStep}");
+        }
+    }
+    
+    /// <summary>
+    /// 处理字符选择变化，在教程步骤中控制拼按钮的启用状态
+    /// </summary>
+    public void OnCharacterSelectionChanged()
+    {
+        if (currentStep == TutorialStep.SelectAndCombine)
+        {
+            // 检查是否选择了正确的字符（"虫"和"枼"）
+            if (ButtonController.Instance != null && ButtonController.Instance.GetStringSelector() != null)
+            {
+                var selectedStrings = ButtonController.Instance.GetStringSelector().SelectedStrings;
+                bool hasChong = selectedStrings.Contains("虫");
+                bool hasYe = selectedStrings.Contains("枼");
+                
+                Debug.Log($"TutorialManager: 字符选择变化 - 选中字符: [{string.Join(", ", selectedStrings)}], 有虫: {hasChong}, 有枼: {hasYe}");
+                
+                // 只有当同时选中"虫"和"枼"时才启用拼按钮
+                if (hasChong && hasYe && selectedStrings.Count == 2)
+                {
+                    if (combineButton != null)
+                    {
+                        combineButton.interactable = true;
+                        Debug.Log("TutorialManager: 已启用拼按钮（选中了虫和枼）");
+                    }
+                }
+                else
+                {
+                    if (combineButton != null)
+                    {
+                        combineButton.interactable = false;
+                        Debug.Log("TutorialManager: 已禁用拼按钮（未选中正确的字符）");
+                    }
+                }
+            }
         }
     }
 
