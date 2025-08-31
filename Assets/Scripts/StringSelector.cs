@@ -782,6 +782,52 @@ public class StringSelector : MonoBehaviour
         Debug.Log($"StringSelector: 中文字体已设置为 {font?.name ?? "null"}");
     }
     
+    /// <summary>
+    /// 禁用所有字符按钮的选择功能
+    /// </summary>
+    public void DisableAllCharacterButtons()
+    {
+        foreach (Button button in stringButtons)
+        {
+            if (button != null)
+            {
+                button.interactable = false;
+            }
+        }
+        Debug.Log("StringSelector: 已禁用所有字符按钮的选择功能");
+    }
+    
+    /// <summary>
+    /// 启用所有字符按钮的选择功能
+    /// </summary>
+    public void EnableAllCharacterButtons()
+    {
+        foreach (Button button in stringButtons)
+        {
+            if (button != null)
+            {
+                button.interactable = true;
+            }
+        }
+        Debug.Log("StringSelector: 已启用所有字符按钮的选择功能");
+    }
+    
+    /// <summary>
+    /// 设置所有字符按钮的交互状态
+    /// </summary>
+    /// <param name="interactable">是否可交互</param>
+    public void SetAllCharacterButtonsInteractable(bool interactable)
+    {
+        if (interactable)
+        {
+            EnableAllCharacterButtons();
+        }
+        else
+        {
+            DisableAllCharacterButtons();
+        }
+    }
+    
     // 自动加载中文字体
     private void AutoLoadChineseFont()
     {

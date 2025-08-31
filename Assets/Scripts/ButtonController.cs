@@ -34,6 +34,9 @@ public class ButtonController : MonoBehaviour
     private bool isFlyingAnimationActive = false;
     private bool isLevel1Flying = false; // Level1飞舞状态
     
+    // 教程模式控制
+    private bool isTutorialMode = false;
+    
     private void Awake()
     {
         if (Instance == null)
@@ -125,14 +128,18 @@ public class ButtonController : MonoBehaviour
             return;
         }
         
-        if (splitButton != null)
+        // 在教程模式下，按钮的状态由TutorialManager控制
+        if (!isTutorialMode)
         {
-            splitButton.interactable = selectedCount == 1;
-        }
-        
-        if (combineButton != null)
-        {
-            combineButton.interactable = selectedCount == 2;
+            if (splitButton != null)
+            {
+                splitButton.interactable = selectedCount == 1;
+            }
+            
+            if (combineButton != null)
+            {
+                combineButton.interactable = selectedCount == 2;
+            }
         }
         
         // 通知TutorialManager字符选择发生变化
@@ -471,6 +478,56 @@ public class ButtonController : MonoBehaviour
         {
             tutorialManager.OnCharacterSelectionChanged();
         }
+    }
+    
+    /// <summary>
+    /// 设置教程模式
+    /// </summary>
+    /// <param name="tutorialMode">是否为教程模式</param>
+    public void SetTutorialMode(bool tutorialMode)
+    {
+        isTutorialMode = tutorialMode;
+        
+        // 在教程模式中禁用字符选择，在非教程模式中启用字符选择
+        if (stringSelector != null)
+        {
+            stringSelector.SetAllCharacterButtonsInteractable(!tutorialMode);
+        }
+        
+        Debug.Log($"ButtonController: 教程模式已设置为 {tutorialMode}");
+    }
+    
+    /// <summary>
+    /// 禁用字符选择功能
+    /// </summary>
+    public void DisableCharacterSelection()
+    {
+        if (stringSelector != null)
+        {
+            stringSelector.DisableAllCharacterButtons();
+        }
+        Debug.Log("ButtonController: 已禁用字符选择功能");
+    }
+    
+    /// <summary>
+    /// 启用字符选择功能
+    /// </summary>
+    public void EnableCharacterSelection()
+    {
+        if (stringSelector != null)
+        {
+            stringSelector.EnableAllCharacterButtons();
+        }
+        Debug.Log("ButtonController: 已启用字符选择功能");
+    }
+    
+    /// <summary>
+    /// 获取当前是否为教程模式
+    /// </summary>
+    /// <returns>是否为教程模式</returns>
+    public bool IsTutorialMode()
+    {
+        return isTutorialMode;
     }
     
     // 处理可用字符串变化事件

@@ -6,6 +6,9 @@ public class PlayerController : MonoBehaviour
     [Header("玩家切换设置")]
     [SerializeField] private List<Player> players = new List<Player>();
     [SerializeField] private KeyCode switchKey = KeyCode.Space;
+    
+    [Header("颜色管理设置")]
+    [SerializeField] private bool enableColorManagement = true; // 是否启用颜色管理
 
     private int currentPlayerIndex = 0;
     private Player currentPlayer;
@@ -37,6 +40,12 @@ public class PlayerController : MonoBehaviour
             currentPlayerIndex = 0;
             currentPlayer = players[0];
             // 不调用 SetCurrentPlayer(0)，因为那会启用输入
+            
+            // 只有在启用颜色管理时才初始化颜色状态
+            if (enableColorManagement)
+            {
+                UpdatePlayerColors();
+            }
         }
         else
         {
@@ -70,6 +79,12 @@ public class PlayerController : MonoBehaviour
         // 切换到下一个玩家
         currentPlayerIndex = (currentPlayerIndex + 1) % players.Count;
         SetCurrentPlayer(currentPlayerIndex);
+        
+        // 只有在启用颜色管理时才更新颜色状态
+        if (enableColorManagement)
+        {
+            UpdatePlayerColors();
+        }
 
         Debug.Log($"切换到玩家 {currentPlayerIndex + 1}");
     }
@@ -81,6 +96,12 @@ public class PlayerController : MonoBehaviour
             currentPlayerIndex = index;
             currentPlayer = players[index];
             currentPlayer.SetInputEnabled(true);
+            
+            // 只有在启用颜色管理时才更新颜色状态
+            if (enableColorManagement)
+            {
+                UpdatePlayerColors();
+            }
         }
     }
 
@@ -231,5 +252,105 @@ public class PlayerController : MonoBehaviour
     {
         // 重新启用切换键为空格键
         switchKey = KeyCode.Space;
+    }
+    
+    /// <summary>
+    /// 更新所有玩家的颜色状态（当前操控的玩家正常颜色，其他玩家灰色）
+    /// </summary>
+    public void UpdatePlayerColors()
+    {
+        if (!enableColorManagement)
+        {
+            Debug.LogWarning("PlayerController: 颜色管理已禁用，跳过更新玩家颜色。");
+            return;
+        }
+
+        for (int i = 0; i < players.Count; i++)
+        {
+            Player player = players[i];
+            if (player != null)
+            {
+                if (i == currentPlayerIndex)
+                {
+                    // 当前操控的玩家恢复正常颜色
+                    player.RestoreNormalColor();
+                }
+                else
+                {
+                    // 其他玩家设置为灰色
+                    player.SetGrayedOut();
+                }
+            }
+        }
+        Debug.Log($"PlayerController: 已更新玩家颜色状态，当前操控玩家: {currentPlayerIndex + 1}");
+    }
+    
+    /// <summary>
+    /// 将所有玩家恢复正常颜色
+    /// </summary>
+    public void RestoreAllPlayerColors()
+    {
+        if (!enableColorManagement)
+        {
+            Debug.LogWarning("PlayerController: 颜色管理已禁用，跳过恢复玩家颜色。");
+            return;
+        }
+
+        foreach (Player player in players)
+        {
+            if (player != null)
+            {
+                player.RestoreNormalColor();
+            }
+        }
+        Debug.Log("PlayerController: 已恢复所有玩家正常颜色");
+    }
+    
+    /// <summary>
+    /// 将所有玩家设置为灰色
+    /// </summary>
+    public void SetAllPlayersGrayedOut()
+    {
+        if (!enableColorManagement)
+        {
+            Debug.LogWarning("PlayerController: 颜色管理已禁用，跳过设置玩家为灰色。");
+            return;
+        }
+
+        foreach (Player player in players)
+        {
+            if (player != null)
+            {
+                player.SetGrayedOut();
+            }
+        }
+        Debug.Log("PlayerController: 已将所有玩家设置为灰色");
+    }
+    
+    /// <summary>
+    /// 启用颜色管理
+    /// </summary>
+    public void EnableColorManagement()
+    {
+        enableColorManagement = true;
+        Debug.Log("PlayerController: 已启用颜色管理");
+    }
+    
+    /// <summary>
+    /// 禁用颜色管理
+    /// </summary>
+    public void DisableColorManagement()
+    {
+        enableColorManagement = false;
+        Debug.Log("PlayerController: 已禁用颜色管理");
+    }
+    
+    /// <summary>
+    /// 检查颜色管理是否启用
+    /// </summary>
+    /// <returns>颜色管理是否启用</returns>
+    public bool IsColorManagementEnabled()
+    {
+        return enableColorManagement;
     }
 }

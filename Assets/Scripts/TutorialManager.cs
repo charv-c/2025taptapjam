@@ -97,6 +97,20 @@ public class TutorialManager : MonoBehaviour
         // 初始化遮罩控制器
         InitializeMaskController();
 
+        // 在教程开始时禁用字符选择
+        if (ButtonController.Instance != null)
+        {
+            ButtonController.Instance.DisableCharacterSelection();
+            Debug.Log("TutorialManager: 教程开始时已禁用字符选择");
+        }
+        
+        // 在教程模式中禁用颜色管理
+        if (playerController != null)
+        {
+            playerController.DisableColorManagement();
+            Debug.Log("TutorialManager: 教程模式中已禁用颜色管理");
+        }
+
         tutorialMask.SetActive(true); // 在教程开始时激活蒙层
         currentStep = TutorialStep.Welcome_Part1;
         ExecuteCurrentStep();
@@ -303,6 +317,13 @@ public class TutorialManager : MonoBehaviour
         DisablePlayerMovement();
         DisablePlayerSwitching();
         DisableEnterKey();
+        
+        // 禁用字符选择
+        if (ButtonController.Instance != null)
+        {
+            ButtonController.Instance.DisableCharacterSelection();
+        }
+        
         SetGuideExpression(exprNormal);
         hintText.text = "缘分的故事，始于同窗之谊...";
         continueButton.gameObject.SetActive(true);
@@ -313,6 +334,13 @@ public class TutorialManager : MonoBehaviour
         DisablePlayerMovement();
         DisablePlayerSwitching();
         DisableEnterKey();
+        
+        // 禁用字符选择
+        if (ButtonController.Instance != null)
+        {
+            ButtonController.Instance.DisableCharacterSelection();
+        }
+        
         SetGuideExpression(exprNormal);
         hintText.text = "这里是万松书院，梁山伯与祝英台初遇之地。而你，将化身为【梁山伯】...";
         continueButton.gameObject.SetActive(true);
@@ -324,6 +352,13 @@ public class TutorialManager : MonoBehaviour
         hintText.text = "请使用【WASD】键，在书院中自由走动，熟悉一下环境吧。";
         continueButton.gameObject.SetActive(true);
         EnablePlayerMovement();
+        
+        // 禁用字符选择
+        if (ButtonController.Instance != null)
+        {
+            ButtonController.Instance.DisableCharacterSelection();
+        }
+        
         // EnableUIInteraction();
     }
 
@@ -350,6 +385,12 @@ public class TutorialManager : MonoBehaviour
             Player currentPlayer = playerController.GetCurrentPlayer();
             currentPlayer.SetEnterKeyEnabled(true);
             Debug.Log("TutorialManager: 已启用回车键响应，允许与小狗交互");
+        }
+
+        // 禁用字符选择
+        if (ButtonController.Instance != null)
+        {
+            ButtonController.Instance.DisableCharacterSelection();
         }
 
         // 开始重复检查玩家是否获得"伏"字
@@ -395,6 +436,13 @@ public class TutorialManager : MonoBehaviour
     {
         DisablePlayerMovement();
         DisableEnterKey();
+        
+        // 禁用字符选择
+        if (ButtonController.Instance != null)
+        {
+            ButtonController.Instance.DisableCharacterSelection();
+        }
+        
         SetGuideExpression(exprHappy);
         hintText.text = "很好！你变成了\"伏\"字，获得了伏下身子的能力。";
 
@@ -414,6 +462,12 @@ public class TutorialManager : MonoBehaviour
         EnablePlayerMovement(0);
         
         EnableEnterKey(); // 启用回车键响应，允许与草丛交互
+
+        // 禁用字符选择
+        if (ButtonController.Instance != null)
+        {
+            ButtonController.Instance.DisableCharacterSelection();
+        }
 
         // 重置虫显示标志
         chongShown = false;
@@ -521,6 +575,13 @@ public class TutorialManager : MonoBehaviour
     {
         DisablePlayerMovement();
         DisableEnterKey();
+        
+        // 禁用字符选择
+        if (ButtonController.Instance != null)
+        {
+            ButtonController.Instance.DisableCharacterSelection();
+        }
+        
         SetGuideExpression(exprHappy);
         hintText.text = "你获得了【虫】字！这是化蝶的关键。";
 
@@ -534,6 +595,13 @@ public class TutorialManager : MonoBehaviour
         DisableUIInteraction();
         DisablePlayerMovement();
         DisablePlayerSwitching();
+        
+        // 禁用字符选择
+        if (ButtonController.Instance != null)
+        {
+            ButtonController.Instance.DisableCharacterSelection();
+        }
+        
         SetGuideExpression(exprSideEye);
         hintText.text = "与此同时，那位女扮男装的同窗【祝英台】，又在做什么呢？";
         continueButton.gameObject.SetActive(true);
@@ -547,6 +615,13 @@ public class TutorialManager : MonoBehaviour
         continueButton.gameObject.SetActive(false); // 隐藏继续按钮，使用自动检测
         DisablePlayerMovement(); // 先禁用移动，等待空格键
         EnablePlayerSwitching(); // 启用切换功能
+        
+        // 禁用字符选择
+        if (ButtonController.Instance != null)
+        {
+            ButtonController.Instance.DisableCharacterSelection();
+        }
+        
         //EnableUIInteraction();
         
         // 开始重复检查玩家是否按下空格键
@@ -571,6 +646,12 @@ public class TutorialManager : MonoBehaviour
         EnablePlayerMovement(1);
         
         EnableEnterKey(); // 启用回车键响应，允许与文牒交互
+
+        // 禁用字符选择
+        if (ButtonController.Instance != null)
+        {
+            ButtonController.Instance.DisableCharacterSelection();
+        }
 
         // 重置牒显示标志
         dieShown = false;
@@ -604,6 +685,13 @@ public class TutorialManager : MonoBehaviour
     private void HandleAfterGetDie()
     {
         DisablePlayerMovement();
+        
+        // 禁用字符选择
+        if (ButtonController.Instance != null)
+        {
+            ButtonController.Instance.DisableCharacterSelection();
+        }
+        
         SetGuideExpression(exprHappy);
         hintText.text = "你获得了【牒】字！";
 
@@ -614,33 +702,85 @@ public class TutorialManager : MonoBehaviour
 
     private void HandleSelectAndSplit()
     {
-        SetGuideExpression(exprSideEye);
-        hintText.text = "请在解字台中，选中【牒】字，然后点击【拆】按钮。";
+        Debug.Log("TutorialManager: HandleSelectAndSplit - 开始执行");
+        
+        // 启用教程模式，防止ButtonController自动启用拆按钮
+        if (ButtonController.Instance != null)
+        {
+            ButtonController.Instance.SetTutorialMode(true);
+            Debug.Log("TutorialManager: HandleSelectAndSplit - 已启用教程模式");
+        }
+        
+        // 先禁用拆按钮，确保在显示提示之前就禁用
         if (splitButton != null)
         {
+            splitButton.interactable = false;
+            Debug.Log("TutorialManager: HandleSelectAndSplit - 已禁用拆按钮");
+        }
+        else
+        {
+            Debug.LogError("TutorialManager: HandleSelectAndSplit - splitButton为空!");
+        }
+        
+        // 设置表情和提示文本
+        SetGuideExpression(exprSideEye);
+        hintText.text = "请在解字台中，选中【牒】字，然后点击【拆】按钮。";
+        
+        // 高亮拆按钮（即使它是禁用的）
+        if (splitButton != null)
+        {
+            Debug.Log($"TutorialManager: HandleSelectAndSplit - 调用HighlightUITarget，目标: {splitButton.name}");
             HighlightUITarget(splitButton.transform);
         }
+        
         DisablePlayerMovement();
         EnableUIInteraction();
         
+        // 在这个步骤中允许字符选择
+        if (ButtonController.Instance != null)
+        {
+            ButtonController.Instance.EnableCharacterSelection();
+            Debug.Log("TutorialManager: HandleSelectAndSplit - 已启用字符选择");
+        }
+        
         // 调整教学Panel位置，避免遮挡底部UI
         AdjustTutorialPanelPosition();
+        Debug.Log("TutorialManager: HandleSelectAndSplit - 执行完成");
     }
 
     private void HandleAfterSplit()
     {
+        Debug.Log("TutorialManager: HandleAfterSplit - 开始执行");
+        
         DisablePlayerMovement();
         SetGuideExpression(exprHappy);
         hintText.text = "成功拆分！你获得了【片】和【枼】。";
+        
         // 清理高亮UI元素
         ClearHighlightUI();
 
         // 恢复教学Panel的默认位置
         ResetTutorialPanelPosition();
+        
+        // 关闭教程模式，恢复ButtonController的正常行为
+        if (ButtonController.Instance != null)
+        {
+            ButtonController.Instance.SetTutorialMode(false);
+            Debug.Log("TutorialManager: HandleAfterSplit - 已关闭教程模式");
+        }
+        
+        // 重新禁用字符选择
+        if (ButtonController.Instance != null)
+        {
+            ButtonController.Instance.DisableCharacterSelection();
+            Debug.Log("TutorialManager: HandleAfterSplit - 已重新禁用字符选择");
+        }
 
         // 显示继续按钮，等待玩家点击
         continueButton.gameObject.SetActive(true);
         EnableUIInteraction(); // 启用UI交互以便继续按钮可用
+        
+        Debug.Log("TutorialManager: HandleAfterSplit - 执行完成");
     }
 
     private void HandleSelectAndCombine()
@@ -648,6 +788,13 @@ public class TutorialManager : MonoBehaviour
         Debug.Log("TutorialManager: HandleSelectAndCombine - 开始执行");
         Debug.Log("TutorialManager: HandleSelectAndCombine - 第一行代码执行");
         Debug.Log("TutorialManager: HandleSelectAndCombine - 立即输出测试");
+        
+        // 启用教程模式，防止ButtonController自动启用拼按钮
+        if (ButtonController.Instance != null)
+        {
+            ButtonController.Instance.SetTutorialMode(true);
+            Debug.Log("TutorialManager: HandleSelectAndCombine - 已启用教程模式");
+        }
         
         // 先禁用拼按钮，确保在显示提示之前就禁用
         if (combineButton != null)
@@ -674,6 +821,13 @@ public class TutorialManager : MonoBehaviour
         DisablePlayerMovement();
         EnableUIInteraction();
 
+        // 在这个步骤中允许字符选择
+        if (ButtonController.Instance != null)
+        {
+            ButtonController.Instance.EnableCharacterSelection();
+            Debug.Log("TutorialManager: HandleSelectAndCombine - 已启用字符选择");
+        }
+
         // 调整教学Panel位置，避免遮挡底部UI
         AdjustTutorialPanelPosition();
         Debug.Log("TutorialManager: HandleSelectAndCombine - 执行完成");
@@ -691,6 +845,20 @@ public class TutorialManager : MonoBehaviour
         // 恢复教学Panel的默认位置
         ResetTutorialPanelPosition();
 
+        // 关闭教程模式，恢复ButtonController的正常行为
+        if (ButtonController.Instance != null)
+        {
+            ButtonController.Instance.SetTutorialMode(false);
+            Debug.Log("TutorialManager: HandleAfterCombine - 已关闭教程模式");
+        }
+        
+        // 重新禁用字符选择
+        if (ButtonController.Instance != null)
+        {
+            ButtonController.Instance.DisableCharacterSelection();
+            Debug.Log("TutorialManager: HandleAfterCombine - 已重新禁用字符选择");
+        }
+
         // 显示继续按钮，等待玩家点击
         continueButton.gameObject.SetActive(true);
         EnableUIInteraction(); // 启用UI交互以便继续按钮可用
@@ -707,6 +875,13 @@ public class TutorialManager : MonoBehaviour
         // 禁用玩家移动
         DisablePlayerMovement();
         EnableUIInteraction();
+        
+        // 禁用字符选择
+        if (ButtonController.Instance != null)
+        {
+            ButtonController.Instance.DisableCharacterSelection();
+        }
+        
         // 隐藏继续按钮，使用自动触发
         continueButton.gameObject.SetActive(false);
         
@@ -881,6 +1056,13 @@ public class TutorialManager : MonoBehaviour
     private void HandleEndPart1()
     {
         DisablePlayerMovement();
+        
+        // 禁用字符选择
+        if (ButtonController.Instance != null)
+        {
+            ButtonController.Instance.DisableCharacterSelection();
+        }
+        
         SetGuideExpression(exprHappy);
         hintText.text = "你成功让梁祝的缘分，在此刻凝结。";
         continueButton.gameObject.SetActive(true);
@@ -889,6 +1071,13 @@ public class TutorialManager : MonoBehaviour
     private void HandleEndPart2()
     {
         DisablePlayerMovement();
+        
+        // 禁用字符选择
+        if (ButtonController.Instance != null)
+        {
+            ButtonController.Instance.DisableCharacterSelection();
+        }
+        
         SetGuideExpression(exprNormal);
         hintText.text = "但他们的故事尚未结束，正如言界中还有许多破碎的篇章等待织补...";
         continueButton.gameObject.SetActive(true);
@@ -897,6 +1086,13 @@ public class TutorialManager : MonoBehaviour
     private void HandleEndPart3()
     {
         DisablePlayerMovement();
+        
+        // 禁用字符选择
+        if (ButtonController.Instance != null)
+        {
+            ButtonController.Instance.DisableCharacterSelection();
+        }
+        
         SetGuideExpression(exprHappy);
         hintText.text = "下一章，我们将进入【牛郎】与【织女】的星河，感受那份跨越天际的守望。";
         continueButton.GetComponentInChildren<TextMeshProUGUI>().text = "完成教学";
@@ -1016,11 +1212,54 @@ public class TutorialManager : MonoBehaviour
     }
     
     /// <summary>
-    /// 处理字符选择变化，在教程步骤中控制拼按钮的启用状态
+    /// 处理字符选择变化，在教程步骤中控制按钮的启用状态
     /// </summary>
     public void OnCharacterSelectionChanged()
     {
-        if (currentStep == TutorialStep.SelectAndCombine)
+        // 在教程模式中，只有在特定步骤才允许字符选择
+        if (ButtonController.Instance != null && ButtonController.Instance.IsTutorialMode())
+        {
+            Debug.Log("TutorialManager: 当前处于教程模式，检查是否允许字符选择");
+            
+            // 只有在SelectAndSplit和SelectAndCombine步骤中才允许字符选择
+            if (currentStep != TutorialStep.SelectAndSplit && currentStep != TutorialStep.SelectAndCombine)
+            {
+                Debug.Log("TutorialManager: 当前步骤不允许字符选择，禁用所有字符按钮");
+                ButtonController.Instance.DisableCharacterSelection();
+                return;
+            }
+        }
+        
+        if (currentStep == TutorialStep.SelectAndSplit)
+        {
+            // 检查是否选择了正确的字符（"牒"）
+            if (ButtonController.Instance != null && ButtonController.Instance.GetStringSelector() != null)
+            {
+                var selectedStrings = ButtonController.Instance.GetStringSelector().SelectedStrings;
+                bool hasDie = selectedStrings.Contains("牒");
+                
+                Debug.Log($"TutorialManager: 字符选择变化 - 选中字符: [{string.Join(", ", selectedStrings)}], 有牒: {hasDie}");
+                
+                // 只有当选中"牒"时才启用拆按钮
+                if (hasDie && selectedStrings.Count == 1)
+                {
+                    if (splitButton != null)
+                    {
+                        splitButton.interactable = true;
+                        Debug.Log("TutorialManager: 已启用拆按钮（选中了牒）");
+                    }
+                }
+                else
+                {
+                    if (splitButton != null)
+                    {
+                        splitButton.interactable = false;
+                        Debug.Log("TutorialManager: 已禁用拆按钮（未选中正确的字符）");
+                    }
+                }
+            }
+        }
+        else if (currentStep == TutorialStep.SelectAndCombine)
         {
             // 检查是否选择了正确的字符（"虫"和"枼"）
             if (ButtonController.Instance != null && ButtonController.Instance.GetStringSelector() != null)
@@ -1111,6 +1350,20 @@ public class TutorialManager : MonoBehaviour
         if (tutorialPanel != null)
         {
             tutorialPanel.SetActive(false);
+        }
+        
+        // 重新启用字符选择功能
+        if (ButtonController.Instance != null)
+        {
+            ButtonController.Instance.EnableCharacterSelection();
+            Debug.Log("TutorialManager: 教程结束时已重新启用字符选择");
+        }
+        
+        // 重新启用颜色管理功能
+        if (playerController != null)
+        {
+            playerController.EnableColorManagement();
+            Debug.Log("TutorialManager: 教程结束时已重新启用颜色管理");
         }
     }
     

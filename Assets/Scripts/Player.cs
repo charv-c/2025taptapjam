@@ -22,8 +22,20 @@ public class Player : MonoBehaviour
     private bool enterKeyEnabled = true; // 控制回车键是否启用，默认启用
     public string CarryCharacter="人";
     
+    // 颜色控制相关
+    private SpriteRenderer spriteRenderer;
+    private Color originalColor;
+    private bool isGrayedOut = false;
+    
     void Start()
     {
+        // 获取SpriteRenderer组件
+        spriteRenderer = GetComponent<SpriteRenderer>();
+        if (spriteRenderer != null)
+        {
+            originalColor = spriteRenderer.color;
+        }
+        
         // 获取主摄像机
         mainCamera = Camera.main;
         if (mainCamera == null)
@@ -502,5 +514,73 @@ public class Player : MonoBehaviour
     public bool IsEnterKeyEnabled()
     {
         return enterKeyEnabled;
+    }
+    
+    /// <summary>
+    /// 将玩家设置为灰色（未操控状态）
+    /// </summary>
+    public void SetGrayedOut()
+    {
+        if (spriteRenderer != null && !isGrayedOut)
+        {
+            // 保存原始颜色（如果还没有保存）
+            if (originalColor == Color.clear)
+            {
+                originalColor = spriteRenderer.color;
+            }
+            
+            // 设置为灰色
+            Color grayColor = new Color(0.5f, 0.5f, 0.5f, 1f);
+            spriteRenderer.color = grayColor;
+            isGrayedOut = true;
+            
+            Debug.Log($"Player: 已将玩家设置为灰色状态");
+        }
+    }
+    
+    /// <summary>
+    /// 恢复正常颜色（操控状态）
+    /// </summary>
+    public void RestoreNormalColor()
+    {
+        if (spriteRenderer != null && isGrayedOut)
+        {
+            // 恢复原始颜色
+            spriteRenderer.color = originalColor;
+            isGrayedOut = false;
+            
+            Debug.Log($"Player: 已恢复玩家正常颜色");
+        }
+    }
+    
+    /// <summary>
+    /// 检查玩家是否处于灰色状态
+    /// </summary>
+    /// <returns>是否为灰色状态</returns>
+    public bool IsGrayedOut()
+    {
+        return isGrayedOut;
+    }
+    
+    /// <summary>
+    /// 获取原始颜色
+    /// </summary>
+    /// <returns>原始颜色</returns>
+    public Color GetOriginalColor()
+    {
+        return originalColor;
+    }
+    
+    /// <summary>
+    /// 设置自定义颜色
+    /// </summary>
+    /// <param name="color">要设置的颜色</param>
+    public void SetCustomColor(Color color)
+    {
+        if (spriteRenderer != null)
+        {
+            spriteRenderer.color = color;
+            Debug.Log($"Player: 已设置自定义颜色: {color}");
+        }
     }
 } 

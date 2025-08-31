@@ -99,7 +99,10 @@ public class Level2Manager : MonoBehaviour
             // 启用玩家切换功能
             playerController.EnablePlayerSwitching();
             
-            Debug.Log("Level2Manager: 已启用所有移动、切换、回车、空格操作");
+            // 更新玩家颜色状态（当前操控的玩家正常颜色，其他玩家灰色）
+            playerController.UpdatePlayerColors();
+            
+            Debug.Log("Level2Manager: 已启用所有移动、切换、回车、空格操作，并设置玩家颜色状态");
         }
         else
         {
