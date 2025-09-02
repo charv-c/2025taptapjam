@@ -27,7 +27,7 @@ public class TutorialManager : MonoBehaviour
     public Image guideCharacterImage;
     public Sprite exprNormal;     // 正常表情
     public Sprite exprHappy;      // 开心表情
-    public Sprite exprSideEye;    // 斜眼表情 (替代了“惊讶”)
+    public Sprite exprSideEye;    // 斜眼表情 (替代了"惊讶")
 
     [Header("指示器元素")]
     // public RectTransform highlightBox;
@@ -457,7 +457,12 @@ public class TutorialManager : MonoBehaviour
         hintText.text = "那片草丛里似乎藏着什么，靠近并按下【回车键】仔细看看吧。";
         if (grassObject != null)
         {
+            Debug.Log($"TutorialManager: HandleMoveToGrass - 找到grassObject: {grassObject.name}");
             PointAtTarget(grassObject.transform);
+        }
+        else
+        {
+            Debug.LogError("TutorialManager: HandleMoveToGrass - grassObject为null!");
         }
         EnablePlayerMovement(0);
         
@@ -1677,6 +1682,88 @@ public class TutorialManager : MonoBehaviour
     }
     #endregion
 
+    #region Arrow Positioning Helper Methods
+    /// <summary>
+    /// 将屏幕像素坐标转换为箭头所在 Canvas 的局部坐标并落位
+    /// </summary>
+    /// <param name="screenPos">屏幕像素坐标</param>
+    /// <param name="angle">箭头旋转角度</param>
+    /// <param name="flip">是否水平翻转</param>
+    /// <returns>是否成功设置位置</returns>
+    private bool TrySetArrowAnchoredFromScreen(Vector3 screenPos, float angle, bool flip)
+    {
+        if (arrowImage == null || arrowImage.canvas == null) 
+        {
+            Debug.LogWarning("TutorialManager: TrySetArrowAnchoredFromScreen - arrowImage或canvas为空");
+            return false;
+        }
+
+        var canvas = arrowImage.canvas;
+        RectTransform canvasRect = canvas.transform as RectTransform;
+        Camera uiCam = canvas.renderMode == RenderMode.ScreenSpaceOverlay ? null : canvas.worldCamera;
+
+        // 详细日志输出，用于调试
+        Debug.Log($"TutorialManager: TrySetArrowAnchoredFromScreen - 箭头Canvas: {canvas.name}, 渲染模式: {canvas.renderMode}, 相机: {(uiCam != null ? uiCam.name : "null")}");
+        Debug.Log($"TutorialManager: TrySetArrowAnchoredFromScreen - Canvas尺寸: {canvasRect.sizeDelta}, 缩放: {canvasRect.localScale}");
+
+        if (RectTransformUtility.ScreenPointToLocalPointInRectangle(canvasRect, screenPos, uiCam, out Vector2 localPos))
+        {
+            RectTransform arrowRect = arrowImage.rectTransform;
+            arrowRect.anchoredPosition = localPos;      // 正确：使用 anchoredPosition
+            arrowRect.localRotation = Quaternion.Euler(0f, 0f, angle);
+            arrowRect.localScale = flip ? new Vector3(-1f, 1f, 1f) : new Vector3(1f, 1f, 1f);
+
+            // 防止 Z 偏移把箭头"推远"造成看不见
+            Vector3 lp = arrowRect.localPosition;
+            arrowRect.localPosition = new Vector3(lp.x, lp.y, 0f);
+            
+            Debug.Log($"TutorialManager: 箭头定位成功 - 屏幕坐标: {screenPos}, 局部坐标: {localPos}, 角度: {angle}, 翻转: {flip}");
+            Debug.Log($"TutorialManager: 箭头最终位置 - anchoredPosition: {arrowRect.anchoredPosition}, localPosition: {arrowRect.localPosition}");
+            return true;
+        }
+        else
+        {
+            Debug.LogWarning($"TutorialManager: 屏幕坐标转换失败 - 屏幕坐标: {screenPos}");
+            Debug.LogWarning($"TutorialManager: Canvas信息 - 模式: {canvas.renderMode}, 相机: {(uiCam != null ? uiCam.name : "null")}, Canvas尺寸: {canvasRect.sizeDelta}");
+            return false;
+        }
+    }
+
+    /// <summary>
+    /// 获取UI相机
+    /// </summary>
+    /// <returns>UI相机实例</returns>
+    private Camera GetUICamera() 
+    {
+        return (arrowImage != null && arrowImage.canvas != null) ? arrowImage.canvas.worldCamera : null;
+    }
+
+    /// <summary>
+    /// 获取UI元素中心点的准确屏幕坐标
+    /// </summary>
+    /// <param name="rt">UI元素的RectTransform</param>
+    /// <returns>屏幕坐标</returns>
+    private Vector3 GetScreenPositionOfRectTransform(RectTransform rt)
+    {
+        Vector3[] worldCorners = new Vector3[4];
+        rt.GetWorldCorners(worldCorners);
+        Vector3 worldCenter = (worldCorners[0] + worldCorners[2]) * 0.5f;
+        
+        // 获取目标UI元素所在的Canvas
+        Canvas targetCanvas = rt.GetComponentInParent<Canvas>();
+        Camera targetCam = null;
+        
+        if (targetCanvas != null && targetCanvas.renderMode != RenderMode.ScreenSpaceOverlay)
+        {
+            targetCam = targetCanvas.worldCamera;
+        }
+
+        Vector3 screenPos = RectTransformUtility.WorldToScreenPoint(targetCam, worldCenter);
+        Debug.Log($"TutorialManager: GetScreenPositionOfRectTransform - {rt.name}: worldCenter={worldCenter}, screenPos={screenPos}");
+        return screenPos;
+    }
+    #endregion
+
     #region Helper Methods
     // 调整教学Panel，禁用所有遮挡元素的Raycast Target避免拦截点击事件
     private void AdjustTutorialPanelPosition()
@@ -1952,51 +2039,43 @@ public class TutorialManager : MonoBehaviour
             return;
         }
 
-        // 首先显示高亮圈在目标物体上
-        // HighlightUITarget(target);
-        
         arrowImage.gameObject.SetActive(true);
         
-        // 获取引导人物的屏幕坐标
-        Vector3 guideScreenPos = Camera.main.WorldToScreenPoint(guideCharacterImage.transform.position);
-        
-        // 获取目标的屏幕坐标
+        // 获取引导人物的屏幕坐标 (UI元素需要正确转换)
+        Vector3 guideScreenPos = GetScreenPositionOfRectTransform(guideCharacterImage.rectTransform);
+        // 获取目标的屏幕坐标 (世界物体需要转换)
         Vector3 targetScreenPos = Camera.main.WorldToScreenPoint(target.position);
         
         // 计算从引导人物到目标的方向向量
         Vector3 direction = (targetScreenPos - guideScreenPos).normalized;
 
-        // 计算角度
-        float angle = Mathf.Atan2(direction.y, direction.x) * Mathf.Rad2Deg;
-
         // 将箭头放置在目标附近，紧挨着高亮圈
         // 根据方向计算箭头的偏移位置，指向高亮圈的边缘
-        float arrowOffset = 80f*2; // 箭头距离目标的偏移距离，增大以指向高亮圈边缘
-        Vector3 arrowPosition = targetScreenPos + direction * arrowOffset;
-        arrowImage.transform.position = arrowPosition;
+        float arrowOffset = 60f; // 箭头距离目标的偏移距离（更贴近目标）
+        Vector3 arrowScreenPos = targetScreenPos - direction * arrowOffset; // 箭头位置在目标外围
+
+        // 计算箭头应该指向的角度（从箭头位置指向目标）
+        Vector3 arrowToTarget = (targetScreenPos - arrowScreenPos).normalized;
+        float angle = Mathf.Atan2(arrowToTarget.y, arrowToTarget.x) * Mathf.Rad2Deg;
+        
+        // 箭头素材是向左的（-X方向，即180度），需要调整角度让它指向目标
+        angle += 180f;
 
         // 决定是否水平翻转
-        if (angle > 90 || angle < -90)
-        {
-            arrowImage.transform.localScale = new Vector3(-1, 1, 1); // 向左指，翻转
-            angle += 180; // 修正角度
-        }
-        else
-        {
-            arrowImage.transform.localScale = new Vector3(1, 1, 1); // 向右指，不翻转
-        }
+        bool flip = false; // 暂时不翻转，先看效果
 
         // 根据角度的绝对值决定使用哪个Sprite
-        if (Mathf.Abs(angle) > 45) // 角度较大，更偏向下方
-        {
-            arrowImage.sprite = arrowDownLeft;
-        }
-        else // 角度较小，更偏向水平
+        if (Mathf.Abs(angle % 360f) > 135f || Mathf.Abs(angle % 360f) < 45f) // 更水平的角度
         {
             arrowImage.sprite = arrowLeft;
         }
+        else // 更垂直的角度
+        {
+            arrowImage.sprite = arrowDownLeft;
+        }
 
-        arrowImage.transform.rotation = Quaternion.Euler(0, 0, angle);
+        // 关键：使用 anchoredPosition 落位
+        TrySetArrowAnchoredFromScreen(arrowScreenPos, angle, flip);
     }
 
     // 高亮UI元素或世界物体
@@ -2047,45 +2126,141 @@ public class TutorialManager : MonoBehaviour
             return;
         }
         
-        // 获取引导人物的屏幕坐标
-        Vector3 guideScreenPos = Camera.main.WorldToScreenPoint(guideCharacterImage.transform.position);
+        Debug.Log($"TutorialManager: SetupArrowForUI - 目标UI元素: {targetRect.name}");
         
-        // 获取UI元素的屏幕坐标
-        Vector3 targetScreenPos = targetRect.position;
+        // 确保箭头在最上层，避免被底部栏等UI遮挡
+        BringArrowToFront();
+        
+        // 统一使用屏幕坐标转化，避免不同父级坐标系导致的误差
+        SetupArrowForUIWithScreenCoords(targetRect);
+    }
+
+    // 将箭头移动到根Canvas的最上层，保证可见
+    private void BringArrowToFront()
+    {
+        if (arrowImage == null)
+            return;
+        
+        Canvas canvas = arrowImage.canvas != null ? arrowImage.canvas.rootCanvas : null;
+        if (canvas != null)
+        {
+            Transform root = canvas.transform;
+            if (arrowImage.rectTransform.parent != root)
+            {
+                arrowImage.rectTransform.SetParent(root, true);
+            }
+            arrowImage.rectTransform.SetAsLastSibling();
+            // 禁止射线拦截，确保不影响底部栏交互
+            arrowImage.raycastTarget = false;
+            Debug.Log("TutorialManager: 已将箭头置于根Canvas最上层");
+        }
+        else
+        {
+            Debug.LogWarning("TutorialManager: 无法找到根Canvas，箭头置顶失败");
+        }
+    }
+
+    // 同一Canvas内的直接UI坐标定位
+    private void SetupArrowForUIDirectly(RectTransform targetRect)
+    {
+        Debug.Log("TutorialManager: 使用直接UI坐标定位");
+
+        // 获取箭头所在的父级RectTransform，这将作为我们的统一坐标系
+        RectTransform arrowParentRT = arrowImage.rectTransform.parent as RectTransform;
+        if (arrowParentRT == null)
+        {
+            Debug.LogError("TutorialManager: 箭头的父节点没有RectTransform！");
+            return;
+        }
+
+        // 1. 获取引导人物和目标UI的世界坐标
+        Vector3 guideWorldPos = guideCharacterImage.rectTransform.position;
+        Vector3 targetWorldPos = targetRect.position;
+
+        // 2. 将世界坐标转换为相对于箭头父节点的局部坐标
+        Vector2 guidePos = arrowParentRT.InverseTransformPoint(guideWorldPos);
+        Vector2 targetPos = arrowParentRT.InverseTransformPoint(targetWorldPos);
+
+        Debug.Log($"TutorialManager: SetupArrowForUIDirectly - 引导人物UI坐标(统一坐标系): {guidePos}, 目标UI坐标(统一坐标系): {targetPos}");
+
+        // 3. 基于统一坐标系的计算
+        Vector2 direction = (targetPos - guidePos).normalized;
+
+        float arrowOffset = 60f; // 在统一坐标系下的偏移距离
+        Vector2 arrowPos = targetPos - direction * arrowOffset;
+
+        // 设置箭头位置
+        arrowImage.rectTransform.anchoredPosition = arrowPos;
+
+        // 计算并设置角度
+        float angle = Mathf.Atan2(direction.y, direction.x) * Mathf.Rad2Deg;
+        // 我们的箭头素材本身是向左的(指向180度)，所以需要加上这个偏移
+        angle -= 180f; 
+        
+        arrowImage.rectTransform.localRotation = Quaternion.Euler(0f, 0f, angle);
+        arrowImage.rectTransform.localScale = Vector3.one;
+
+        // 根据角度的绝对值决定使用哪个Sprite
+        // 注意：这里的角度计算方式变了，阈值也需要相应调整
+        float normalizedAngle = (angle % 360f + 360f) % 360f; // 确保角度在0-360之间
+        if (normalizedAngle > 45 && normalizedAngle < 135) // 指向上方
+        {
+             arrowImage.sprite = arrowDownLeft; // 暂时用左下替代
+        }
+        else if (normalizedAngle > 225 && normalizedAngle < 315) // 指向下方
+        {
+             arrowImage.sprite = arrowDownLeft;
+        }
+        else // 指向左右
+        {
+            arrowImage.sprite = arrowLeft;
+        }
+
+        Debug.Log($"TutorialManager: SetupArrowForUIDirectly - 箭头位置: {arrowPos}, 角度: {angle}");
+    }
+    
+    // 不同Canvas间的屏幕坐标转换定位
+    private void SetupArrowForUIWithScreenCoords(RectTransform targetRect)
+    {
+        Debug.Log("TutorialManager: 使用屏幕坐标转换定位");
+        
+        // 正确获取引导人物的屏幕坐标（UI元素需要正确转换）
+        Vector3 guideScreenPos = GetScreenPositionOfRectTransform(guideCharacterImage.rectTransform);
+        Debug.Log($"TutorialManager: SetupArrowForUIWithScreenCoords - 引导人物屏幕坐标: {guideScreenPos}");
+        
+        // 正确获取目标UI元素的屏幕坐标
+        Vector3 targetScreenPos = GetScreenPositionOfRectTransform(targetRect);
+        Debug.Log($"TutorialManager: SetupArrowForUIWithScreenCoords - 目标UI屏幕坐标: {targetScreenPos}");
         
         // 计算从引导人物到目标的方向向量
         Vector3 direction = (targetScreenPos - guideScreenPos).normalized;
         
-        // 计算角度
-        float angle = Mathf.Atan2(direction.y, direction.x) * Mathf.Rad2Deg;
-        
         // 将箭头放置在目标附近，紧挨着高亮圈
-        float arrowOffset = 80f; // 箭头距离目标的偏移距离
-        Vector3 arrowPosition = targetScreenPos + direction * arrowOffset;
-        arrowImage.transform.position = arrowPosition;
+        float arrowOffset = 30f; // 箭头距离目标的偏移距离（UI=30）
+        Vector3 arrowScreenPos = targetScreenPos - direction * arrowOffset; // 箭头位置在目标外围
+
+        // 计算箭头应该指向的角度（从箭头位置指向目标）
+        Vector3 arrowToTarget = (targetScreenPos - arrowScreenPos).normalized;
+        float angle = Mathf.Atan2(arrowToTarget.y, arrowToTarget.x) * Mathf.Rad2Deg;
         
+        // 左指向素材(基准为180°)，因此需要减去180°来对齐
+        angle -= 180f;
+
         // 决定是否水平翻转
-        if (angle > 90 || angle < -90)
-        {
-            arrowImage.transform.localScale = new Vector3(-1, 1, 1); // 向左指，翻转
-            angle += 180; // 修正角度
-        }
-        else
-        {
-            arrowImage.transform.localScale = new Vector3(1, 1, 1); // 向右指，不翻转
-        }
+        bool flip = false; // 暂时不翻转，先看效果
         
         // 根据角度的绝对值决定使用哪个Sprite
-        if (Mathf.Abs(angle) > 45) // 角度较大，更偏向下方
-        {
-            arrowImage.sprite = arrowDownLeft;
-        }
-        else // 角度较小，更偏向水平
+        if (Mathf.Abs(angle % 360f) > 135f || Mathf.Abs(angle % 360f) < 45f) // 更水平的角度
         {
             arrowImage.sprite = arrowLeft;
         }
+        else // 更垂直的角度
+        {
+            arrowImage.sprite = arrowDownLeft;
+        }
         
-        arrowImage.transform.rotation = Quaternion.Euler(0, 0, angle);
+        // 关键：使用 anchoredPosition 落位
+        TrySetArrowAnchoredFromScreen(arrowScreenPos, angle, flip);
     }
     
     // 为世界物体设置箭头位置
@@ -2097,42 +2272,38 @@ public class TutorialManager : MonoBehaviour
             return;
         }
         
-        // 获取引导人物的屏幕坐标
-        Vector3 guideScreenPos = Camera.main.WorldToScreenPoint(guideCharacterImage.transform.position);
+        // 获取引导人物的屏幕坐标 (UI元素需要正确转换)
+        Vector3 guideScreenPos = GetScreenPositionOfRectTransform(guideCharacterImage.rectTransform);
         
         // 计算从引导人物到目标的方向向量
         Vector3 direction = (targetScreenPos - guideScreenPos).normalized;
         
-        // 计算角度
-        float angle = Mathf.Atan2(direction.y, direction.x) * Mathf.Rad2Deg;
-        
         // 将箭头放置在目标附近，紧挨着高亮圈
-        float arrowOffset = 80f; // 箭头距离目标的偏移距离
-        Vector3 arrowPosition = targetScreenPos + direction * arrowOffset;
-        arrowImage.transform.position = arrowPosition;
+        float arrowOffset = 60f; // 箭头距离目标的偏移距离（世界物体=60）
+        Vector3 arrowScreenPos = targetScreenPos - direction * arrowOffset; // 箭头位置在目标外围
+
+        // 计算箭头应该指向的角度（从箭头位置指向目标）
+        Vector3 arrowToTarget = (targetScreenPos - arrowScreenPos).normalized;
+        float angle = Mathf.Atan2(arrowToTarget.y, arrowToTarget.x) * Mathf.Rad2Deg;
         
+        // 箭头素材是向左的（-X方向，即180度），需要调整角度让它指向目标
+        angle += 180f;
+
         // 决定是否水平翻转
-        if (angle > 90 || angle < -90)
-        {
-            arrowImage.transform.localScale = new Vector3(-1, 1, 1); // 向左指，翻转
-            angle += 180; // 修正角度
-        }
-        else
-        {
-            arrowImage.transform.localScale = new Vector3(1, 1, 1); // 向右指，不翻转
-        }
+        bool flip = false; // 暂时不翻转，先看效果
         
         // 根据角度的绝对值决定使用哪个Sprite
-        if (Mathf.Abs(angle) > 45) // 角度较大，更偏向下方
-        {
-            arrowImage.sprite = arrowDownLeft;
-        }
-        else // 角度较小，更偏向水平
+        if (Mathf.Abs(angle % 360f) > 135f || Mathf.Abs(angle % 360f) < 45f) // 更水平的角度
         {
             arrowImage.sprite = arrowLeft;
         }
+        else // 更垂直的角度
+        {
+            arrowImage.sprite = arrowDownLeft;
+        }
         
-        arrowImage.transform.rotation = Quaternion.Euler(0, 0, angle);
+        // 关键：使用 anchoredPosition 落位
+        TrySetArrowAnchoredFromScreen(arrowScreenPos, angle, flip);
     }
     
     // 检查是否在MoveToGrass步骤中
