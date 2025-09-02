@@ -142,9 +142,6 @@ public class StringSelector : MonoBehaviour
             RectTransform rectTransform = buttonObj.GetComponent<RectTransform>();
             if (rectTransform != null)
             {
-                // 设置合适的尺寸，避免按钮重叠
-                rectTransform.sizeDelta = new Vector2(100, 50);
-
                 // 确保按钮有正确的锚点设置，避免占据整个容器
                 rectTransform.anchorMin = new Vector2(0, 0);
                 rectTransform.anchorMax = new Vector2(0, 0);
@@ -165,6 +162,8 @@ public class StringSelector : MonoBehaviour
             if (buttonText != null)
             {
                 buttonText.text = str;
+                // 仅用按钮的 Image 作为点击命中，文本不参与射线
+                buttonText.raycastTarget = false;
                 Debug.Log($"StringSelector: 正在创建按钮，字符串: '{str}'，字符代码: {(int)str[0]}，索引: {index}");
                 
                 // 添加按钮标识，用于调试
@@ -258,6 +257,9 @@ public class StringSelector : MonoBehaviour
 
                 // 延迟更新按钮显示，确保文字正确显示
                 StartCoroutine(DelayedButtonUpdate(buttonText, str));
+
+                // 按文字自适应按钮尺寸（带内边距）
+                ResizeButtonToText(button, buttonText, new Vector2(24f, 16f));
             }
             else
             {
@@ -282,6 +284,13 @@ public class StringSelector : MonoBehaviour
         {
             buttonText.ForceMeshUpdate();
             Debug.Log($"StringSelector: 延迟更新完成，字符串 '{str}' 的文本网格已重新更新");
+
+            // 延迟一帧后再根据最终排版结果收缩按钮点击区域
+            Button parentButton = buttonText.GetComponentInParent<Button>();
+            if (parentButton != null)
+            {
+                ResizeButtonToText(parentButton, buttonText, new Vector2(24f, 16f));
+            }
         }
     }
     
@@ -403,22 +412,32 @@ public class StringSelector : MonoBehaviour
             Debug.LogWarning($"StringSelector: 按钮没有Image组件");
         }
         
-        // 确保按钮的RectTransform有正确的尺寸
-        RectTransform rectTransform = button.GetComponent<RectTransform>();
-        if (rectTransform != null)
-        {
-            // 确保按钮有合适的尺寸
-            if (rectTransform.sizeDelta.x < 50 || rectTransform.sizeDelta.y < 30)
-            {
-                rectTransform.sizeDelta = new Vector2(100, 50);
-            }
-        }
+        // 维持现有按钮尺寸，不再强制放大，避免点击范围超过图片
         
         // 强制更新按钮状态
         button.enabled = false;
         button.enabled = true;
         
         Debug.Log($"StringSelector: 按钮视觉效果更新完成");
+    }
+
+    // 根据文本内容自适应按钮点击区域，仅用可见文字尺寸加少量内边距
+    private void ResizeButtonToText(Button button, TextMeshProUGUI text, Vector2 padding)
+    {
+        if (button == null || text == null) return;
+        RectTransform buttonRect = button.GetComponent<RectTransform>();
+        if (buttonRect == null) return;
+
+        // 计算文本的首选尺寸
+        Vector2 preferred = text.GetPreferredValues(text.text);
+        float width = Mathf.Ceil(preferred.x + padding.x);
+        float height = Mathf.Ceil(preferred.y + padding.y);
+
+        // 最小安全值，避免为零
+        width = Mathf.Max(10f, width);
+        height = Mathf.Max(10f, height);
+
+        buttonRect.sizeDelta = new Vector2(width, height);
     }
     
     // 清除选择
