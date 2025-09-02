@@ -1,10 +1,11 @@
 using UnityEngine;
+using UnityEngine.UI;
 
 // 米字格控制器：管理misquare对象的sprite变化
 public class MiSquareController : MonoBehaviour
 {
     [Header("米字格设置")]
-    [SerializeField] private SpriteRenderer spriteRenderer;
+    [SerializeField] private Image imageComponent;
     [SerializeField] private bool enableLogging = true;
     
     [Header("米字格类型")]
@@ -22,15 +23,15 @@ public class MiSquareController : MonoBehaviour
     
     void Start()
     {
-        // 如果没有手动设置SpriteRenderer，自动获取
-        if (spriteRenderer == null)
+        // 如果没有手动设置Image，自动获取
+        if (imageComponent == null)
         {
-            spriteRenderer = GetComponent<SpriteRenderer>();
+            imageComponent = GetComponent<Image>();
         }
         
-        if (spriteRenderer == null)
+        if (imageComponent == null)
         {
-            Debug.LogError($"MiSquareController: 对象 '{gameObject.name}' 没有SpriteRenderer组件");
+            Debug.LogError($"MiSquareController: 对象 '{gameObject.name}' 没有Image组件");
         }
         else
         {
@@ -41,9 +42,9 @@ public class MiSquareController : MonoBehaviour
     // 设置米字格sprite
     public void SetMiSquareSprite(string character)
     {
-        if (spriteRenderer == null)
+        if (imageComponent == null)
         {
-            Debug.LogError("SpriteRenderer组件为空，无法设置sprite");
+            Debug.LogError("Image组件为空，无法设置sprite");
             return;
         }
         
@@ -65,7 +66,7 @@ public class MiSquareController : MonoBehaviour
         
         if (miZiGeSprite != null)
         {
-            spriteRenderer.sprite = miZiGeSprite;
+            imageComponent.sprite = miZiGeSprite;
             currentCharacter = character;
             
             if (enableLogging)
@@ -82,9 +83,9 @@ public class MiSquareController : MonoBehaviour
     // 设置普通sprite
     public void SetNormalSprite(string character)
     {
-        if (spriteRenderer == null)
+        if (imageComponent == null)
         {
-            Debug.LogError("SpriteRenderer组件为空，无法设置sprite");
+            Debug.LogError("Image组件为空，无法设置sprite");
             return;
         }
         
@@ -92,7 +93,7 @@ public class MiSquareController : MonoBehaviour
         Sprite normalSprite = PublicData.GetCharacterSprite(character);
         if (normalSprite != null)
         {
-            spriteRenderer.sprite = normalSprite;
+            imageComponent.sprite = normalSprite;
             currentCharacter = character;
             
             if (enableLogging)
@@ -115,9 +116,9 @@ public class MiSquareController : MonoBehaviour
     // 清除sprite
     public void ClearSprite()
     {
-        if (spriteRenderer != null)
+        if (imageComponent != null)
         {
-            spriteRenderer.sprite = null;
+            imageComponent.sprite = null;
             currentCharacter = "";
             
             if (enableLogging)
@@ -130,20 +131,20 @@ public class MiSquareController : MonoBehaviour
     // 检查是否有sprite
     public bool HasSprite()
     {
-        return spriteRenderer != null && spriteRenderer.sprite != null;
+        return imageComponent != null && imageComponent.sprite != null;
     }
     
-    // 设置SpriteRenderer引用
-    public void SetSpriteRenderer(SpriteRenderer renderer)
+    // 设置Image引用
+    public void SetImage(Image image)
     {
-        spriteRenderer = renderer;
-        Debug.Log($"MiSquareController: SpriteRenderer已设置为: {renderer?.gameObject.name ?? "null"}");
+        imageComponent = image;
+        Debug.Log($"MiSquareController: Image已设置为: {image?.gameObject.name ?? "null"}");
     }
     
-    // 获取SpriteRenderer引用
-    public SpriteRenderer GetSpriteRenderer()
+    // 获取Image引用
+    public Image GetImage()
     {
-        return spriteRenderer;
+        return imageComponent;
     }
     
     // 设置米字格类型

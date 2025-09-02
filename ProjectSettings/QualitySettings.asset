@@ -1,5 +1,5 @@
 %YAML 1.1
-%TAG !u! tag:unity3d.com,2011:
+%TAG !u! tag:yousandi.cn,2023:
 --- !u!47 &1
 QualitySettings:
   m_ObjectHideFlags: 0
@@ -54,6 +54,8 @@ QualitySettings:
     terrainBillboardStart: 50
     terrainFadeLength: 5
     terrainMaxTrees: 50
+    vgPersistentBufferSize: 256
+    vgStreamingBufferSize: 512
     excludedTargetPlatforms: []
   - serializedVersion: 3
     name: Low
@@ -103,6 +105,8 @@ QualitySettings:
     terrainBillboardStart: 50
     terrainFadeLength: 5
     terrainMaxTrees: 50
+    vgPersistentBufferSize: 256
+    vgStreamingBufferSize: 512
     excludedTargetPlatforms: []
   - serializedVersion: 3
     name: Medium
@@ -152,6 +156,8 @@ QualitySettings:
     terrainBillboardStart: 50
     terrainFadeLength: 5
     terrainMaxTrees: 50
+    vgPersistentBufferSize: 256
+    vgStreamingBufferSize: 512
     excludedTargetPlatforms: []
   - serializedVersion: 3
     name: High
@@ -201,6 +207,8 @@ QualitySettings:
     terrainBillboardStart: 50
     terrainFadeLength: 5
     terrainMaxTrees: 50
+    vgPersistentBufferSize: 256
+    vgStreamingBufferSize: 512
     excludedTargetPlatforms: []
   - serializedVersion: 3
     name: Very High
@@ -250,6 +258,8 @@ QualitySettings:
     terrainBillboardStart: 50
     terrainFadeLength: 5
     terrainMaxTrees: 50
+    vgPersistentBufferSize: 256
+    vgStreamingBufferSize: 512
     excludedTargetPlatforms: []
   - serializedVersion: 3
     name: Ultra
@@ -299,6 +309,8 @@ QualitySettings:
     terrainBillboardStart: 50
     terrainFadeLength: 5
     terrainMaxTrees: 50
+    vgPersistentBufferSize: 256
+    vgStreamingBufferSize: 512
     excludedTargetPlatforms: []
   m_TextureMipmapLimitGroupNames: []
   m_PerPlatformDefaultQuality:
@@ -309,9 +321,11 @@ QualitySettings:
     Nintendo Switch: 5
     PS4: 5
     PS5: 5
+    Server: 0
     Stadia: 5
     Standalone: 5
     WebGL: 3
+    WeixinMiniGame: 2
     Windows Store Apps: 5
     XboxOne: 5
     iPhone: 2
