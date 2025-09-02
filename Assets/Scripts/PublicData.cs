@@ -293,6 +293,13 @@ public class PublicData : MonoBehaviour
             // 在切换场景前禁用门的highlight
             DisableDoorHighlights();
             
+            // 停止当前场景的BGM，避免在下一场景中重复播放
+            if (AudioManager.Instance != null)
+            {
+                AudioManager.Instance.StopBGM();
+                Debug.Log("PublicData: 已停止当前场景的BGM");
+            }
+            
             // 所有目标完成，切换到下一个场景
             if (!string.IsNullOrEmpty(sceneName))
             {
