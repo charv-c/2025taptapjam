@@ -12,6 +12,10 @@ public class Highlight : MonoBehaviour
     [SerializeField]
     public string letter;
     
+    // 因互动占用而被禁用的标记，用于交互后统一恢复
+    [HideInInspector]
+    public bool disabledByInteraction = false;
+    
     [Header("米字格对象引用")]
     [SerializeField] private GameObject misquare;
     [SerializeField] private bool canControlMisquare = false;
@@ -289,21 +293,17 @@ public class Highlight : MonoBehaviour
             return; // 直接返回，不执行后续的carryletter逻辑
         }
         
-        // 只有在对象不可收集时才执行carryletter逻辑
+        // 只有在对象不可收集时才执行 carryletter / 其他交互逻辑
         if (player != null && !string.IsNullOrEmpty(player.CarryCharacter))
         {
-            if (player.CarryCharacter == "人")
+            // 放宽条件：无论玩家当前携带什么字符，只要该对象在可化字列表中，均触发化字
+            if (PublicData.listofhua.Contains(letter))
             {
-                Debug.Log($"FunctionA: 玩家携带'人'字符，检查 '{letter}' 是否在可化字列表中");
-                if (PublicData.listofhua.Contains(letter))
-                {
-                    Debug.Log($"FunctionA: '{letter}' 在可化字列表中，调用ChangeMi");
-                    ChangeMi();
-                }
-                else
-                {
-                    Debug.LogWarning($"FunctionA: '{letter}' 不在可化字列表中: {string.Join(", ", PublicData.listofhua)}");
-                }
+                Debug.Log($"FunctionA: '{letter}' 在可化字列表中，触发化字（忽略玩家当前携带字符）");
+                ChangeMi();
+                // 仅恢复与当前携带字符对应的被禁用高亮，并禁用当前对象高亮
+                TransferDisabledHighlightToCurrent();
+                return;
             }
             else if (player.CarryCharacter == "侠")
             {
@@ -341,6 +341,43 @@ public class Highlight : MonoBehaviour
         {
             Debug.LogWarning($"FunctionA: 玩家为空或携带字符为空，玩家={player}, CarryCharacter='{player?.CarryCharacter}'");
         }
+    }
+
+    // 恢复所有此前因互动占用而禁用的对象，然后禁用当前对象并打标
+    private void TransferDisabledHighlightToCurrent()
+    {
+        Highlight[] allHighlights = FindObjectsOfType<Highlight>();
+        int restoredCount = 0;
+        foreach (Highlight h in allHighlights)
+        {
+            if (h != null && h != this && !h.enabled)
+            {
+                if (h.disabledByInteraction)
+                {
+                    h.enabled = true;
+                    h.disabledByInteraction = false;
+                    restoredCount++;
+                }
+            }
+        }
+
+        // 兼容历史：若没有任何对象打过标记，则恢复可化字列表中目前被禁用的对象
+        if (restoredCount == 0)
+        {
+            foreach (Highlight h in allHighlights)
+            {
+                if (h != null && h != this && !h.enabled && PublicData.listofhua.Contains(h.letter))
+                {
+                    h.enabled = true;
+                    restoredCount++;
+                }
+            }
+        }
+
+        // 禁用当前对象，并标记为因互动占用而禁用
+        enabled = false;
+        disabledByInteraction = true;
+        Debug.Log($"Highlight: 已恢复 {restoredCount} 个此前被占用禁用的对象，并将当前对象 '{gameObject.name}' 置为禁用");
     }
     
     // 处理教程中的特殊逻辑
