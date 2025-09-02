@@ -26,6 +26,7 @@ public class ButtonController : MonoBehaviour
     
     [Header("字体设置")]
     [SerializeField] private TMP_FontAsset chineseFont; // 中文字体
+    [SerializeField] private float flyingFontSize = 50f; // 飞行动画中文字大小
     
     // 单例模式，方便其他脚本访问
     public static ButtonController Instance { get; private set; }
@@ -592,7 +593,7 @@ public class ButtonController : MonoBehaviour
         // 添加TextMeshPro组件
         TMPro.TextMeshProUGUI textMesh = flyingCharacter.AddComponent<TMPro.TextMeshProUGUI>();
         textMesh.text = character;
-        textMesh.fontSize = 50;
+        textMesh.fontSize = Mathf.RoundToInt(flyingFontSize);
         textMesh.alignment = TMPro.TextAlignmentOptions.Center;
         textMesh.color = Color.black; // 设置文字为黑色
         
@@ -780,7 +781,13 @@ public class ButtonController : MonoBehaviour
             return;
         }
         
-        StartCoroutine(Level1FlyCharacterCoroutine(character, startPosition, endPosition));
+        // 使用新的统一飞行接口，终点使用 Inspector 指定的 targetPosition
+        if (targetPosition == null)
+        {
+            Debug.LogError("ButtonController: 目标位置未设置");
+            return;
+        }
+        Fly(character, targetPosition);
     }
     
     /// <summary>
@@ -802,8 +809,7 @@ public class ButtonController : MonoBehaviour
             return;
         }
         
-        Vector2 endPosition = GetTargetUIPosition(targetPosition);
-        StartCoroutine(Level1FlyCharacterCoroutine(character, startPosition, endPosition));
+        Fly(character, targetPosition);
     }
     
     /// <summary>
@@ -813,10 +819,12 @@ public class ButtonController : MonoBehaviour
     {
         isLevel1Flying = true;
         
-        // 创建飞舞的字符对象，使用统一的CreateFlyingCharacter方法
-        CreateFlyingCharacter(character, targetPosition);
-        
-        // 等待动画完成
+        // 使用新接口执行飞行
+        if (targetPosition != null)
+        {
+            Fly(character, targetPosition);
+        }
+        // 简单等待，避免重复触发
         yield return new WaitForSeconds(2f);
         
         isLevel1Flying = false;
@@ -853,4 +861,95 @@ public class ButtonController : MonoBehaviour
     }
     
     #endregion
+
+    // 统一飞行动画接口：从 Canvas 中心出发，在 Canvas 坐标系内飞向终点
+    public void Fly(string character, Transform endTransform)
+    {
+        if (targetCanvas == null)
+        {
+            targetCanvas = FindObjectOfType<Canvas>();
+        }
+
+        if (targetCanvas == null)
+        {
+            Debug.LogError("ButtonController: 未找到Canvas，无法执行飞行动画");
+            return;
+        }
+
+        // 在 Canvas 下创建文本对象
+        GameObject flying = new GameObject($"Flying_{character}");
+        flying.transform.SetParent(targetCanvas.transform, false);
+        RectTransform rect = flying.AddComponent<RectTransform>();
+        rect.anchorMin = rect.anchorMax = rect.pivot = new Vector2(0.5f, 0.5f);
+        rect.anchoredPosition = Vector2.zero; // 屏幕（Canvas）中心为起点
+
+        TMPro.TextMeshProUGUI text = flying.AddComponent<TMPro.TextMeshProUGUI>();
+        text.text = character;
+        text.fontSize = Mathf.RoundToInt(flyingFontSize);
+        text.alignment = TMPro.TextAlignmentOptions.Center;
+        text.color = Color.black;
+        if (stringSelector != null && stringSelector.GetChineseFont() != null)
+        {
+            text.font = stringSelector.GetChineseFont();
+        }
+        text.ForceMeshUpdate();
+
+        // 终点坐标（Canvas 坐标系）
+        Vector2 endAnchored = Vector2.zero;
+        RectTransform endRect = endTransform as RectTransform;
+        if (endRect != null)
+        {
+            endAnchored = endRect.anchoredPosition;
+        }
+        else
+        {
+            // 兜底：不在UI下的Transform，转换为Canvas本地坐标
+            Vector2 screen = RectTransformUtility.WorldToScreenPoint(null, endTransform.position);
+            RectTransform canvasRect = targetCanvas.transform as RectTransform;
+            Vector2 localPoint;
+            if (RectTransformUtility.ScreenPointToLocalPointInRectangle(canvasRect, screen, null, out localPoint))
+            {
+                endAnchored = localPoint;
+            }
+        }
+
+        // 启动动画
+        StartCoroutine(FlyUIRoutine(flying, endAnchored, character));
+    }
+
+    private IEnumerator FlyUIRoutine(GameObject flyingCharacter, Vector2 endAnchored, string character)
+    {
+        SetFlyingAnimationActive(true);
+
+        RectTransform rect = flyingCharacter.GetComponent<RectTransform>();
+        Vector2 startAnchored = rect.anchoredPosition; // 已是中心
+
+        if (AudioManager.Instance != null && AudioManager.Instance.sfxGoalFlyIn != null)
+        {
+            AudioManager.Instance.PlaySFX(AudioManager.Instance.sfxGoalFlyIn);
+        }
+
+        float duration = 1.5f;
+        float elapsed = 0f;
+        while (elapsed < duration)
+        {
+            elapsed += Time.deltaTime;
+            float t = Mathf.Clamp01(elapsed / duration);
+
+            // 使用现有的螺旋轨迹计算
+            Vector2 pos = CalculateSpiralPosition(startAnchored, endAnchored, t);
+            rect.anchoredPosition = pos;
+
+            // 轻微缩放动效
+            float scale = 1f + Mathf.Sin(t * Mathf.PI * 2f) * 0.3f;
+            rect.localScale = Vector3.one * scale;
+
+            yield return null;
+        }
+
+        rect.anchoredPosition = endAnchored;
+        rect.localScale = Vector3.one;
+
+        SetFlyingAnimationActive(false);
+    }
 }
