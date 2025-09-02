@@ -27,6 +27,9 @@ public class Player : MonoBehaviour
     private Color originalColor;
     private bool isGrayedOut = false;
     
+    [Header("颜色设置")]
+    [SerializeField] private Color grayedOutColor = new Color(0.2f, 0.2f, 0.2f, 1f);
+    
     void Start()
     {
         // 获取SpriteRenderer组件
@@ -529,9 +532,8 @@ public class Player : MonoBehaviour
                 originalColor = spriteRenderer.color;
             }
             
-            // 设置为灰色
-            Color grayColor = new Color(0.5f, 0.5f, 0.5f, 1f);
-            spriteRenderer.color = grayColor;
+            // 设置为灰色（可在 Inspector 中配置）
+            spriteRenderer.color = grayedOutColor;
             isGrayedOut = true;
             
             Debug.Log($"Player: 已将玩家设置为灰色状态");
