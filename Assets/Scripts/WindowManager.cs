@@ -45,21 +45,18 @@ public class WindowManager : MonoBehaviour
     public void SetFullscreen()
     {
         Screen.fullScreen = true;
-        Debug.Log("已设置为全屏模式");
     }
     
     // 设置窗口模式
     public void SetWindowed()
     {
         Screen.fullScreen = false;
-        Debug.Log("已设置为窗口模式");
     }
     
     // 切换全屏/窗口模式
     public void ToggleFullscreen()
     {
         Screen.fullScreen = !Screen.fullScreen;
-        Debug.Log($"已切换为{(Screen.fullScreen ? "全屏" : "窗口")}模式");
         
         // 重新调整摄像机
         AdjustCamera();
@@ -75,7 +72,6 @@ public class WindowManager : MonoBehaviour
         
         if (mainCamera == null)
         {
-            Debug.LogError("未找到主摄像机");
             return;
         }
         
@@ -87,8 +83,7 @@ public class WindowManager : MonoBehaviour
         float currentAspectRatio = screenWidth / screenHeight;
         float targetAspect = targetAspectRatio.x / targetAspectRatio.y;
         
-        Debug.Log($"当前屏幕: {screenWidth}x{screenHeight}, 宽高比: {currentAspectRatio:F2}");
-        Debug.Log($"目标宽高比: {targetAspect:F2}");
+
         
         if (maintainAspectRatio)
         {
@@ -98,13 +93,12 @@ public class WindowManager : MonoBehaviour
             // 设置摄像机视口
             mainCamera.rect = viewportRect;
             
-            Debug.Log($"已调整摄像机视口: {viewportRect}");
+
         }
         else
         {
             // 重置摄像机视口
             mainCamera.rect = new Rect(0, 0, 1, 1);
-            Debug.Log("已重置摄像机视口");
         }
     }
     
@@ -140,10 +134,7 @@ public class WindowManager : MonoBehaviour
     // 获取当前屏幕信息
     public void LogScreenInfo()
     {
-        Debug.Log($"屏幕分辨率: {Screen.width}x{Screen.height}");
-        Debug.Log($"全屏状态: {Screen.fullScreen}");
-        Debug.Log($"当前宽高比: {Screen.width / (float)Screen.height:F2}");
-        Debug.Log($"目标宽高比: {targetAspectRatio.x / targetAspectRatio.y:F2}");
+        // 屏幕信息记录功能已移除
     }
     
     // 公共方法：重新调整所有设置
