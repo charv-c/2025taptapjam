@@ -83,6 +83,15 @@ public class PublicData : MonoBehaviour
         {"伙", "孩"},
         {"仙", "日"},
     };
+
+    // AutoHint 使用的字典：键与 stringKeyValuePairs 相同，值稍后由用户填写
+    public static Dictionary<string, string> autoHintDict = new Dictionary<string, string>(){
+        {"停", "雨"},
+        {"休", "猎"},
+        {"侠", "王"},
+        {"伙", "孩"},
+        {"仙", "日"},
+    };
     
     private static Dictionary<string, Sprite> characterSprites = new Dictionary<string, Sprite>();
     private static Dictionary<string, Sprite> leftMiZiGeSprites = new Dictionary<string, Sprite>();
