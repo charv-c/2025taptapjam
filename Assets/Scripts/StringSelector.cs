@@ -250,6 +250,11 @@ public class StringSelector : MonoBehaviour
 
                 // 确保按钮可以交互
                 button.interactable = true;
+                
+                // 禁用按钮的键盘导航，防止回车键触发
+                Navigation noNavigation = new Navigation();
+                noNavigation.mode = Navigation.Mode.None;
+                button.navigation = noNavigation;
 
                 stringButtons.Add(button);
                 Debug.Log($"StringSelector: 按钮已添加到stringButtons列表，当前按钮数量: {stringButtons.Count}");

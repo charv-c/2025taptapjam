@@ -115,7 +115,29 @@ public class TutorialManager : MonoBehaviour
         currentStep = TutorialStep.Welcome_Part1;
         ExecuteCurrentStep();
         continueButton.onClick.AddListener(GoToNextStep);
+        
+        // 禁用继续按钮的键盘导航，防止回车键触发
+        Navigation noNavigation = new Navigation();
+        noNavigation.mode = Navigation.Mode.None;
+        continueButton.navigation = noNavigation;
 
+    }
+
+    private void Update()
+    {
+        // 检测 E 键按下继续教程，但禁用回车键继续
+        if (Input.GetKeyDown(KeyCode.E))
+        {
+            // 只有当继续按钮可见时才允许 E 键继续
+            if (continueButton != null && continueButton.gameObject.activeInHierarchy)
+            {
+                Debug.Log("TutorialManager: 检测到 E 键按下，继续教程");
+                GoToNextStep();
+            }
+        }
+        
+        // 禁用回车键继续教程的功能
+        // 回车键现在只用于与游戏对象交互，不能继续教程
     }
     #endregion
 
