@@ -13,7 +13,11 @@ public class EndScreenManager : MonoBehaviour
 
     private void Start()
     {
-
+        // 播放一次性的胜利音效
+        if (AudioManager.Instance != null && AudioManager.Instance.sfxWin != null)
+        {
+            AudioManager.Instance.PlaySFX(AudioManager.Instance.sfxWin);
+        }
     }
 
     void Update()

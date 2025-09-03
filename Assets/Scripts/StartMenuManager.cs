@@ -11,56 +11,44 @@ public class StartMenuManager : MonoBehaviour
     [Header("场景设置")]
     public string sceneToLoad = "FormalLevel_Cowherd";
 
-    [Header("音效设置")]
-    public AudioClip hoverSound;
-    public AudioClip clickSound;
-    public AudioSource sfxSource;
-
-    /// <summary>
-    /// “开始游戏”按钮被点击时，会调用此方法。
-    /// 它不再直接加载场景，而是启动一个协程。
-    /// </summary>
-    public void OnStartGameClicked()
+    private void Start()
     {
-        // 确保音频源和音频片段都已设置
-        if (sfxSource != null && clickSound != null)
+        // 进入开始场景时播放菜单BGM（通过AudioManager统一控制）
+        if (AudioManager.Instance != null && AudioManager.Instance.bgmMenu != null)
         {
-            // 启动“在音效后加载场景”的协程
-            StartCoroutine(LoadSceneAfterSound());
-        }
-        else
-        {
-            // 如果没有设置音效，则直接加载场景，避免卡住
-            PublicData.OnBeforeSceneTransition();
-            
-            SceneManager.LoadScene(sceneToLoad);
+            AudioManager.Instance.PlayBGM(AudioManager.Instance.bgmMenu);
         }
     }
 
+    public void OnStartGameClicked()
+    {
+        // 统一经由AudioManager播放点击音效，并在音效结束后加载场景
+        StartCoroutine(LoadSceneAfterSound());
+    }
+
     /// <summary>
-    /// 这是一个协程，用于播放音效并等待其播放完毕后再加载场景
+    /// 播放点击音效并等待其播放完毕后再加载场景
     /// </summary>
     private IEnumerator LoadSceneAfterSound()
     {
-        // 1. 播放点击音效
-        sfxSource.PlayOneShot(clickSound);
+        AudioClip clickClip = (AudioManager.Instance != null) ? AudioManager.Instance.sfxButtonClick : null;
 
-        // 2. 等待一段时间，等待的时间正好是音效的长度
-        yield return new WaitForSeconds(clickSound.length);
+        if (AudioManager.Instance != null && clickClip != null)
+        {
+            AudioManager.Instance.PlaySFX(clickClip);
+            yield return new WaitForSeconds(clickClip.length);
+        }
+        // 若没有可用的AudioManager或音效未配置，则直接进入下一场景
 
-        // 3. 音效播放得差不多了，现在加载下一个场景
         PublicData.OnBeforeSceneTransition();
         SceneManager.LoadScene(sceneToLoad);
     }
 
     public void PlayHoverSound()
     {
-        if (hoverSound != null && sfxSource != null)
+        if (AudioManager.Instance != null && AudioManager.Instance.sfxButtonHover != null)
         {
-            sfxSource.PlayOneShot(hoverSound);
+            AudioManager.Instance.PlaySFX(AudioManager.Instance.sfxButtonHover);
         }
     }
-
-    // 点击音效的播放现在由协程管理，所以这个方法可以移除了
-    // public void PlayClickSound() { ... }
 }
