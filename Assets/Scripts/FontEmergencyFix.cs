@@ -19,8 +19,6 @@ public class FontEmergencyFix : MonoBehaviour
     [ContextMenu("紧急修复字体")]
     public void EmergencyFix()
     {
-        Debug.Log("=== 紧急字体修复 ===");
-        
         // 尝试使用系统默认字体
         if (useSystemFont)
         {
@@ -29,19 +27,14 @@ public class FontEmergencyFix : MonoBehaviour
         
         // 强制重新创建所有按钮
         ForceRecreateAllButtons();
-        
-        Debug.Log("=== 紧急字体修复完成 ===");
     }
     
     void UseSystemDefaultFont()
     {
-        Debug.Log("尝试使用系统默认字体...");
-        
         // 尝试加载TMP默认字体
         TMP_FontAsset defaultFont = TMP_Settings.defaultFontAsset;
         if (defaultFont != null)
         {
-            Debug.Log($"使用TMP默认字体: {defaultFont.name}");
             ApplyFontToAll(defaultFont);
             return;
         }
@@ -50,7 +43,6 @@ public class FontEmergencyFix : MonoBehaviour
         TMP_FontAsset liberationFont = Resources.Load<TMP_FontAsset>("Fonts & Materials/LiberationSans SDF");
         if (liberationFont != null)
         {
-            Debug.Log($"使用LiberationSans字体: {liberationFont.name}");
             ApplyFontToAll(liberationFont);
             return;
         }
@@ -61,30 +53,23 @@ public class FontEmergencyFix : MonoBehaviour
         {
             if (font != null && font.name.Contains("Liberation"))
             {
-                Debug.Log($"使用备选字体: {font.name}");
                 ApplyFontToAll(font);
                 return;
             }
         }
-        
-        Debug.LogWarning("未找到可用的系统字体");
     }
     
     void ApplyFontToAll(TMP_FontAsset font)
     {
-        Debug.Log($"应用字体到所有组件: {font.name}");
-        
         // 应用到StringSelector
         StringSelector stringSelector = FindObjectOfType<StringSelector>();
         if (stringSelector != null)
         {
             stringSelector.SetChineseFont(font);
-            Debug.Log("已应用到StringSelector");
         }
         
         // 应用到所有TextMeshProUGUI组件
         TextMeshProUGUI[] allTexts = FindObjectsOfType<TextMeshProUGUI>();
-        int appliedCount = 0;
         
         foreach (TextMeshProUGUI text in allTexts)
         {
@@ -92,17 +77,12 @@ public class FontEmergencyFix : MonoBehaviour
             {
                 text.font = font;
                 text.ForceMeshUpdate();
-                appliedCount++;
             }
         }
-        
-        Debug.Log($"已应用到 {appliedCount} 个文本组件");
     }
     
     void ForceRecreateAllButtons()
     {
-        Debug.Log("强制重新创建所有按钮...");
-        
         StringSelector stringSelector = FindObjectOfType<StringSelector>();
         if (stringSelector != null)
         {
@@ -111,20 +91,12 @@ public class FontEmergencyFix : MonoBehaviour
             
             // 重新创建所有按钮
             stringSelector.RecreateAllButtonsPublic();
-            
-            Debug.Log("已重新创建StringSelector按钮");
-        }
-        else
-        {
-            Debug.LogWarning("未找到StringSelector");
         }
     }
     
     [ContextMenu("测试字符显示")]
     public void TestCharacterDisplay()
     {
-        Debug.Log("=== 测试字符显示 ===");
-        
         // 创建测试文本
         GameObject testObj = new GameObject("CharacterTest");
         testObj.transform.SetParent(transform);
@@ -139,21 +111,10 @@ public class FontEmergencyFix : MonoBehaviour
         if (currentFont != null)
         {
             testText.font = currentFont;
-            Debug.Log($"测试文本使用字体: {currentFont.name}");
         }
         
         // 强制更新
         testText.ForceMeshUpdate();
-        
-        Debug.Log($"测试文本: '{testText.text}'");
-        Debug.Log($"文本长度: {testText.text.Length}");
-        
-        // 检查每个字符
-        for (int i = 0; i < testText.text.Length; i++)
-        {
-            char c = testText.text[i];
-            Debug.Log($"字符 {i}: '{c}' (Unicode: U+{(int)c:X4})");
-        }
     }
     
     TMP_FontAsset GetCurrentFont()

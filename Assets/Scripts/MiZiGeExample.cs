@@ -19,13 +19,11 @@ public class MiZiGeExample : MonoBehaviour
         if (leftMiZiGe != null)
         {
             leftMiZiGe.SetMiZiGeType(MiSquareController.MiZiGeType.Left);
-            Debug.Log("左米字格类型已设置为 Left");
         }
         
         if (rightMiZiGe != null)
         {
             rightMiZiGe.SetMiZiGeType(MiSquareController.MiZiGeType.Right);
-            Debug.Log("右米字格类型已设置为 Right");
         }
         
         // 测试设置图片
@@ -38,13 +36,11 @@ public class MiZiGeExample : MonoBehaviour
         if (leftMiZiGe != null)
         {
             leftMiZiGe.SetMiSquareSprite(testCharacter);
-            Debug.Log($"已为左米字格设置字符: {testCharacter}");
         }
         
         if (rightMiZiGe != null)
         {
             rightMiZiGe.SetMiSquareSprite(testCharacter);
-            Debug.Log($"已为右米字格设置字符: {testCharacter}");
         }
     }
     
@@ -55,26 +51,24 @@ public class MiZiGeExample : MonoBehaviour
         
         foreach (string character in testCharacters)
         {
-            Debug.Log($"测试字符: {character}");
-            
             // 检查左米字格是否有对应的图片
             if (PublicData.HasLeftMiZiGeSprite(character))
             {
-                Debug.Log($"左米字格有字符 '{character}' 的图片映射");
+                // 左米字格有字符的图片映射
             }
             else
             {
-                Debug.LogWarning($"左米字格没有字符 '{character}' 的图片映射");
+                // 左米字格没有字符的图片映射
             }
             
             // 检查右米字格是否有对应的图片
             if (PublicData.HasRightMiZiGeSprite(character))
             {
-                Debug.Log($"右米字格有字符 '{character}' 的图片映射");
+                // 右米字格有字符的图片映射
             }
             else
             {
-                Debug.LogWarning($"右米字格没有字符 '{character}' 的图片映射");
+                // 右米字格没有字符的图片映射
             }
         }
     }
@@ -82,19 +76,9 @@ public class MiZiGeExample : MonoBehaviour
     // 获取所有可用的米字格字符
     public void ListAllAvailableCharacters()
     {
-        Debug.Log("=== 左米字格字符 ===");
         var leftChars = PublicData.GetAllLeftMiZiGeCharacters();
-        foreach (string character in leftChars)
-        {
-            Debug.Log($"左: {character}");
-        }
-        
-        Debug.Log("=== 右米字格字符 ===");
         var rightChars = PublicData.GetAllRightMiZiGeCharacters();
-        foreach (string character in rightChars)
-        {
-            Debug.Log($"右: {character}");
-        }
+        // 字符列表功能已移除
     }
     
     // 在Inspector中调用的测试方法
