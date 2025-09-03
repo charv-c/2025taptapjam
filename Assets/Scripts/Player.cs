@@ -365,7 +365,9 @@ public class Player : MonoBehaviour
     {
         // 查找场景中所有Highlight对象
         Highlight[] allHighlights = FindObjectsOfType<Highlight>();
+        Highlight targetHighlight = null;
         
+        // 优先级排序：小孩 > 其他对象 > 门对象（当小孩未隐藏时）
         foreach (Highlight highlight in allHighlights)
         {
             if (highlight != null && highlight.enabled)
@@ -373,13 +375,70 @@ public class Player : MonoBehaviour
                 // 检查是否与当前玩家有碰撞（通过碰撞箱判断）
                 if (IsPlayerCollidingWithHighlight(highlight))
                 {
-                    // 触发Highlight对象的交互
-                    highlight.TriggerInteraction();
-                    Debug.Log($"Player: 触发与Highlight对象 '{highlight.gameObject.name}' 的交互");
-                    break; // 只与第一个找到的对象交互
+                    // 特殊处理：如果检测到小孩对象，优先选择小孩
+                    if (highlight.letter == "孩")
+                    {
+                        targetHighlight = highlight;
+                        Debug.Log($"Player: 优先选择小孩对象进行交互: '{highlight.gameObject.name}'");
+                        break; // 小孩优先级最高，直接跳出
+                    }
+                    // 如果检测到门对象，需要检查孩子是否隐藏
+                    else if (highlight.letter == "门")
+                    {
+                        // 只有在没有找到其他可交互对象且孩子已隐藏时才选择门
+                        if (targetHighlight == null && IsChildHidden())
+                        {
+                            targetHighlight = highlight;
+                            Debug.Log($"Player: 小孩已隐藏，可选择门对象: '{highlight.gameObject.name}'");
+                        }
+                        else
+                        {
+                            Debug.Log($"Player: 门对象被跳过，小孩可能未隐藏或已有其他交互对象");
+                        }
+                    }
+                    // 其他对象正常处理
+                    else if (targetHighlight == null)
+                    {
+                        targetHighlight = highlight;
+                        Debug.Log($"Player: 选择对象进行交互: '{highlight.gameObject.name}'");
+                    }
                 }
             }
         }
+        
+        // 执行交互
+        if (targetHighlight != null)
+        {
+            targetHighlight.TriggerInteraction();
+            Debug.Log($"Player: 最终触发与Highlight对象 '{targetHighlight.gameObject.name}' 的交互");
+        }
+    }
+    
+    // 检查孩子是否隐藏（复用Highlight中的逻辑）
+    private bool IsChildHidden()
+    {
+        // 查找场景中所有带有Highlight脚本的对象
+        Highlight[] allHighlights = FindObjectsOfType<Highlight>();
+        
+        foreach (Highlight highlight in allHighlights)
+        {
+            if (highlight != null && highlight.letter == "孩")
+            {
+                // 检查孩子的SpriteRenderer是否被禁用
+                SpriteRenderer childSpriteRenderer = highlight.GetComponent<SpriteRenderer>();
+                if (childSpriteRenderer != null && !childSpriteRenderer.enabled)
+                {
+                    return true;
+                }
+                else
+                {
+                    return false;
+                }
+            }
+        }
+        
+        // 如果没有找到孩子对象，默认认为已隐藏
+        return true;
     }
     
     // 检查玩家是否与Highlight对象碰撞
