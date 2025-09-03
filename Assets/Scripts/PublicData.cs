@@ -62,6 +62,7 @@ public class PublicData : MonoBehaviour
         {"伏", ("人", "犬")},  // 添加伏字的映射
         {"牒", ("片", "枼")},  // 添加牒字的映射
         {"蝶", ("虫", "枼")},
+        {"本", ("木", "一")},
 
         {"金", ("全", "丷")},
         {"相", ("木", "目")},
@@ -294,11 +295,11 @@ public class PublicData : MonoBehaviour
             DisableDoorHighlights();
             
             // 停止当前场景的BGM，避免在下一场景中重复播放
-            if (AudioManager.Instance != null)
+            /*if (AudioManager.Instance != null)
             {
                 AudioManager.Instance.StopBGM();
                 Debug.Log("PublicData: 已停止当前场景的BGM");
-            }
+            }*/
             
             // 所有目标完成，切换到下一个场景
             if (!string.IsNullOrEmpty(sceneName))
