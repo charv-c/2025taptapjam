@@ -273,6 +273,11 @@ public class Highlight : MonoBehaviour
                 {
                     Debug.Log($"FunctionA: 玩家携带'侠'字符，可以收集'王'对象");
                     AddLetterToAvailableList();
+                    
+                    // 重要：重置玩家状态为"人"字
+                    player.SetCarryCharacter("人");
+                    Debug.Log($"FunctionA: 已将玩家状态重置为'人'字");
+                    
                     Destroy(gameObject);
                     return;
                 }
@@ -760,38 +765,8 @@ public class Highlight : MonoBehaviour
             Debug.Log("门对象被收集，添加'门'到可用字符串列表");
             AddDoorToAvailableList();
             
-            // 门的特殊逻辑：不隐藏对象，但永久删除Highlight脚本
-            Debug.Log("门对象：不隐藏对象，但永久删除Highlight脚本");
-            
-            // 恢复对象的显示状态（因为上面的代码已经隐藏了）
-            if (spriteRenderer != null)
-            {
-                spriteRenderer.enabled = true;
-            }
-            
-            if (collider != null)
-            {
-                collider.enabled = true;
-            }
-            
-            foreach (Light2D light in allLights)
-            {
-                if (light != null)
-                {
-                    light.gameObject.SetActive(true);
-                }
-            }
-            
-            foreach (Renderer renderer in allRenderers)
-            {
-                if (renderer != null && renderer != spriteRenderer)
-                {
-                    renderer.enabled = true;
-                }
-            }
-            
-            // 永久删除Highlight脚本
-            Destroy(this);
+            // 门对象现在和其他收集元素保持一致：交互后正常隐藏
+            Debug.Log("门对象：交互后正常隐藏，与其他收集元素保持一致");
         }
     }
     
