@@ -28,7 +28,9 @@ public class AudioManager : MonoBehaviour
     public AudioClip bgmTutorial;   // 教程阶段的BGM [cite: 8]
 
     [Header("音效 (SFX)")]
-    public AudioClip sfxUIClick;             // UI按钮交互音效 [cite: 12]
+    public AudioClip sfxUIClick;             // 关卡UI按钮交互音效 [cite: 12]
+    public AudioClip sfxButtonHover;             // 主菜单按钮悬停音效
+    public AudioClip sfxButtonClick;         // 主菜单按钮点击音效
     public AudioClip sfxTransform;           // “化字”音效 [cite: 12]
     public AudioClip sfxAcquire;             // “取字”音效 [cite: 12]
     public AudioClip sfxSplitSuccess;        // 成功“拆字” [cite: 12]
@@ -36,6 +38,7 @@ public class AudioManager : MonoBehaviour
     public AudioClip sfxOperationFailure;    // “拆/拼”操作失败 [cite: 12]
     public AudioClip sfxSelectWord;          // 在解字台选中文字 [cite: 12]
     public AudioClip sfxGoalFlyIn;           // 目标字飞入诗句的核心奖励音效 [cite: 12]
+    public AudioClip sfxWin;                 // 关卡胜利音效
 
     [Header("环境音 (Ambient)")]
     public AudioClip ambientRain;            // 循环播放的背景雨声 [cite: 12]

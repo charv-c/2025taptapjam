@@ -2073,7 +2073,7 @@ public class TutorialManager : MonoBehaviour
 
         // 将箭头放置在目标附近，紧挨着高亮圈
         // 根据方向计算箭头的偏移位置，指向高亮圈的边缘
-        float arrowOffset = 60f; // 箭头距离目标的偏移距离（更贴近目标）
+        float arrowOffset = 160f; // 箭头距离目标的偏移距离（更贴近目标）
         Vector3 arrowScreenPos = targetScreenPos - direction * arrowOffset; // 箭头位置在目标外围
 
         // 计算箭头应该指向的角度（从箭头位置指向目标）
@@ -2208,7 +2208,7 @@ public class TutorialManager : MonoBehaviour
         // 3. 基于统一坐标系的计算
         Vector2 direction = (targetPos - guidePos).normalized;
 
-        float arrowOffset = 60f; // 在统一坐标系下的偏移距离
+        float arrowOffset = 80f; // 在统一坐标系下的偏移距离
         Vector2 arrowPos = targetPos - direction * arrowOffset;
 
         // 设置箭头位置
@@ -2258,7 +2258,7 @@ public class TutorialManager : MonoBehaviour
         Vector3 direction = (targetScreenPos - guideScreenPos).normalized;
         
         // 将箭头放置在目标附近，紧挨着高亮圈
-        float arrowOffset = 30f; // 箭头距离目标的偏移距离（UI=30）
+        float arrowOffset = 80f; // 箭头距离目标的偏移距离（UI=30）
         Vector3 arrowScreenPos = targetScreenPos - direction * arrowOffset; // 箭头位置在目标外围
 
         // 计算箭头应该指向的角度（从箭头位置指向目标）
@@ -2301,7 +2301,7 @@ public class TutorialManager : MonoBehaviour
         Vector3 direction = (targetScreenPos - guideScreenPos).normalized;
         
         // 将箭头放置在目标附近，紧挨着高亮圈
-        float arrowOffset = 60f; // 箭头距离目标的偏移距离（世界物体=60）
+        float arrowOffset = 160f; // 箭头距离目标的偏移距离（世界物体=60）
         Vector3 arrowScreenPos = targetScreenPos - direction * arrowOffset; // 箭头位置在目标外围
 
         // 计算箭头应该指向的角度（从箭头位置指向目标）
