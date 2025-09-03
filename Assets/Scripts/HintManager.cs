@@ -383,7 +383,27 @@ public class HintManager : MonoBehaviour
 
         if (candidates.Count == 0)
         {
-            return "暂无可用提示";
+            // 新增兜底提示：根据场景中是否仍有可收集且启用显示的对象给出不同文案
+            Highlight[] allHighlights = FindObjectsOfType<Highlight>();
+            bool anyCollectableActive = false;
+            for (int i = 0; i < allHighlights.Length; i++)
+            {
+                Highlight h = allHighlights[i];
+                if (h != null && h.IsCollectableActive())
+                {
+                    anyCollectableActive = true;
+                    break;
+                }
+            }
+
+            if (anyCollectableActive)
+            {
+                return "天地间似乎还有⽂字，仔细观察⼀番吧";
+            }
+            else
+            {
+                return "万物⻬备，看看⽬标字如何拆分组合吧";
+            }
         }
 
         int idx = Random.Range(0, candidates.Count);

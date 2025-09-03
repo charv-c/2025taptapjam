@@ -153,6 +153,7 @@ public class AutoHint : MonoBehaviour
         {
             return value ?? string.Empty;
         }
+        // 如果广播内容不在字典中，返回空字符串（不显示提示）
         return string.Empty;
     }
 
