@@ -353,6 +353,15 @@ public class StringSelector : MonoBehaviour
                 Debug.Log("StringSelector: 播放选中文字音效");
             }
         }
+        else
+        {
+            // 达到最大选择数量，提示 AutoHint：最多只能选择两个字
+            if (BroadcastManager.Instance != null)
+            {
+                BroadcastManager.Instance.BroadcastToAll("select_limit");
+                Debug.Log("StringSelector: 已达到选择上限，发送提示广播 'select_limit'");
+            }
+        }
         
         // 通知ButtonController更新确认按钮状态
         NotifySelectionChanged();
@@ -501,6 +510,51 @@ public class StringSelector : MonoBehaviour
         Debug.Log($"StringSelector: 按钮重新创建完成，按钮数量: {stringButtons.Count}");
     }
     
+    // 返回当前已选择按钮的索引副本
+    public List<int> GetSelectedIndices()
+    {
+        return new List<int>(selectedIndices);
+    }
+
+    // 返回可用字符串中首次出现的位置
+    public int IndexOfAvailableString(string str)
+    {
+        return availableStrings.IndexOf(str);
+    }
+
+    // 在指定位置插入一个可用字符串并刷新UI
+    public void InsertAvailableStringAt(string str, int index)
+    {
+        if (string.IsNullOrEmpty(str)) return;
+
+        if (!allStrings.Contains(str))
+        {
+            AddToAllStrings(str);
+        }
+
+        if (index < 0) index = 0;
+        if (index > availableStrings.Count) index = availableStrings.Count;
+
+        availableStrings.Insert(index, str);
+
+        // 插入后，需要更新后续按钮索引并重建UI
+        RecreateAllButtonsPublic();
+
+        OnAvailableStringsChanged?.Invoke();
+    }
+
+    // 按索引移除一个可用字符串并刷新UI
+    public void RemoveAvailableStringAt(int index)
+    {
+        if (index < 0 || index >= availableStrings.Count) return;
+
+        availableStrings.RemoveAt(index);
+
+        RecreateAllButtonsPublic();
+
+        OnAvailableStringsChanged?.Invoke();
+    }
+
 
     
     // 公共方法：添加可用字符串
@@ -782,6 +836,48 @@ public class StringSelector : MonoBehaviour
     public int GetAvailableStringCount()
     {
         return availableStrings.Count;
+    }
+
+    // 就地拆分：将 original 在其当前位置替换为 part1 与 part2，保持其他元素位置不变
+    public bool SplitInPlace(string original, string part1, string part2)
+    {
+        int idx = availableStrings.IndexOf(original);
+        if (idx < 0) return false;
+
+        // 确保部件在 allStrings 中
+        AddToAllStrings(part1);
+        AddToAllStrings(part2);
+
+        availableStrings.RemoveAt(idx);
+        availableStrings.Insert(idx, part1);
+        availableStrings.Insert(idx + 1, part2);
+
+        // 重新创建按钮以反映新顺序
+        RecreateAllButtonsPublic();
+        OnAvailableStringsChanged?.Invoke();
+        return true;
+    }
+
+    // 就地合并：将 first 与 second 在其较小索引位置合并为 combined，保持其他元素位置不变
+    public bool CombineInPlace(string first, string second, string combined)
+    {
+        int i = availableStrings.IndexOf(first);
+        int j = availableStrings.IndexOf(second);
+        if (i < 0 || j < 0) return false;
+
+        int lower = Mathf.Min(i, j);
+        int higher = Mathf.Max(i, j);
+
+        // 确保合并后的字符在 allStrings 中
+        AddToAllStrings(combined);
+
+        availableStrings.RemoveAt(higher);
+        availableStrings.RemoveAt(lower);
+        availableStrings.Insert(lower, combined);
+
+        RecreateAllButtonsPublic();
+        OnAvailableStringsChanged?.Invoke();
+        return true;
     }
     
     // 公共方法：设置中文字体

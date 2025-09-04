@@ -242,29 +242,33 @@ public class ButtonController : MonoBehaviour
                         Debug.Log("ButtonController: 播放拆分成功音效");
                     }
 
+                    // 记录被拆字符的原始索引
+                    int oldIndex = stringSelector.IndexOfAvailableString(selectedString);
+                    if (oldIndex < 0) oldIndex = 0;
+
+                    // 清除选择
                     stringSelector.ClearSelection();
                     Debug.Log("ButtonController: 清除选择");
-                    
-                    stringSelector.RemoveAvailableString(selectedString);
-                    Debug.Log($"ButtonController: 从可用字符串列表中移除 '{selectedString}'");
-                    
-                    stringSelector.AddAvailableString(part1);
-                    Debug.Log($"ButtonController: 添加字符 '{part1}' 到可用字符串列表");
-                    
-                    stringSelector.AddAvailableString(part2);
-                    Debug.Log($"ButtonController: 添加字符 '{part2}' 到可用字符串列表");
-                    
-                    stringSelector.RecreateAllButtonsPublic();
-                    Debug.Log("ButtonController: 重新创建所有按钮");
+
+                    // 在原位置替换为拆分结果：先移除原字符，再按顺序插入两个结果
+                    stringSelector.RemoveAvailableStringAt(oldIndex);
+                    Debug.Log($"ButtonController: 从索引 {oldIndex} 处移除 '{selectedString}'");
+
+                    stringSelector.InsertAvailableStringAt(part1, oldIndex);
+                    Debug.Log($"ButtonController: 在索引 {oldIndex} 插入 '{part1}'");
+
+                    stringSelector.InsertAvailableStringAt(part2, oldIndex + 1);
+                    Debug.Log($"ButtonController: 在索引 {oldIndex + 1} 插入 '{part2}'");
                     
                     stringSelector.SetMaxSelectionCount(2);
                     Debug.Log("ButtonController: 设置最大选择数量为2");
                     
-                    // 发送拆分成功广播
+                    // 发送拆分成功广播：兼容旧事件 + 新格式“拆{被拆字符}”
                     if (BroadcastManager.Instance != null)
                     {
                         BroadcastManager.Instance.BroadcastToAll("split_success");
-                        Debug.Log("ButtonController: 发送拆分成功广播");
+                        BroadcastManager.Instance.BroadcastToAll($"拆{selectedString}");
+                        Debug.Log($"ButtonController: 发送拆分成功广播 (split_success, 拆{selectedString})");
                     }
                     
                     Debug.Log("ButtonController: 拆分操作完成");
@@ -327,14 +331,28 @@ public class ButtonController : MonoBehaviour
                     Debug.Log("ButtonController: 播放组合成功音效");
                 }
 
+                // 记录两个选中字符中靠前的索引，作为结果插入位置
+                List<int> indices = stringSelector.GetSelectedIndices();
+                indices.Sort();
+                int insertIndex = indices.Count > 0 ? indices[0] : 0;
+
+                // 清除选择
                 stringSelector.ClearSelection();
                 Debug.Log("ButtonController: 清除选择");
-                
-                stringSelector.RemoveAvailableString(firstString);
-                Debug.Log($"ButtonController: 从可用字符串列表中移除 '{firstString}'");
-                
-                stringSelector.RemoveAvailableString(secondString);
-                Debug.Log($"ButtonController: 从可用字符串列表中移除 '{secondString}'");
+
+                // 先按索引大的先移除，避免下标偏移
+                if (indices.Count >= 2)
+                {
+                    int idxA = indices[1];
+                    stringSelector.RemoveAvailableStringAt(idxA);
+                    Debug.Log($"ButtonController: 从索引 {idxA} 处移除第二个选中字符");
+                }
+                if (indices.Count >= 1)
+                {
+                    int idxB = indices[0];
+                    stringSelector.RemoveAvailableStringAt(idxB);
+                    Debug.Log($"ButtonController: 从索引 {idxB} 处移除第一个选中字符");
+                }
                 
                 if (PublicData.IsCharacterInTargetList(originalString))
                 {
@@ -347,12 +365,9 @@ public class ButtonController : MonoBehaviour
                     {
                         Debug.Log($"ButtonController: 目标位置有效，准备播放飞行动画");
                         
-                        // 先添加到可用字符串列表
-                        stringSelector.AddAvailableString(originalString);
-                        Debug.Log($"ButtonController: 添加字符 '{originalString}' 到可用字符串列表");
-                        
-                        stringSelector.RecreateAllButtonsPublic();
-                        Debug.Log("ButtonController: 重新创建所有按钮");
+                        // 在原位置插入合成结果
+                        stringSelector.InsertAvailableStringAt(originalString, insertIndex);
+                        Debug.Log($"ButtonController: 在索引 {insertIndex} 插入 '{originalString}'");
                         
                         // 延迟一秒后播放飞行动画
                         StartCoroutine(DelayedFlyingAnimation(originalString, targetPosition));
@@ -361,7 +376,7 @@ public class ButtonController : MonoBehaviour
                     else
                     {
                         Debug.LogWarning($"ButtonController: 目标位置为空，直接添加字符 '{originalString}'");
-                        stringSelector.AddAvailableString(originalString);
+                        stringSelector.InsertAvailableStringAt(originalString, insertIndex);
                     }
                 }
                 else
@@ -379,11 +394,12 @@ public class ButtonController : MonoBehaviour
                 stringSelector.ClearSelection();
                 Debug.Log("ButtonController: 清除选择");
                 
-                // 发送组合成功广播
+                // 发送组合成功广播：兼容旧事件 + 新格式“合{合成结果}”
                 if (BroadcastManager.Instance != null)
                 {
                     BroadcastManager.Instance.BroadcastToAll("combine_success");
-                    Debug.Log("ButtonController: 发送组合成功广播");
+                    BroadcastManager.Instance.BroadcastToAll($"合{originalString}");
+                    Debug.Log($"ButtonController: 发送组合成功广播 (combine_success, 合{originalString})");
                 }
                 Debug.Log($"合成结果: {originalString}");
                 Debug.Log("ButtonController: 组合操作完成");
