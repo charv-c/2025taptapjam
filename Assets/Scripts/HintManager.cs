@@ -1,5 +1,6 @@
 using UnityEngine;
 using UnityEngine.UI;
+using UnityEngine.EventSystems;
 using System.Collections;
 using System.Collections.Generic;
 using TMPro;
@@ -84,14 +85,39 @@ public class HintManager : MonoBehaviour
         // 设置初始状态
         InitializeHintImage();
         
-        // 绑定按钮点击事件
+        // 限制仅响应鼠标点击：移除所有 onClick 监听并禁用导航（屏蔽键盘/手柄触发）
         if (hintButton != null)
         {
-            hintButton.onClick.AddListener(OnHintButtonClicked);
+            hintButton.onClick.RemoveAllListeners();
+            var nav = hintButton.navigation;
+            nav.mode = Navigation.Mode.None;
+            hintButton.navigation = nav;
+
+            // 仅响应鼠标左键点击
+            var trigger = hintButton.gameObject.GetComponent<EventTrigger>();
+            if (trigger == null)
+            {
+                trigger = hintButton.gameObject.AddComponent<EventTrigger>();
+            }
+            // 避免重复添加
+            if (trigger.triggers == null)
+            {
+                trigger.triggers = new System.Collections.Generic.List<EventTrigger.Entry>();
+            }
+            var entry = new EventTrigger.Entry { eventID = EventTriggerType.PointerClick };
+            entry.callback.AddListener((eventData) =>
+            {
+                var pd = eventData as PointerEventData;
+                if (pd != null && pd.button == PointerEventData.InputButton.Left)
+                {
+                    OnHintButtonClicked();
+                }
+            });
+            trigger.triggers.Add(entry);
         }
         else
         {
-            Debug.LogWarning("HintManager: 未找到hintButton，无法绑定点击事件");
+            Debug.LogWarning("HintManager: 未找到hintButton，无法设置导航模式");
         }
 
         // 获取玩家控制器引用
