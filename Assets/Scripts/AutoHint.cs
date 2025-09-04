@@ -21,6 +21,12 @@ public class AutoHint : MonoBehaviour
     [SerializeField] private float visibleDuration = 1.50f;
     [SerializeField] private float fadeOutDuration = 0.25f;
 
+    [Header("自适应宽度设置")]
+    [SerializeField] private RectTransform targetRect; // 需要调整宽度的Rect（通常是自身或背景Image）
+    [SerializeField] private float minWidth = 120f;
+    [SerializeField] private float maxWidth = 900f;
+    [SerializeField] private float contentPadding = 40f; // 左右总内边距
+
     private List<TMP_Text> childTexts = new List<TMP_Text>();
     private CanvasGroup canvasGroup;
     private Image selfImage;
@@ -31,6 +37,10 @@ public class AutoHint : MonoBehaviour
         CacheChildTexts();
         EnsureCanvasGroup();
         selfImage = GetComponent<Image>();
+        if (targetRect == null)
+        {
+            targetRect = GetComponent<RectTransform>();
+        }
         // 默认隐藏（但不禁用对象，确保可接收广播）
         ImmediateHide();
     }
@@ -69,6 +79,11 @@ public class AutoHint : MonoBehaviour
         if (!string.IsNullOrEmpty(content))
         {
             bool hasTextReceiver = ApplyTextToChildren(content);
+            // 自适应宽度：若有文本接收者则按文本宽度调整目标Rect宽度
+            if (hasTextReceiver)
+            {
+                AdjustWidthToText();
+            }
             // 若没有文本接收者，尝试将值映射为字符图片到自身 Image
             if (!hasTextReceiver && selfImage != null)
             {
@@ -186,5 +201,23 @@ public class AutoHint : MonoBehaviour
             }
         }
         return applied;
+    }
+
+    private void AdjustWidthToText()
+    {
+        if (targetRect == null) return;
+        float preferredWidth = 0f;
+        for (int i = 0; i < childTexts.Count; i++)
+        {
+            var t = childTexts[i];
+            if (t == null) continue;
+            // 确保已更新网格，获取精确首选宽度
+            t.ForceMeshUpdate();
+            preferredWidth = Mathf.Max(preferredWidth, t.preferredWidth);
+        }
+        float computed = Mathf.Clamp(preferredWidth + contentPadding, minWidth, maxWidth);
+        var size = targetRect.sizeDelta;
+        size.x = computed;
+        targetRect.sizeDelta = size;
     }
 }
