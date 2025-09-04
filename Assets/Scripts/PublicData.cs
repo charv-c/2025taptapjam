@@ -96,6 +96,12 @@ public class PublicData : MonoBehaviour
         {"人夹侠", "⾏于⼭「夹」间者，谓之「侠」"},
         {"人木休", "⼈倚⽊⽽息，得以「休」"},
         
+        {"门", "轻推柴扉，取得「⻔」字"},
+        {"粳", "⽥中取⽲，得「粳」⽶之粹"},
+        {"丛", "探草⽊深处，觅得「丛」字"},
+        {"日", "感「仙」⼈之⼒，摘得「⽇」轮"},
+        {"王", "「侠」者伏猛⻁，终成「王」"},
+        
     };
     
     private static Dictionary<string, Sprite> characterSprites = new Dictionary<string, Sprite>();

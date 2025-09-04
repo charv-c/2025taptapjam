@@ -304,6 +304,13 @@ public class Highlight : MonoBehaviour
                     Debug.Log($"FunctionA: 玩家携带'侠'字符，可以收集'王'对象");
                     AddLetterToAvailableList();
                     
+                    // 收集"王"成功后发送广播
+                    if (BroadcastManager.Instance != null)
+                    {
+                        BroadcastManager.Instance.BroadcastToAll("王");
+                        Debug.Log($"FunctionA: 已广播收集提示 '王'");
+                    }
+                    
                     // 重要：重置玩家状态为"人"字
                     player.SetCarryCharacter("人");
                     Debug.Log($"FunctionA: 已将玩家状态重置为'人'字");
@@ -321,6 +328,13 @@ public class Highlight : MonoBehaviour
             // 其他可收集对象的正常处理
             Debug.Log($"FunctionA: 对象 '{letter}' 是可收集的，优先添加到可用字符串列表");
             AddLetterToAvailableList();
+            
+            // 收集成功后发送广播
+            if (BroadcastManager.Instance != null)
+            {
+                BroadcastManager.Instance.BroadcastToAll(letter);
+                Debug.Log($"FunctionA: 已广播收集提示 '{letter}'");
+            }
             
             // 销毁可收集的对象
             Debug.Log($"FunctionA: 销毁可收集对象 '{letter}'");
@@ -704,6 +718,13 @@ public class Highlight : MonoBehaviour
                 if (collectable)
                 {
                     AddLetterToAvailableList();
+                    
+                    // 收集"王"成功后发送广播
+                    if (BroadcastManager.Instance != null)
+                    {
+                        BroadcastManager.Instance.BroadcastToAll("王");
+                        Debug.Log($"收到'侠'广播: 已广播收集提示 '王'");
+                    }
                 }
             }
         }
@@ -794,6 +815,13 @@ public class Highlight : MonoBehaviour
         {
             Debug.Log("门对象被收集，添加'门'到可用字符串列表");
             AddDoorToAvailableList();
+            
+            // 门对象收集成功后发送广播
+            if (BroadcastManager.Instance != null)
+            {
+                BroadcastManager.Instance.BroadcastToAll("门");
+                Debug.Log("HideObject: 已广播收集提示 '门'");
+            }
             
             // 门对象现在和其他收集元素保持一致：交互后正常隐藏
             Debug.Log("门对象：交互后正常隐藏，与其他收集元素保持一致");

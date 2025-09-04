@@ -351,6 +351,16 @@ public class HintManager : MonoBehaviour
 
         string carry = GetCurrentCarryCharacter();
 
+        // 第一优先级：检查是否需要状态重置（玩家处于化字状态，且该形态对应互动均已完成）
+        if (!string.IsNullOrEmpty(carry) && carry != "人")
+        {
+            if (IsCarryFormInteractionsCompleted(carry, rainVisible, childVisible, hunterVisible, kingVisible, sunVisible))
+            {
+                // 唯一的“状态重置提示”
+                return "此形态之事已毕，先回归「人」再继续吧";
+            }
+        }
+
         // 让雨“停”
         if (rainVisible)
         {
@@ -408,6 +418,36 @@ public class HintManager : MonoBehaviour
 
         int idx = Random.Range(0, candidates.Count);
         return candidates[idx];
+    }
+
+    // 判断某化字形态对应的场景互动是否均完成
+    private bool IsCarryFormInteractionsCompleted(string carry, bool rainVisible, bool childVisible, bool hunterVisible, bool kingVisible, bool sunVisible)
+    {
+        // PublicData.stringKeyValuePairs 定义了形态到目标的映射，如 仙->日、停->雨 等
+        string target;
+        if (!PublicData.stringKeyValuePairs.TryGetValue(carry, out target))
+        {
+            // 未定义映射则视为无需重置
+            return false;
+        }
+
+        switch (target)
+        {
+            case "雨":
+                // 雨的互动完成：雨不再可见
+                return !rainVisible;
+            case "猎":
+                return !hunterVisible;
+            case "孩":
+                return !childVisible;
+            case "王":
+                return !kingVisible;
+            case "日":
+                // 多个日：均处理完毕时场景中不再有可见的日
+                return !sunVisible;
+            default:
+                return false;
+        }
     }
 
     // 判断对象是否“显示”（按启用状态）
