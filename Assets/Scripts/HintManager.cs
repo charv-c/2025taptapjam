@@ -14,7 +14,7 @@ public class HintManager : MonoBehaviour
     
     [Header("动画设置")]
     [SerializeField] private float targetWidth = 300f;  // 目标宽度（可被动态计算覆盖）
-    [SerializeField] private float animationDuration = 1.5f; // 动画持续时间
+    [SerializeField] private float animationDuration = 0.1f; // 动画持续时间
     
     [Header("初始设置")]
     [SerializeField] private float initialWidth = 0f;   // 初始宽度
@@ -29,6 +29,9 @@ public class HintManager : MonoBehaviour
     private Coroutine widthAnimationCoroutine;          // 宽度动画协程
     private bool isExpanded = false;                    // 当前是否展开
     private Sprite initialButtonSprite;                 // 按钮初始底图
+    
+    [Header("按钮状态切换")]
+    [SerializeField] private Sprite expandedButtonSprite;  // 展开时的按钮底图
     
     [SerializeField]
     private TextMeshProUGUI hintText;
@@ -210,6 +213,12 @@ public class HintManager : MonoBehaviour
 
         // 动态计算目标宽度
         targetWidth = ComputeTargetWidth(text);
+        
+        // 切换按钮底图到展开状态
+        if (hintButton != null && hintButton.image != null && expandedButtonSprite != null)
+        {
+            hintButton.image.sprite = expandedButtonSprite;
+        }
         
         // 展开前隐藏文字
         HideHintText();
@@ -477,6 +486,12 @@ public class HintManager : MonoBehaviour
         
         isAnimating = false;
         isExpanded = false;
+        
+        // 重置按钮底图为初始状态
+        if (hintButton != null && hintButton.image != null && initialButtonSprite != null)
+        {
+            hintButton.image.sprite = initialButtonSprite;
+        }
         
         if (hintImageRect != null)
         {
