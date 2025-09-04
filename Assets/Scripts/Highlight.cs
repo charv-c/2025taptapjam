@@ -50,6 +50,28 @@ public class Highlight : MonoBehaviour
         }
     }
 
+    // 对外提供：是否为可收集元素且当前处于启用显示状态
+    public bool IsCollectableActive()
+    {
+        if (!collectable) return false;
+
+        // 认为可交互显示的条件：
+        // - 组件启用
+        // - GameObject 处于激活
+        // - 自身 SpriteRenderer 启用（若有）
+        // - 碰撞箱启用（若有）
+        if (!enabled) return false;
+        if (!gameObject.activeInHierarchy) return false;
+
+        var spriteRenderer = GetComponent<SpriteRenderer>();
+        if (spriteRenderer != null && !spriteRenderer.enabled) return false;
+
+        var collider = GetComponent<Collider2D>();
+        if (collider != null && !collider.enabled) return false;
+
+        return true;
+    }
+
     void Update()
     {
         if (!enabled) return;
@@ -188,6 +210,14 @@ public class Highlight : MonoBehaviour
                 // 使用新的SetCarryCharacter方法，会自动更新米字格图片
                 player.SetCarryCharacter(combinedCharacter);
                 Debug.Log($"ChangeMi: 已设置玩家携带字符为 '{combinedCharacter}'");
+
+                // 合字成功后发送广播，例如 人 + 亭 -> 停 ，广播 "人亭停"
+                if (BroadcastManager.Instance != null)
+                {
+                    string combineBroadcast = $"人{letter}{combinedCharacter}";
+                    BroadcastManager.Instance.BroadcastToAll(combineBroadcast);
+                    Debug.Log($"ChangeMi: 已广播合字提示 '{combineBroadcast}'");
+                }
             }
             else
             {
