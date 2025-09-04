@@ -21,7 +21,8 @@ public class TutorialManager : MonoBehaviour
     public Button continueButton;
 
     [Header("字体设置")]
-    [SerializeField] private TMP_FontAsset chineseFont; // 中文字体资源
+    [SerializeField] private TMP_FontAsset hintTextFont; // 提示文本字体资源
+    [SerializeField] private TMP_FontAsset buttonTextFont; // 按钮文本字体资源
 
     [Header("引导人物与表情")]
     public Image guideCharacterImage;
@@ -1652,55 +1653,115 @@ public class TutorialManager : MonoBehaviour
     #endregion
 
     #region Font Settings
-    // 设置中文字体
+    // 设置教学面板字体
     private void SetChineseFont()
     {
-        // 如果没有设置中文字体，尝试从StringSelector获取
-        if (chineseFont == null)
+        SetupHintTextFont();
+        SetupButtonTextFont();
+    }
+    
+    // 设置提示文本字体
+    private void SetupHintTextFont()
+    {
+        if (hintText == null)
         {
-            StringSelector stringSelector = FindObjectOfType<StringSelector>();
-            if (stringSelector != null)
-            {
-                chineseFont = stringSelector.GetChineseFont();
-                Debug.Log("TutorialManager: 从StringSelector获取中文字体");
-            }
+            Debug.LogWarning("TutorialManager: hintText为空，无法设置字体");
+            return;
         }
         
-        if (chineseFont != null)
+        // 优先使用编辑器中已配置的字体，如果没有配置则使用代码设置的字体
+        if (hintText.font != null)
         {
-            // 设置提示文本的字体
-            if (hintText != null)
-            {
-                hintText.font = chineseFont;
-                hintText.ForceMeshUpdate();
-            }
-
-            // 设置继续按钮文本的字体
-            TextMeshProUGUI continueButtonText = continueButton.GetComponentInChildren<TextMeshProUGUI>();
-            if (continueButtonText != null)
-            {
-                continueButtonText.font = chineseFont;
-                continueButtonText.ForceMeshUpdate();
-            }
-
-            Debug.Log("TutorialManager: 中文字体设置完成");
+            Debug.Log($"TutorialManager: 提示文本使用编辑器配置的字体: {hintText.font.name}");
+            return;
+        }
+        
+        // 编辑器中没有配置字体，尝试使用代码设置的字体
+        TMP_FontAsset targetFont = hintTextFont;
+        
+        // 如果代码中也没有设置字体，尝试从StringSelector获取或加载默认字体
+        if (targetFont == null)
+        {
+            targetFont = GetFallbackFont("提示文本");
+        }
+        
+        // 应用字体
+        if (targetFont != null)
+        {
+            hintText.font = targetFont;
+            hintText.ForceMeshUpdate();
+            Debug.Log($"TutorialManager: 提示文本字体设置完成: {targetFont.name}");
         }
         else
         {
-            Debug.LogWarning("TutorialManager: 未设置中文字体资源，尝试加载默认字体");
-            // 尝试加载默认的中文字体
-            TMP_FontAsset defaultFont = Resources.Load<TMP_FontAsset>("Fonts/SourceHanSerifCN-Heavy SDF 1");
-            if (defaultFont != null)
+            Debug.LogWarning("TutorialManager: 无法为提示文本设置字体");
+        }
+    }
+    
+    // 设置按钮文本字体
+    private void SetupButtonTextFont()
+    {
+        TextMeshProUGUI continueButtonText = continueButton?.GetComponentInChildren<TextMeshProUGUI>();
+        if (continueButtonText == null)
+        {
+            Debug.LogWarning("TutorialManager: continueButtonText为空，无法设置字体");
+            return;
+        }
+        
+        // 优先使用编辑器中已配置的字体，如果没有配置则使用代码设置的字体
+        if (continueButtonText.font != null)
+        {
+            Debug.Log($"TutorialManager: 按钮文本使用编辑器配置的字体: {continueButtonText.font.name}");
+            return;
+        }
+        
+        // 编辑器中没有配置字体，尝试使用代码设置的字体
+        TMP_FontAsset targetFont = buttonTextFont;
+        
+        // 如果代码中也没有设置字体，尝试从StringSelector获取或加载默认字体
+        if (targetFont == null)
+        {
+            targetFont = GetFallbackFont("按钮文本");
+        }
+        
+        // 应用字体
+        if (targetFont != null)
+        {
+            continueButtonText.font = targetFont;
+            continueButtonText.ForceMeshUpdate();
+            Debug.Log($"TutorialManager: 按钮文本字体设置完成: {targetFont.name}");
+        }
+        else
+        {
+            Debug.LogWarning("TutorialManager: 无法为按钮文本设置字体");
+        }
+    }
+    
+    // 获取备用字体（从StringSelector或Resources加载）
+    private TMP_FontAsset GetFallbackFont(string fontType)
+    {
+        // 尝试从StringSelector获取字体
+        StringSelector stringSelector = FindObjectOfType<StringSelector>();
+        if (stringSelector != null)
+        {
+            TMP_FontAsset font = stringSelector.GetChineseFont();
+            if (font != null)
             {
-                chineseFont = defaultFont;
-                if (hintText != null)
-                {
-                    hintText.font = chineseFont;
-                    hintText.ForceMeshUpdate();
-                }
-                Debug.Log("TutorialManager: 使用默认中文字体");
+                Debug.Log($"TutorialManager: 从StringSelector获取{fontType}备用字体: {font.name}");
+                return font;
             }
         }
+        
+        // 尝试加载默认字体
+        TMP_FontAsset defaultFont = Resources.Load<TMP_FontAsset>("Fonts/SourceHanSerifCN-Heavy SDF 1");
+        if (defaultFont != null)
+        {
+            Debug.Log($"TutorialManager: 为{fontType}加载默认字体: {defaultFont.name}");
+            return defaultFont;
+        }
+        
+        Debug.LogWarning($"TutorialManager: 无法获取{fontType}的备用字体");
+        return null;
     }
     #endregion
 
