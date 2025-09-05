@@ -201,11 +201,11 @@ public class Player : MonoBehaviour
                 // 禁用输入时，重置输入值
                 currentHorizontalInput = 0f;
                 currentVerticalInput = 0f;
-                Debug.Log($"Player: 已禁用输入，重置输入值");
+                GameLogger.LogDev($"Player: 已禁用输入，重置输入值");
             }
             else
             {
-                Debug.Log($"Player: 已启用输入");
+                GameLogger.LogDev($"Player: 已启用输入");
             }
         }
 
@@ -317,11 +317,11 @@ public class Player : MonoBehaviour
         // 检查当前玩家是否为当前控制角色
         if (!IsCurrentControlledPlayer())
         {
-            Debug.Log($"Player: 当前玩家不是控制角色，忽略回车键输入");
+            GameLogger.LogDev($"Player: 当前玩家不是控制角色，忽略回车键输入");
             return;
         }
         
-        Debug.Log($"Player: 当前玩家是控制角色，执行回车键交互逻辑");
+        GameLogger.LogDev($"Player: 当前玩家是控制角色，执行回车键交互逻辑");
         // 查找附近的Highlight对象并触发交互
         TriggerNearbyHighlightInteraction();
     }
@@ -333,7 +333,7 @@ public class Player : MonoBehaviour
         PlayerController playerController = FindObjectOfType<PlayerController>();
         if (playerController == null)
         {
-            Debug.LogWarning("Player: 未找到PlayerController，默认允许交互");
+            GameLogger.LogWarning("Player: 未找到PlayerController，默认允许交互");
             return true;
         }
         
@@ -341,7 +341,7 @@ public class Player : MonoBehaviour
         Player currentControlledPlayer = playerController.GetCurrentPlayer();
         if (currentControlledPlayer == null)
         {
-            Debug.LogWarning("Player: 当前控制角色为空，默认允许交互");
+            GameLogger.LogWarning("Player: 当前控制角色为空，默认允许交互");
             return true;
         }
         
@@ -350,11 +350,11 @@ public class Player : MonoBehaviour
         
         if (isCurrentControlled)
         {
-            Debug.Log($"Player: 当前玩家是控制角色，允许执行交互");
+            GameLogger.LogDev($"Player: 当前玩家是控制角色，允许执行交互");
         }
         else
         {
-            Debug.Log($"Player: 当前玩家不是控制角色，禁止执行交互");
+            GameLogger.LogDev($"Player: 当前玩家不是控制角色，禁止执行交互");
         }
         
         return isCurrentControlled;
@@ -379,7 +379,7 @@ public class Player : MonoBehaviour
                     if (highlight.letter == "孩")
                     {
                         targetHighlight = highlight;
-                        Debug.Log($"Player: 优先选择小孩对象进行交互: '{highlight.gameObject.name}'");
+                        GameLogger.LogDev($"Player: 优先选择小孩对象进行交互: '{highlight.gameObject.name}'");
                         break; // 小孩优先级最高，直接跳出
                     }
                     // 如果检测到门对象，需要检查孩子是否隐藏
@@ -389,18 +389,18 @@ public class Player : MonoBehaviour
                         if (targetHighlight == null && IsChildHidden())
                         {
                             targetHighlight = highlight;
-                            Debug.Log($"Player: 小孩已隐藏，可选择门对象: '{highlight.gameObject.name}'");
+                            GameLogger.LogDev($"Player: 小孩已隐藏，可选择门对象: '{highlight.gameObject.name}'");
                         }
                         else
                         {
-                            Debug.Log($"Player: 门对象被跳过，小孩可能未隐藏或已有其他交互对象");
+                            GameLogger.LogDev($"Player: 门对象被跳过，小孩可能未隐藏或已有其他交互对象");
                         }
                     }
                     // 其他对象正常处理
                     else if (targetHighlight == null)
                     {
                         targetHighlight = highlight;
-                        Debug.Log($"Player: 选择对象进行交互: '{highlight.gameObject.name}'");
+                        GameLogger.LogDev($"Player: 选择对象进行交互: '{highlight.gameObject.name}'");
                     }
                 }
             }
@@ -410,7 +410,7 @@ public class Player : MonoBehaviour
         if (targetHighlight != null)
         {
             targetHighlight.TriggerInteraction();
-            Debug.Log($"Player: 最终触发与Highlight对象 '{targetHighlight.gameObject.name}' 的交互");
+            GameLogger.LogDev($"Player: 最终触发与Highlight对象 '{targetHighlight.gameObject.name}' 的交互");
         }
     }
     
@@ -448,7 +448,7 @@ public class Player : MonoBehaviour
         Collider2D playerCollider = GetComponent<Collider2D>();
         if (playerCollider == null)
         {
-            Debug.LogWarning("Player: 玩家没有Collider2D组件");
+            GameLogger.LogWarning("Player: 玩家没有Collider2D组件");
             return false;
         }
         
@@ -456,7 +456,7 @@ public class Player : MonoBehaviour
         Collider2D highlightCollider = highlight.GetComponent<Collider2D>();
         if (highlightCollider == null)
         {
-            Debug.LogWarning($"Player: Highlight对象 '{highlight.gameObject.name}' 没有Collider2D组件");
+            GameLogger.LogWarning($"Player: Highlight对象 '{highlight.gameObject.name}' 没有Collider2D组件");
             return false;
         }
         
@@ -465,7 +465,7 @@ public class Player : MonoBehaviour
         
         if (isColliding)
         {
-            Debug.Log($"Player: 检测到与Highlight对象 '{highlight.gameObject.name}' 的碰撞");
+            GameLogger.LogDev($"Player: 检测到与Highlight对象 '{highlight.gameObject.name}' 的碰撞");
         }
         
         return isColliding;
@@ -475,44 +475,44 @@ public class Player : MonoBehaviour
     public void SetCarryCharacter(string newCharacter)
     {
         string oldCharacter = CarryCharacter;
-        Debug.Log($"Player.SetCarryCharacter: 开始设置携带字符，从 '{oldCharacter}' 更改为 '{newCharacter}'");
+        GameLogger.LogDev($"Player.SetCarryCharacter: 开始设置携带字符，从 '{oldCharacter}' 更改为 '{newCharacter}'");
         
         CarryCharacter = newCharacter;
         
         // 更新对应的米字格图片
         UpdateMiSquareForCarryCharacter(newCharacter);
         
-        Debug.Log($"Player.SetCarryCharacter: 携带字符设置完成，当前携带字符为 '{CarryCharacter}'");
+        GameLogger.LogDev($"Player.SetCarryCharacter: 携带字符设置完成，当前携带字符为 '{CarryCharacter}'");
     }
     
     // 更新米字格图片
     private void UpdateMiSquareForCarryCharacter(string character)
     {
-        Debug.Log($"Player.UpdateMiSquareForCarryCharacter: 开始更新米字格图片，字符='{character}'，isPlayer1={isPlayer1}");
+        GameLogger.LogDev($"Player.UpdateMiSquareForCarryCharacter: 开始更新米字格图片，字符='{character}'，isPlayer1={isPlayer1}");
         
         // 根据玩家类型确定对应的米字格
         string targetMiSquareName = isPlayer1 ? "MiSquare1" : "MiSquare2";
-        Debug.Log($"Player.UpdateMiSquareForCarryCharacter: 查找米字格对象 '{targetMiSquareName}'");
+        GameLogger.LogDev($"Player.UpdateMiSquareForCarryCharacter: 查找米字格对象 '{targetMiSquareName}'");
         
         GameObject targetMiSquare = GameObject.Find(targetMiSquareName);
         
         if (targetMiSquare != null)
         {
-            Debug.Log($"Player.UpdateMiSquareForCarryCharacter: 找到米字格对象 '{targetMiSquareName}'");
+            GameLogger.LogDev($"Player.UpdateMiSquareForCarryCharacter: 找到米字格对象 '{targetMiSquareName}'");
             MiSquareController miSquareController = targetMiSquare.GetComponent<MiSquareController>();
             if (miSquareController != null)
             {
                 miSquareController.SetMiSquareSprite(character);
-                Debug.Log($"Player.UpdateMiSquareForCarryCharacter: 已更新米字格 '{targetMiSquareName}' 为字符 '{character}'");
+                GameLogger.LogDev($"Player.UpdateMiSquareForCarryCharacter: 已更新米字格 '{targetMiSquareName}' 为字符 '{character}'");
             }
             else
             {
-                Debug.LogWarning($"Player.UpdateMiSquareForCarryCharacter: 米字格 '{targetMiSquareName}' 没有MiSquareController组件");
+                GameLogger.LogWarning($"Player.UpdateMiSquareForCarryCharacter: 米字格 '{targetMiSquareName}' 没有MiSquareController组件");
             }
         }
         else
         {
-            Debug.LogWarning($"Player.UpdateMiSquareForCarryCharacter: 未找到米字格对象 '{targetMiSquareName}'");
+            GameLogger.LogWarning($"Player.UpdateMiSquareForCarryCharacter: 未找到米字格对象 '{targetMiSquareName}'");
         }
     }
     
@@ -550,7 +550,7 @@ public class Player : MonoBehaviour
             }
         }
         
-        Debug.Log("Player: 已重置所有米字格为'人'字符");
+        GameLogger.LogDev("Player: 已重置所有米字格为'人'字符");
     }
     
     // 获取当前携带的字符
@@ -569,7 +569,7 @@ public class Player : MonoBehaviour
     public void SetEnterKeyEnabled(bool enabled)
     {
         enterKeyEnabled = enabled;
-        Debug.Log($"Player: 回车键响应已{(enabled ? "启用" : "禁用")}");
+        GameLogger.LogDev($"Player: 回车键响应已{(enabled ? "启用" : "禁用")}");
     }
     
     // 获取回车键响应状态
@@ -595,7 +595,7 @@ public class Player : MonoBehaviour
             spriteRenderer.color = grayedOutColor;
             isGrayedOut = true;
             
-            Debug.Log($"Player: 已将玩家设置为灰色状态");
+            GameLogger.LogDev($"Player: 已将玩家设置为灰色状态");
         }
     }
     
@@ -610,7 +610,7 @@ public class Player : MonoBehaviour
             spriteRenderer.color = originalColor;
             isGrayedOut = false;
             
-            Debug.Log($"Player: 已恢复玩家正常颜色");
+            GameLogger.LogDev($"Player: 已恢复玩家正常颜色");
         }
     }
     
@@ -641,7 +641,7 @@ public class Player : MonoBehaviour
         if (spriteRenderer != null)
         {
             spriteRenderer.color = color;
-            Debug.Log($"Player: 已设置自定义颜色: {color}");
+            GameLogger.LogDev($"Player: 已设置自定义颜色: {color}");
         }
     }
 } 

@@ -10,7 +10,7 @@ public class Level2Manager : MonoBehaviour
 
     void Start()
     {
-        Debug.Log("Level2Manager: 开始初始化level2场景");
+        GameLogger.LogSystem("Level2Manager: 开始初始化level2场景");
         
         // 设置Level2的BGM
         SetupLevel2BGM();
@@ -33,7 +33,7 @@ public class Level2Manager : MonoBehaviour
         }
         else
         {
-            Debug.LogError("Level2Manager: 未找到PlayerController");
+            GameLogger.LogError("Level2Manager: 未找到PlayerController");
         }
     }
     
@@ -46,34 +46,34 @@ public class Level2Manager : MonoBehaviour
             if (AudioManager.Instance.bgmRainy != null)
             {
                 AudioManager.Instance.PlayBGM(AudioManager.Instance.bgmRainy);
-                Debug.Log("Level2Manager: 已设置Level2 BGM为bgmRainy");
+                GameLogger.LogSystem("Level2Manager: 已设置Level2 BGM为bgmRainy");
             }
             else
             {
-                Debug.LogWarning("Level2Manager: bgmRainy音频片段未设置");
+                GameLogger.LogWarning("Level2Manager: bgmRainy音频片段未设置");
             }
             
             // 播放雨声环境音
             if (AudioManager.Instance.ambientRain != null)
             {
                 AudioManager.Instance.PlayAmbient(AudioManager.Instance.ambientRain);
-                Debug.Log("Level2Manager: 已播放雨声环境音");
+                GameLogger.LogSystem("Level2Manager: 已播放雨声环境音");
             }
             else
             {
-                Debug.LogWarning("Level2Manager: ambientRain音频片段未设置");
+                GameLogger.LogWarning("Level2Manager: ambientRain音频片段未设置");
             }
         }
         else
         {
-            Debug.LogWarning("Level2Manager: 未找到AudioManager实例");
+            GameLogger.LogWarning("Level2Manager: 未找到AudioManager实例");
         }
     }
     
     // 启用所有操作（移动、切换、回车、空格）
     private void EnableAllOperations()
     {
-        Debug.Log("Level2Manager: 启用所有操作");
+        GameLogger.LogSystem("Level2Manager: 启用所有操作");
         
         if (playerController != null)
         {
@@ -102,11 +102,11 @@ public class Level2Manager : MonoBehaviour
             // 更新玩家颜色状态（当前操控的玩家正常颜色，其他玩家灰色）
             playerController.UpdatePlayerColors();
             
-            Debug.Log("Level2Manager: 已启用所有移动、切换、回车、空格操作，并设置玩家颜色状态");
+            GameLogger.LogSystem("Level2Manager: 已启用所有移动、切换、回车、空格操作，并设置玩家颜色状态");
         }
         else
         {
-            Debug.LogWarning("Level2Manager: PlayerController为null，无法启用操作");
+            GameLogger.LogWarning("Level2Manager: PlayerController为null，无法启用操作");
         }
     }
 }

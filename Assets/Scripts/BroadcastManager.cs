@@ -33,7 +33,7 @@ public class BroadcastManager : MonoBehaviour
     {
         if (enableBroadcastLogging)
         {
-            Debug.Log($"BroadcastManager: 开始全屏广播值: {broadcastedValue}");
+            GameLogger.LogDev($"BroadcastManager: 开始全屏广播值: {broadcastedValue}");
         }
         
         // 记录广播历史
@@ -54,7 +54,7 @@ public class BroadcastManager : MonoBehaviour
                 if (obj is Highlight highlight)
                 {
                     highlightCount++;
-                    Debug.Log($"找到Highlight组件: {obj.gameObject.name}, letter={highlight.letter}, enabled={obj.enabled}, activeInHierarchy={obj.gameObject.activeInHierarchy}");
+                    GameLogger.LogDev($"找到Highlight组件: {obj.gameObject.name}, letter={highlight.letter}, enabled={obj.enabled}, activeInHierarchy={obj.gameObject.activeInHierarchy}");
                 }
                 
                 // 调用对象的接收广播方法
@@ -65,7 +65,7 @@ public class BroadcastManager : MonoBehaviour
         
         if (enableBroadcastLogging)
         {
-            Debug.Log($"BroadcastManager: 广播完成，发送给 {receiverCount} 个对象，其中 {highlightCount} 个Highlight组件");
+            GameLogger.LogDev($"BroadcastManager: 广播完成，发送给 {receiverCount} 个对象，其中 {highlightCount} 个Highlight组件");
         }
     }
     
@@ -84,7 +84,7 @@ public class BroadcastManager : MonoBehaviour
         
         if (enableBroadcastLogging)
         {
-            Debug.Log($"BroadcastManager: 向 {objectsOfType.Length} 个 {typeof(T).Name} 对象广播: {broadcastedValue}");
+            GameLogger.LogDev($"BroadcastManager: 向 {objectsOfType.Length} 个 {typeof(T).Name} 对象广播: {broadcastedValue}");
         }
     }
     
@@ -105,12 +105,12 @@ public class BroadcastManager : MonoBehaviour
             
             if (enableBroadcastLogging)
             {
-                Debug.Log($"BroadcastManager: 向对象 '{objectName}' 广播: {broadcastedValue}");
+                GameLogger.LogDev($"BroadcastManager: 向对象 '{objectName}' 广播: {broadcastedValue}");
             }
         }
         else
         {
-            Debug.LogWarning($"BroadcastManager: 未找到名为 '{objectName}' 的对象");
+            GameLogger.LogWarning($"BroadcastManager: 未找到名为 '{objectName}' 的对象");
         }
     }
     

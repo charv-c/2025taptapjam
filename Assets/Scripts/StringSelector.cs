@@ -75,13 +75,13 @@ public class StringSelector : MonoBehaviour
         // 检查必要的组件
         if (buttonContainer == null)
         {
-            Debug.LogError("StringSelector: 请在Inspector中设置Button Container!");
+            GameLogger.LogError("StringSelector: 请在Inspector中设置Button Container!");
             return;
         }
         
         if (buttonPrefab == null)
         {
-            Debug.LogError("StringSelector: 请在Inspector中设置Button Prefab!");
+            GameLogger.LogError("StringSelector: 请在Inspector中设置Button Prefab!");
             return;
         }
         
@@ -89,14 +89,14 @@ public class StringSelector : MonoBehaviour
         Button prefabButton = buttonPrefab.GetComponent<Button>();
         if (prefabButton == null)
         {
-            Debug.LogError("StringSelector: Button Prefab必须包含Button组件!");
+            GameLogger.LogError("StringSelector: Button Prefab必须包含Button组件!");
             return;
         }
         
         TextMeshProUGUI prefabText = buttonPrefab.GetComponentInChildren<TextMeshProUGUI>();
         if (prefabText == null)
         {
-            Debug.LogError("StringSelector: Button Prefab必须包含TextMeshProUGUI组件!");
+            GameLogger.LogError("StringSelector: Button Prefab必须包含TextMeshProUGUI组件!");
             return;
         }
         
@@ -115,26 +115,26 @@ public class StringSelector : MonoBehaviour
     {
         try
         {
-            Debug.Log($"StringSelector: 开始创建按钮，字符串: '{str}'，索引: {index}");
+            GameLogger.LogDev($"StringSelector: 开始创建按钮，字符串: '{str}'，索引: {index}");
             
             GameObject buttonObj = Instantiate(buttonPrefab, buttonContainer);
             if (buttonObj == null)
             {
-                Debug.LogError("StringSelector: 按钮预制体实例化失败");
+                GameLogger.LogError("StringSelector: 按钮预制体实例化失败");
                 return;
             }
 
             Button button = buttonObj.GetComponent<Button>();
             if (button == null)
             {
-                Debug.LogError("StringSelector: 按钮对象没有Button组件");
+                GameLogger.LogError("StringSelector: 按钮对象没有Button组件");
                 return;
             }
             
             TextMeshProUGUI buttonText = buttonObj.GetComponentInChildren<TextMeshProUGUI>();
             if (buttonText == null)
             {
-                Debug.LogError("StringSelector: 按钮对象没有TextMeshProUGUI组件");
+                GameLogger.LogError("StringSelector: 按钮对象没有TextMeshProUGUI组件");
                 return;
             }
 
@@ -164,7 +164,7 @@ public class StringSelector : MonoBehaviour
                 buttonText.text = str;
                 // 仅用按钮的 Image 作为点击命中，文本不参与射线
                 buttonText.raycastTarget = false;
-                Debug.Log($"StringSelector: 正在创建按钮，字符串: '{str}'，字符代码: {(int)str[0]}，索引: {index}");
+                GameLogger.LogDev($"StringSelector: 正在创建按钮，字符串: '{str}'，字符代码: {(int)str[0]}，索引: {index}");
                 
                 // 添加按钮标识，用于调试
                 buttonObj.name = $"Button_{index}_{str}";
@@ -177,45 +177,45 @@ public class StringSelector : MonoBehaviour
                     // 特别检查"门"字
                     if (str == "门")
                     {
-                        Debug.Log($"StringSelector: 特别检查'门'字显示");
-                        Debug.Log($"'门'字Unicode: {(int)str[0]:X4}");
-                        Debug.Log($"字体名称: {chineseFont.name}");
-                        Debug.Log($"字体是否支持'门': {chineseFont.HasCharacter(str[0])}");
+                        GameLogger.LogDev($"StringSelector: 特别检查'门'字显示");
+                        GameLogger.LogDev($"'门'字Unicode: {(int)str[0]:X4}");
+                        GameLogger.LogDev($"字体名称: {chineseFont.name}");
+                        GameLogger.LogDev($"字体是否支持'门': {chineseFont.HasCharacter(str[0])}");
                         
                         // 检查字符查找表
                         if (chineseFont.characterLookupTable != null)
                         {
                             uint unicode = (uint)str[0];
                             bool hasInLookupTable = chineseFont.characterLookupTable.ContainsKey(unicode);
-                            Debug.Log($"字符查找表是否包含'门': {hasInLookupTable}");
+                            GameLogger.LogDev($"字符查找表是否包含'门': {hasInLookupTable}");
                         }
                     }
 
                     // 检查字体是否支持当前字符
                     if (!chineseFont.HasCharacter(str[0]))
                     {
-                        Debug.LogWarning($"StringSelector: 中文字体不支持字符 '{str}'，字符代码: {(int)str[0]:X4}");
+                        GameLogger.LogWarning($"StringSelector: 中文字体不支持字符 '{str}'，字符代码: {(int)str[0]:X4}");
                         
                         // 尝试自动加载其他字体
                         TMP_FontAsset alternativeFont = FindAlternativeFont(str[0]);
                         if (alternativeFont != null)
                         {
                             buttonText.font = alternativeFont;
-                            Debug.Log($"StringSelector: 使用备选字体显示字符 '{str}': {alternativeFont.name}");
+                            GameLogger.LogDev($"StringSelector: 使用备选字体显示字符 '{str}': {alternativeFont.name}");
                         }
                         else if (fallbackFont != null && fallbackFont.HasCharacter(str[0]))
                         {
                             buttonText.font = fallbackFont;
-                            Debug.Log($"StringSelector: 使用回退字体显示字符 '{str}'");
+                            GameLogger.LogDev($"StringSelector: 使用回退字体显示字符 '{str}'");
                         }
                         else
                         {
-                            Debug.LogWarning($"StringSelector: 所有字体都不支持字符 '{str}'，将使用默认字体");
+                            GameLogger.LogWarning($"StringSelector: 所有字体都不支持字符 '{str}'，将使用默认字体");
                         }
                     }
                     else
                     {
-                        Debug.Log($"StringSelector: 中文字体支持字符 '{str}' (Unicode: {(int)str[0]:X4})");
+                        GameLogger.LogDev($"StringSelector: 中文字体支持字符 '{str}' (Unicode: {(int)str[0]:X4})");
                     }
 
                     // 确保文本居中显示
@@ -228,23 +228,23 @@ public class StringSelector : MonoBehaviour
                 }
                 else
                 {
-                    Debug.LogWarning($"StringSelector: 未设置中文字体，尝试自动加载");
+                    GameLogger.LogWarning($"StringSelector: 未设置中文字体，尝试自动加载");
                     AutoLoadChineseFont();
                     
                     if (chineseFont != null)
                     {
                         buttonText.font = chineseFont;
-                        Debug.Log($"StringSelector: 自动加载字体成功，使用字体: {chineseFont.name}");
+                        GameLogger.LogDev($"StringSelector: 自动加载字体成功，使用字体: {chineseFont.name}");
                     }
                     else
                     {
-                        Debug.LogWarning($"StringSelector: 自动加载字体失败，使用默认字体创建按钮 '{str}'");
+                        GameLogger.LogWarning($"StringSelector: 自动加载字体失败，使用默认字体创建按钮 '{str}'");
                     }
                 }
 
                 // 设置按钮点击事件，传递索引而不是字符串
                 int buttonIndex = index; // 捕获当前索引
-                Debug.Log($"StringSelector: 为按钮设置点击事件，字符串: '{str}'，索引: {buttonIndex}");
+                GameLogger.LogDev($"StringSelector: 为按钮设置点击事件，字符串: '{str}'，索引: {buttonIndex}");
                 button.onClick.RemoveAllListeners(); // 先清除所有监听器
                 button.onClick.AddListener(() => OnStringButtonClicked(buttonIndex, button));
 
@@ -257,8 +257,8 @@ public class StringSelector : MonoBehaviour
                 button.navigation = noNavigation;
 
                 stringButtons.Add(button);
-                Debug.Log($"StringSelector: 按钮已添加到stringButtons列表，当前按钮数量: {stringButtons.Count}");
-                Debug.Log($"StringSelector: 按钮创建成功 - 名称: {buttonObj.name}, 文本: '{buttonText.text}', 可交互: {button.interactable}");
+                GameLogger.LogDev($"StringSelector: 按钮已添加到stringButtons列表，当前按钮数量: {stringButtons.Count}");
+                GameLogger.LogDev($"StringSelector: 按钮创建成功 - 名称: {buttonObj.name}, 文本: '{buttonText.text}', 可交互: {button.interactable}");
 
                 // 延迟更新按钮显示，确保文字正确显示
                 StartCoroutine(DelayedButtonUpdate(buttonText, str));
@@ -268,13 +268,13 @@ public class StringSelector : MonoBehaviour
             }
             else
             {
-                Debug.LogError($"StringSelector: buttonText为空，无法设置按钮文本");
+                GameLogger.LogError($"StringSelector: buttonText为空，无法设置按钮文本");
             }
         }
         catch (System.Exception e)
         {
-            Debug.LogError($"StringSelector: 创建按钮时发生错误，字符串: {str}, 索引: {index}, 错误: {e.Message}");
-            Debug.LogError($"StringSelector: 错误堆栈: {e.StackTrace}");
+            GameLogger.LogError($"StringSelector: 创建按钮时发生错误，字符串: {str}, 索引: {index}, 错误: {e.Message}");
+            GameLogger.LogError($"StringSelector: 错误堆栈: {e.StackTrace}");
         }
     }
     
@@ -288,7 +288,7 @@ public class StringSelector : MonoBehaviour
         if (buttonText != null)
         {
             buttonText.ForceMeshUpdate();
-            Debug.Log($"StringSelector: 延迟更新完成，字符串 '{str}' 的文本网格已重新更新");
+            GameLogger.LogDev($"StringSelector: 延迟更新完成，字符串 '{str}' 的文本网格已重新更新");
 
             // 延迟一帧后再根据最终排版结果收缩按钮点击区域
             Button parentButton = buttonText.GetComponentInParent<Button>();
@@ -311,24 +311,24 @@ public class StringSelector : MonoBehaviour
         string str = index < availableStrings.Count ? availableStrings[index] : "未知";
         
         // Debug输出被点击的字符串
-        Debug.Log($"StringSelector: 字符串按钮被点击，字符串: '{str}'，索引: {index}");
-        Debug.Log($"StringSelector: 按钮名称: '{button.gameObject.name}'");
-        Debug.Log($"StringSelector: 当前availableStrings列表: [{string.Join(", ", availableStrings)}]");
-        Debug.Log($"StringSelector: 当前stringButtons数量: {stringButtons.Count}");
+        GameLogger.LogDev($"StringSelector: 字符串按钮被点击，字符串: '{str}'，索引: {index}");
+        GameLogger.LogDev($"StringSelector: 按钮名称: '{button.gameObject.name}'");
+        GameLogger.LogDev($"StringSelector: 当前availableStrings列表: [{string.Join(", ", availableStrings)}]");
+        GameLogger.LogDev($"StringSelector: 当前stringButtons数量: {stringButtons.Count}");
         
         // 添加更详细的调试信息
-        Debug.Log($"StringSelector: 按钮文本显示: '{button.GetComponentInChildren<TextMeshProUGUI>()?.text ?? "无文本"}'");
-        Debug.Log($"StringSelector: 按钮是否可交互: {button.interactable}");
-        Debug.Log($"StringSelector: 按钮是否激活: {button.gameObject.activeInHierarchy}");
+        GameLogger.LogDev($"StringSelector: 按钮文本显示: '{button.GetComponentInChildren<TextMeshProUGUI>()?.text ?? "无文本"}'");
+        GameLogger.LogDev($"StringSelector: 按钮是否可交互: {button.interactable}");
+        GameLogger.LogDev($"StringSelector: 按钮是否激活: {button.gameObject.activeInHierarchy}");
         
         // 验证索引是否正确
         if (index >= 0 && index < availableStrings.Count)
         {
-            Debug.Log($"StringSelector: 索引验证 - 索引{index}对应字符串: '{availableStrings[index]}'");
+            GameLogger.LogDev($"StringSelector: 索引验证 - 索引{index}对应字符串: '{availableStrings[index]}'");
         }
         else
         {
-            Debug.LogError($"StringSelector: 索引错误 - 索引{index}超出范围[0, {availableStrings.Count})");
+            GameLogger.LogError($"StringSelector: 索引错误 - 索引{index}超出范围[0, {availableStrings.Count})");
         }
         
         if (selectedIndices.Contains(index))
@@ -336,21 +336,21 @@ public class StringSelector : MonoBehaviour
             // 取消选择
             selectedIndices.Remove(index);
             UpdateButtonVisual(button, false);
-            Debug.Log($"StringSelector: 取消选择字符串 '{str}'");
+            GameLogger.LogDev($"StringSelector: 取消选择字符串 '{str}'");
         }
         else if (selectedIndices.Count < maxSelectionCount)
         {
             // 添加选择
             selectedIndices.Add(index);
-            Debug.Log($"StringSelector: 添加选择，索引: {index}，字符串: '{str}'，当前选择数量: {selectedIndices.Count}");
+            GameLogger.LogDev($"StringSelector: 添加选择，索引: {index}，字符串: '{str}'，当前选择数量: {selectedIndices.Count}");
             UpdateButtonVisual(button, true);
-            Debug.Log($"StringSelector: 选择字符串 '{str}'，当前选择数量: {selectedIndices.Count}");
+            GameLogger.LogDev($"StringSelector: 选择字符串 '{str}'，当前选择数量: {selectedIndices.Count}");
             
             // 播放选中文字音效
             if (AudioManager.Instance != null && AudioManager.Instance.sfxSelectWord != null)
             {
                 AudioManager.Instance.PlaySFX(AudioManager.Instance.sfxSelectWord);
-                Debug.Log("StringSelector: 播放选中文字音效");
+                GameLogger.LogDev("StringSelector: 播放选中文字音效");
             }
         }
         else
@@ -359,7 +359,7 @@ public class StringSelector : MonoBehaviour
             if (BroadcastManager.Instance != null)
             {
                 BroadcastManager.Instance.BroadcastToAll("select_limit");
-                Debug.Log("StringSelector: 已达到选择上限，发送提示广播 'select_limit'");
+                GameLogger.LogDev("StringSelector: 已达到选择上限，发送提示广播 'select_limit'");
             }
         }
         
@@ -379,20 +379,20 @@ public class StringSelector : MonoBehaviour
     // 更新按钮视觉效果
     private void UpdateButtonVisual(Button button, bool isSelected)
     {
-        Debug.Log($"StringSelector: 更新按钮视觉效果，isSelected: {isSelected}");
+        GameLogger.LogDev($"StringSelector: 更新按钮视觉效果，isSelected: {isSelected}");
         
         ColorBlock colors = button.colors;
         if (isSelected)
         {
             colors.normalColor = Color.green;
             colors.selectedColor = Color.green;
-            Debug.Log($"StringSelector: 设置按钮为绿色（选中状态）");
+            GameLogger.LogDev($"StringSelector: 设置按钮为绿色（选中状态）");
         }
         else
         {
             colors.normalColor = Color.white;
             colors.selectedColor = Color.white;
-            Debug.Log($"StringSelector: 设置按钮为白色（未选中状态）");
+            GameLogger.LogDev($"StringSelector: 设置按钮为白色（未选中状态）");
         }
         button.colors = colors;
         
@@ -413,17 +413,17 @@ public class StringSelector : MonoBehaviour
             if (isSelected)
             {
                 buttonImage.color = Color.green;
-                Debug.Log($"StringSelector: 直接设置Image颜色为绿色");
+                GameLogger.LogDev($"StringSelector: 直接设置Image颜色为绿色");
             }
             else
             {
                 buttonImage.color = Color.white;
-                Debug.Log($"StringSelector: 直接设置Image颜色为白色");
+                GameLogger.LogDev($"StringSelector: 直接设置Image颜色为白色");
             }
         }
         else
         {
-            Debug.LogWarning($"StringSelector: 按钮没有Image组件");
+            GameLogger.LogWarning($"StringSelector: 按钮没有Image组件");
         }
         
         // 维持现有按钮尺寸，不再强制放大，避免点击范围超过图片
@@ -432,7 +432,7 @@ public class StringSelector : MonoBehaviour
         button.enabled = false;
         button.enabled = true;
         
-        Debug.Log($"StringSelector: 按钮视觉效果更新完成");
+        GameLogger.LogDev($"StringSelector: 按钮视觉效果更新完成");
     }
 
     // 根据文本内容自适应按钮点击区域，仅用可见文字尺寸加少量内边距
@@ -505,9 +505,9 @@ public class StringSelector : MonoBehaviour
     // 公共方法：重新创建所有按钮
     public void RecreateAllButtonsPublic()
     {
-        Debug.Log($"StringSelector: 重新创建所有按钮，当前可用字符串: [{string.Join(", ", availableStrings)}]");
+        GameLogger.LogDev($"StringSelector: 重新创建所有按钮，当前可用字符串: [{string.Join(", ", availableStrings)}]");
         RecreateAllButtons();
-        Debug.Log($"StringSelector: 按钮重新创建完成，按钮数量: {stringButtons.Count}");
+        GameLogger.LogDev($"StringSelector: 按钮重新创建完成，按钮数量: {stringButtons.Count}");
     }
     
     // 返回当前已选择按钮的索引副本
@@ -560,23 +560,23 @@ public class StringSelector : MonoBehaviour
     // 公共方法：添加可用字符串
     public void AddAvailableString(string str)
     {
-        Debug.Log($"StringSelector: 开始添加字符串 '{str}' (Unicode: {(int)str[0]:X4})");
+        GameLogger.LogDev($"StringSelector: 开始添加字符串 '{str}' (Unicode: {(int)str[0]:X4})");
         
         // 检查字符串是否为空
         if (string.IsNullOrEmpty(str))
         {
-            Debug.LogError("StringSelector: 尝试添加空字符串，跳过");
+            GameLogger.LogError("StringSelector: 尝试添加空字符串，跳过");
             return;
         }
         
         // 如果字符串不在allStrings中，先添加到allStrings
         if (!allStrings.Contains(str))
         {
-            Debug.Log($"StringSelector: 字符 '{str}' 不在allStrings列表中，正在添加...");
+            GameLogger.LogDev($"StringSelector: 字符 '{str}' 不在allStrings列表中，正在添加...");
             AddToAllStrings(str);
         }
         
-        Debug.Log($"StringSelector: 正在添加字符串 '{str}' 到可用字符串列表");
+        GameLogger.LogDev($"StringSelector: 正在添加字符串 '{str}' 到可用字符串列表");
         
         // 清空当前选择
         ClearSelection();
@@ -585,7 +585,7 @@ public class StringSelector : MonoBehaviour
         // 注释掉重复检查，允许添加相同的字符
         // if (availableStrings.Contains(str))
         // {
-        //     Debug.Log($"StringSelector: 字符串 '{str}' 已存在于可用字符串列表中，跳过添加");
+        //     GameLogger.LogDev($"StringSelector: 字符串 '{str}' 已存在于可用字符串列表中，跳过添加");
         //     return;
         // }
         
@@ -593,22 +593,22 @@ public class StringSelector : MonoBehaviour
         availableStrings.Add(str);
         int index = availableStrings.Count - 1; // 获取新添加字符串的索引
         
-        Debug.Log($"StringSelector: 字符串 '{str}' 已添加到索引 {index}，当前可用字符串数量: {availableStrings.Count}");
-        Debug.Log($"StringSelector: 当前可用字符串列表: [{string.Join(", ", availableStrings)}]");
+        GameLogger.LogDev($"StringSelector: 字符串 '{str}' 已添加到索引 {index}，当前可用字符串数量: {availableStrings.Count}");
+        GameLogger.LogDev($"StringSelector: 当前可用字符串列表: [{string.Join(", ", availableStrings)}]");
         
         // 创建按钮
         CreateStringButton(str, index);
         
-        Debug.Log($"StringSelector: 字符串 '{str}' 的按钮已创建完成");
+        GameLogger.LogDev($"StringSelector: 字符串 '{str}' 的按钮已创建完成");
         
         // 验证按钮是否真的被创建了
         if (index < stringButtons.Count && stringButtons[index] != null)
         {
-            Debug.Log($"StringSelector: 验证成功 - 按钮 '{str}' 已正确创建，按钮名称: {stringButtons[index].gameObject.name}");
+            GameLogger.LogDev($"StringSelector: 验证成功 - 按钮 '{str}' 已正确创建，按钮名称: {stringButtons[index].gameObject.name}");
         }
         else
         {
-            Debug.LogError($"StringSelector: 验证失败 - 按钮 '{str}' 创建失败，当前按钮数量: {stringButtons.Count}");
+            GameLogger.LogError($"StringSelector: 验证失败 - 按钮 '{str}' 创建失败，当前按钮数量: {stringButtons.Count}");
         }
         
         // 重新创建所有按钮以确保UI正确更新
@@ -616,7 +616,7 @@ public class StringSelector : MonoBehaviour
         
         // 触发可用字符串变化事件
         OnAvailableStringsChanged?.Invoke();
-        Debug.Log($"StringSelector: 触发可用字符串变化事件，当前可用字符串数量: {availableStrings.Count}");
+        GameLogger.LogDev($"StringSelector: 触发可用字符串变化事件，当前可用字符串数量: {availableStrings.Count}");
     }
     
     // 公共方法：移除可用字符串
@@ -643,7 +643,7 @@ public class StringSelector : MonoBehaviour
             
             // 触发可用字符串变化事件
             OnAvailableStringsChanged?.Invoke();
-            Debug.Log($"StringSelector: 触发可用字符串变化事件（移除），当前可用字符串数量: {availableStrings.Count}");
+            GameLogger.LogDev($"StringSelector: 触发可用字符串变化事件（移除），当前可用字符串数量: {availableStrings.Count}");
         }
     }
     
@@ -675,7 +675,7 @@ public class StringSelector : MonoBehaviour
         
         // 触发可用字符串变化事件
         OnAvailableStringsChanged?.Invoke();
-        Debug.Log($"StringSelector: 触发可用字符串变化事件（批量移除），当前可用字符串数量: {availableStrings.Count}");
+        GameLogger.LogDev($"StringSelector: 触发可用字符串变化事件（批量移除），当前可用字符串数量: {availableStrings.Count}");
     }
     
     // 更新移除按钮后的索引
@@ -718,7 +718,7 @@ public class StringSelector : MonoBehaviour
     public void SetMaxSelectionCount(int count)
     {
         // 此方法被禁用，最大选择数始终为2
-        Debug.LogWarning("SetMaxSelectionCount方法已被禁用，最大选择数始终为2");
+        GameLogger.LogWarning("SetMaxSelectionCount方法已被禁用，最大选择数始终为2");
         
         // 确保maxSelectionCount始终为2
         maxSelectionCount = 2;
@@ -807,7 +807,7 @@ public class StringSelector : MonoBehaviour
                 }
             }
         }
-        Debug.Log($"StringSelector: 所有按钮尺寸设置为: {size}");
+        GameLogger.LogDev($"StringSelector: 所有按钮尺寸设置为: {size}");
     }
     
 
@@ -899,7 +899,7 @@ public class StringSelector : MonoBehaviour
             }
         }
         
-        Debug.Log($"StringSelector: 中文字体已设置为 {font?.name ?? "null"}");
+        GameLogger.LogDev($"StringSelector: 中文字体已设置为 {font?.name ?? "null"}");
     }
     
     /// <summary>
@@ -914,7 +914,7 @@ public class StringSelector : MonoBehaviour
                 button.interactable = false;
             }
         }
-        Debug.Log("StringSelector: 已禁用所有字符按钮的选择功能");
+        GameLogger.LogDev("StringSelector: 已禁用所有字符按钮的选择功能");
     }
     
     /// <summary>
@@ -929,7 +929,7 @@ public class StringSelector : MonoBehaviour
                 button.interactable = true;
             }
         }
-        Debug.Log("StringSelector: 已启用所有字符按钮的选择功能");
+        GameLogger.LogDev("StringSelector: 已启用所有字符按钮的选择功能");
     }
     
     /// <summary>
@@ -954,11 +954,11 @@ public class StringSelector : MonoBehaviour
         // 如果已经设置了中文字体，直接返回
         if (chineseFont != null)
         {
-            Debug.Log($"StringSelector: 已设置中文字体: {chineseFont.name}");
+            GameLogger.LogDev($"StringSelector: 已设置中文字体: {chineseFont.name}");
             return;
         }
         
-        Debug.Log("StringSelector: 开始自动加载中文字体");
+        GameLogger.LogDev("StringSelector: 开始自动加载中文字体");
         
         // 尝试从Resources文件夹加载字体
         TMP_FontAsset[] fontAssets = Resources.LoadAll<TMP_FontAsset>("Fonts");
@@ -969,7 +969,7 @@ public class StringSelector : MonoBehaviour
                 if (font != null && font.name.Contains("SourceHanSerifCN"))
                 {
                     chineseFont = font;
-                    Debug.Log($"StringSelector: 自动加载中文字体成功: {font.name}");
+                    GameLogger.LogDev($"StringSelector: 自动加载中文字体成功: {font.name}");
                     return;
                 }
             }
@@ -980,7 +980,7 @@ public class StringSelector : MonoBehaviour
         if (sourceHanFont != null)
         {
             chineseFont = sourceHanFont;
-            Debug.Log($"StringSelector: 从Fonts文件夹加载中文字体成功: {sourceHanFont.name}");
+            GameLogger.LogDev($"StringSelector: 从Fonts文件夹加载中文字体成功: {sourceHanFont.name}");
             return;
         }
         
@@ -991,18 +991,18 @@ public class StringSelector : MonoBehaviour
             if (font != null && (font.name.Contains("SourceHan") || font.name.Contains("Chinese") || font.name.Contains("Han")))
             {
                 chineseFont = font;
-                Debug.Log($"StringSelector: 找到备选中文字体: {font.name}");
+                GameLogger.LogDev($"StringSelector: 找到备选中文字体: {font.name}");
                 return;
             }
         }
         
-        Debug.LogWarning("StringSelector: 未能自动加载中文字体，请手动设置chineseFont字段");
+        GameLogger.LogWarning("StringSelector: 未能自动加载中文字体，请手动设置chineseFont字段");
     }
     
     // 查找支持指定字符的备选字体
     private TMP_FontAsset FindAlternativeFont(char character)
     {
-        Debug.Log($"StringSelector: 查找支持字符 '{character}' (Unicode: {(int)character:X4}) 的备选字体");
+        GameLogger.LogDev($"StringSelector: 查找支持字符 '{character}' (Unicode: {(int)character:X4}) 的备选字体");
         
         // 尝试从Resources文件夹加载所有字体
         TMP_FontAsset[] fontAssets = Resources.LoadAll<TMP_FontAsset>("Fonts");
@@ -1012,7 +1012,7 @@ public class StringSelector : MonoBehaviour
             {
                 if (font != null && font.HasCharacter(character))
                 {
-                    Debug.Log($"StringSelector: 找到支持字符 '{character}' 的字体: {font.name}");
+                    GameLogger.LogDev($"StringSelector: 找到支持字符 '{character}' 的字体: {font.name}");
                     return font;
                 }
             }
@@ -1024,12 +1024,12 @@ public class StringSelector : MonoBehaviour
         {
             if (font != null && font.HasCharacter(character))
             {
-                Debug.Log($"StringSelector: 找到支持字符 '{character}' 的字体: {font.name}");
+                GameLogger.LogDev($"StringSelector: 找到支持字符 '{character}' 的字体: {font.name}");
                 return font;
             }
         }
         
-        Debug.LogWarning($"StringSelector: 未找到支持字符 '{character}' 的字体");
+        GameLogger.LogWarning($"StringSelector: 未找到支持字符 '{character}' 的字体");
         return null;
     }
     
@@ -1038,7 +1038,7 @@ public class StringSelector : MonoBehaviour
     {
         if (chineseFont == null)
         {
-            Debug.LogWarning("StringSelector: 未设置中文字体");
+            GameLogger.LogWarning("StringSelector: 未设置中文字体");
             return false;
         }
         
@@ -1069,7 +1069,7 @@ public class StringSelector : MonoBehaviour
         if (!allStrings.Contains(str))
         {
             allStrings.Add(str);
-            Debug.Log($"StringSelector: 已添加字符 '{str}' 到allStrings列表");
+            GameLogger.LogDev($"StringSelector: 已添加字符 '{str}' 到allStrings列表");
         }
     }
     
