@@ -102,14 +102,14 @@ public class TutorialManager : MonoBehaviour
         if (ButtonController.Instance != null)
         {
             ButtonController.Instance.DisableCharacterSelection();
-            Debug.Log("TutorialManager: 教程开始时已禁用字符选择");
+            GameLogger.LogDev("TutorialManager: 教程开始时已禁用字符选择");
         }
         
         // 在教程模式中禁用颜色管理
         if (playerController != null)
         {
             playerController.DisableColorManagement();
-            Debug.Log("TutorialManager: 教程模式中已禁用颜色管理");
+            GameLogger.LogDev("TutorialManager: 教程模式中已禁用颜色管理");
         }
 
         tutorialMask.SetActive(true); // 在教程开始时激活蒙层
@@ -132,7 +132,7 @@ public class TutorialManager : MonoBehaviour
             // 只有当继续按钮可见时才允许 E 键继续
             if (continueButton != null && continueButton.gameObject.activeInHierarchy)
             {
-                Debug.Log("TutorialManager: 检测到 E 键按下，继续教程");
+                GameLogger.LogDev("TutorialManager: 检测到 E 键按下，继续教程");
                 GoToNextStep();
             }
         }
@@ -155,11 +155,11 @@ public class TutorialManager : MonoBehaviour
         // 检查遮罩控制器是否已正确挂载
         if (maskController != null)
         {
-            Debug.Log("TutorialManager: 遮罩控制器初始化完成");
+            GameLogger.LogDev("TutorialManager: 遮罩控制器初始化完成");
         }
         else
         {
-            Debug.LogWarning("TutorialManager: 遮罩控制器为空，请确保MaskController已挂载到遮罩对象上");
+            GameLogger.LogWarning("TutorialManager: 遮罩控制器为空，请确保MaskController已挂载到遮罩对象上");
         }
     }
 
@@ -172,20 +172,20 @@ public class TutorialManager : MonoBehaviour
             if (AudioManager.Instance.bgmTutorial != null)
             {
                 AudioManager.Instance.PlayBGM(AudioManager.Instance.bgmTutorial);
-                Debug.Log("TutorialManager: 已设置Level1 BGM为bgmTutorial");
+                GameLogger.LogDev("TutorialManager: 已设置Level1 BGM为bgmTutorial");
             }
             else
             {
-                Debug.LogWarning("TutorialManager: bgmTutorial音频片段未设置");
+                GameLogger.LogWarning("TutorialManager: bgmTutorial音频片段未设置");
             }
             
             // 停止雨声环境音
             AudioManager.Instance.StopAmbient(1f);
-            Debug.Log("TutorialManager: 已停止雨声环境音");
+            GameLogger.LogDev("TutorialManager: 已停止雨声环境音");
         }
         else
         {
-            Debug.LogWarning("TutorialManager: 未找到AudioManager实例");
+            GameLogger.LogWarning("TutorialManager: 未找到AudioManager实例");
         }
     }
 
@@ -195,11 +195,11 @@ public class TutorialManager : MonoBehaviour
         if (AudioManager.Instance != null && AudioManager.Instance.sfxUIClick != null)
         {
             AudioManager.Instance.PlaySFX(AudioManager.Instance.sfxUIClick);
-            Debug.Log("TutorialManager: 播放UI交互音效");
+            GameLogger.LogDev("TutorialManager: 播放UI交互音效");
         }
         else
         {
-            Debug.LogWarning("TutorialManager: 无法播放UI交互音效，AudioManager或sfxUIClick为空");
+            GameLogger.LogWarning("TutorialManager: 无法播放UI交互音效，AudioManager或sfxUIClick为空");
         }
     }
     #endregion
@@ -239,9 +239,9 @@ public class TutorialManager : MonoBehaviour
         stepHandlers[TutorialStep.End_Part2] = HandleEndPart2;
         stepHandlers[TutorialStep.End_Part3] = HandleEndPart3;
         
-        Debug.Log($"TutorialManager: 已注册 {stepHandlers.Count} 个步骤处理函数");
-        Debug.Log($"TutorialManager: SelectAndCombine步骤注册状态: {stepHandlers.ContainsKey(TutorialStep.SelectAndCombine)}");
-        Debug.Log($"TutorialManager: SelectAndCombine步骤的处理函数: {stepHandlers[TutorialStep.SelectAndCombine]?.Method.Name ?? "null"}");
+        GameLogger.LogDev($"TutorialManager: 已注册 {stepHandlers.Count} 个步骤处理函数");
+        GameLogger.LogDev($"TutorialManager: SelectAndCombine步骤注册状态: {stepHandlers.ContainsKey(TutorialStep.SelectAndCombine)}");
+        GameLogger.LogDev($"TutorialManager: SelectAndCombine步骤的处理函数: {stepHandlers[TutorialStep.SelectAndCombine]?.Method.Name ?? "null"}");
     }
 
     private void RegisterStepTransitions()
@@ -269,46 +269,46 @@ public class TutorialManager : MonoBehaviour
 
     private void ExecuteCurrentStep()
     {
-        Debug.Log($"TutorialManager: ExecuteCurrentStep - 开始执行，当前步骤: {currentStep}");
+        GameLogger.LogDev($"TutorialManager: ExecuteCurrentStep - 开始执行，当前步骤: {currentStep}");
         
         // 初始化UI状态
         InitializeUI();
 
-        Debug.Log($"TutorialManager: 执行步骤 {currentStep}");
-        Debug.Log($"TutorialManager: 当前步骤的整数值: {(int)currentStep}");
+        GameLogger.LogDev($"TutorialManager: 执行步骤 {currentStep}");
+        GameLogger.LogDev($"TutorialManager: 当前步骤的整数值: {(int)currentStep}");
 
         if (stepHandlers.ContainsKey(currentStep))
         {
-            Debug.Log($"TutorialManager: 找到步骤 {currentStep} 的处理函数，准备调用");
+            GameLogger.LogDev($"TutorialManager: 找到步骤 {currentStep} 的处理函数，准备调用");
             try
             {
                 var handler = stepHandlers[currentStep];
-                Debug.Log($"TutorialManager: 处理函数类型: {handler?.Method.Name ?? "null"}");
-                Debug.Log($"TutorialManager: ExecuteCurrentStep - 即将调用处理函数");
+                GameLogger.LogDev($"TutorialManager: 处理函数类型: {handler?.Method.Name ?? "null"}");
+                GameLogger.LogDev($"TutorialManager: ExecuteCurrentStep - 即将调用处理函数");
                 handler?.Invoke();
-                Debug.Log($"TutorialManager: 步骤 {currentStep} 执行成功");
+                GameLogger.LogDev($"TutorialManager: 步骤 {currentStep} 执行成功");
             }
             catch (System.Exception e)
             {
-                Debug.LogError($"TutorialManager: 步骤 {currentStep} 执行失败: {e.Message}");
-                Debug.LogError($"TutorialManager: 异常堆栈: {e.StackTrace}");
+                GameLogger.LogError($"TutorialManager: 步骤 {currentStep} 执行失败: {e.Message}");
+                GameLogger.LogError($"TutorialManager: 异常堆栈: {e.StackTrace}");
             }
         }
         else
         {
-            Debug.LogError($"TutorialManager: 未找到步骤 {currentStep} 的处理函数");
-            Debug.LogError($"TutorialManager: 已注册的步骤: {string.Join(", ", stepHandlers.Keys)}");
+            GameLogger.LogError($"TutorialManager: 未找到步骤 {currentStep} 的处理函数");
+            GameLogger.LogError($"TutorialManager: 已注册的步骤: {string.Join(", ", stepHandlers.Keys)}");
             
             // 检查SelectAndCombine步骤的注册情况
-            Debug.LogError($"TutorialManager: SelectAndCombine步骤是否存在: {stepHandlers.ContainsKey(TutorialStep.SelectAndCombine)}");
-            Debug.LogError($"TutorialManager: SelectAndCombine步骤的整数值: {(int)TutorialStep.SelectAndCombine}");
+            GameLogger.LogError($"TutorialManager: SelectAndCombine步骤是否存在: {stepHandlers.ContainsKey(TutorialStep.SelectAndCombine)}");
+            GameLogger.LogError($"TutorialManager: SelectAndCombine步骤的整数值: {(int)TutorialStep.SelectAndCombine}");
         }
     }
 
     public void GoToNextStep()
     {
-        Debug.Log($"TutorialManager: 尝试从步骤 {currentStep} 跳转到下一步");
-        Debug.Log($"TutorialManager: GoToNextStep - 调用堆栈: {System.Environment.StackTrace}");
+        GameLogger.LogDev($"TutorialManager: 尝试从步骤 {currentStep} 跳转到下一步");
+        GameLogger.LogDev($"TutorialManager: GoToNextStep - 调用堆栈: {System.Environment.StackTrace}");
 
         // 播放UI交互音效
         PlayUIClickSound();
@@ -316,18 +316,18 @@ public class TutorialManager : MonoBehaviour
         if (stepTransitions.ContainsKey(currentStep))
         {
             TutorialStep nextStep = stepTransitions[currentStep];
-            Debug.Log($"TutorialManager: 从 {currentStep} 跳转到 {nextStep}");
+            GameLogger.LogDev($"TutorialManager: 从 {currentStep} 跳转到 {nextStep}");
             currentStep = nextStep;
             ExecuteCurrentStep();
         }
         else
         {
-            Debug.Log($"TutorialManager: 步骤 {currentStep} 没有下一个步骤，教程结束");
+            GameLogger.LogDev($"TutorialManager: 步骤 {currentStep} 没有下一个步骤，教程结束");
             
             // 如果是最后一个步骤，加载下一个场景
             if (currentStep == TutorialStep.End_Part3)
             {
-                Debug.Log("TutorialManager: 教学完成，加载下一个场景 Level2");
+                GameLogger.LogUser("TutorialManager: 教学完成，加载下一个场景 Level2");
                 LoadNextScene();
             }
         }
@@ -399,7 +399,7 @@ public class TutorialManager : MonoBehaviour
         if (maskController != null)
         {
             maskController.SetMaskToRight();
-            Debug.Log("TutorialManager: 已设置遮罩到右边位置");
+            GameLogger.LogDev("TutorialManager: 已设置遮罩到右边位置");
         }
         
         // 启用回车键响应，允许玩家与小狗交互
@@ -407,7 +407,7 @@ public class TutorialManager : MonoBehaviour
         {
             Player currentPlayer = playerController.GetCurrentPlayer();
             currentPlayer.SetEnterKeyEnabled(true);
-            Debug.Log("TutorialManager: 已启用回车键响应，允许与小狗交互");
+            GameLogger.LogDev("TutorialManager: 已启用回车键响应，允许与小狗交互");
         }
 
         // 禁用字符选择
@@ -423,7 +423,7 @@ public class TutorialManager : MonoBehaviour
     // 重复检查玩家是否获得"伏"字的协程
     private IEnumerator CheckForFuCharacter()
     {
-        Debug.Log("TutorialManager: 开始重复检查玩家是否获得'伏'字");
+        GameLogger.LogDev("TutorialManager: 开始重复检查玩家是否获得'伏'字");
         
         while (true)
         {
@@ -433,7 +433,7 @@ public class TutorialManager : MonoBehaviour
                 Player currentPlayer = playerController.GetCurrentPlayer();
                 if (currentPlayer.CarryCharacter == "伏")
                 {
-                    Debug.Log("TutorialManager: 检测到玩家已获得'伏'字，自动进入下一步");
+                    GameLogger.LogDev("TutorialManager: 检测到玩家已获得'伏'字，自动进入下一步");
                     // 禁用回车键响应
                     currentPlayer.SetEnterKeyEnabled(false);
                     // 自动进入下一步
@@ -442,12 +442,12 @@ public class TutorialManager : MonoBehaviour
                 }
                 else
                 {
-                    Debug.Log($"TutorialManager: 玩家当前携带字符为 '{currentPlayer.CarryCharacter}'，继续等待获得'伏'字");
+                    GameLogger.LogDev($"TutorialManager: 玩家当前携带字符为 '{currentPlayer.CarryCharacter}'，继续等待获得'伏'字");
                 }
             }
             else
             {
-                Debug.LogWarning("TutorialManager: 无法获取当前玩家信息");
+                GameLogger.LogWarning("TutorialManager: 无法获取当前玩家信息");
             }
             
             // 等待0.5秒后再次检查
@@ -480,12 +480,12 @@ public class TutorialManager : MonoBehaviour
         hintText.text = "那片草丛里似乎藏着什么，靠近并按下【回车键】仔细看看吧。";
         if (grassObject != null)
         {
-            Debug.Log($"TutorialManager: HandleMoveToGrass - 找到grassObject: {grassObject.name}");
+            GameLogger.LogDev($"TutorialManager: HandleMoveToGrass - 找到grassObject: {grassObject.name}");
             PointAtTarget(grassObject.transform);
         }
         else
         {
-            Debug.LogError("TutorialManager: HandleMoveToGrass - grassObject为null!");
+            GameLogger.LogError("TutorialManager: HandleMoveToGrass - grassObject为null!");
         }
         EnablePlayerMovement(0);
         
@@ -507,7 +507,7 @@ public class TutorialManager : MonoBehaviour
     // 重复检查玩家是否获得"虫"字的协程
     private IEnumerator CheckForChongCharacter()
     {
-        Debug.Log("TutorialManager: 开始重复检查玩家是否获得'虫'字");
+        GameLogger.LogDev("TutorialManager: 开始重复检查玩家是否获得'虫'字");
         
         // 等待虫显示的通知
         while (!chongShown)
@@ -515,7 +515,7 @@ public class TutorialManager : MonoBehaviour
             yield return new WaitForSeconds(0.1f);
         }
         
-        Debug.Log("TutorialManager: 收到虫显示通知，自动进入下一步");
+        GameLogger.LogDev("TutorialManager: 收到虫显示通知，自动进入下一步");
         // 禁用回车键响应
         if (playerController != null && playerController.GetCurrentPlayer() != null)
         {
@@ -529,7 +529,7 @@ public class TutorialManager : MonoBehaviour
     // 重复检查玩家是否按下空格键的协程
     private IEnumerator CheckForSpaceKeyPress()
     {
-        Debug.Log("TutorialManager: 开始重复检查玩家是否按下空格键");
+        GameLogger.LogDev("TutorialManager: 开始重复检查玩家是否按下空格键");
         
         // 记录初始的当前玩家索引
         int initialPlayerIndex = playerController != null ? playerController.GetCurrentPlayerIndex() : 0;
@@ -542,7 +542,7 @@ public class TutorialManager : MonoBehaviour
                 int currentPlayerIndex = playerController.GetCurrentPlayerIndex();
                 if (currentPlayerIndex != initialPlayerIndex)
                 {
-                    Debug.Log($"TutorialManager: 检测到玩家按下空格键，从玩家{initialPlayerIndex}切换到玩家{currentPlayerIndex}，自动进入下一步");
+                    GameLogger.LogDev($"TutorialManager: 检测到玩家按下空格键，从玩家{initialPlayerIndex}切换到玩家{currentPlayerIndex}，自动进入下一步");
                     // 自动进入下一步
                     GoToNextStep();
                     yield break; // 退出协程
@@ -550,7 +550,7 @@ public class TutorialManager : MonoBehaviour
             }
             else
             {
-                Debug.LogWarning("TutorialManager: 无法获取PlayerController信息");
+                GameLogger.LogWarning("TutorialManager: 无法获取PlayerController信息");
             }
             
             // 等待0.1秒后再次检查
@@ -561,7 +561,7 @@ public class TutorialManager : MonoBehaviour
     // 重复检查玩家是否按下空格键的协程（Part2版本）
     private IEnumerator CheckForSpaceKeyPressInPart2()
     {
-        Debug.Log("TutorialManager: 开始重复检查玩家是否按下空格键（Part2）");
+        GameLogger.LogDev("TutorialManager: 开始重复检查玩家是否按下空格键（Part2）");
         
         // 记录初始的当前玩家索引
         int initialPlayerIndex = playerController != null ? playerController.GetCurrentPlayerIndex() : 0;
@@ -574,14 +574,14 @@ public class TutorialManager : MonoBehaviour
                 int currentPlayerIndex = playerController.GetCurrentPlayerIndex();
                 if (currentPlayerIndex != initialPlayerIndex)
                 {
-                    Debug.Log($"TutorialManager: 检测到玩家按下空格键，从玩家{initialPlayerIndex}切换到玩家{currentPlayerIndex}，启用人物2移动并进入下一步");
+                    GameLogger.LogDev($"TutorialManager: 检测到玩家按下空格键，从玩家{initialPlayerIndex}切换到玩家{currentPlayerIndex}，启用人物2移动并进入下一步");
                     
                     // 切换到人物2并启用移动
                     EnablePlayerMovement(1);
                     if (maskController != null)
                     {
                         maskController.SetMaskToLeft();
-                        Debug.Log("TutorialManager: 已设置遮罩到左边位置");
+                        GameLogger.LogDev("TutorialManager: 已设置遮罩到左边位置");
                     }
                     
                     // 自动进入下一步
@@ -591,7 +591,7 @@ public class TutorialManager : MonoBehaviour
             }
             else
             {
-                Debug.LogWarning("TutorialManager: 无法获取PlayerController信息");
+                GameLogger.LogWarning("TutorialManager: 无法获取PlayerController信息");
             }
             
             // 等待0.1秒后再次检查
@@ -691,7 +691,7 @@ public class TutorialManager : MonoBehaviour
     // 重复检查玩家是否获得"牒"字的协程
     private IEnumerator CheckForDieCharacter()
     {
-        Debug.Log("TutorialManager: 开始重复检查玩家是否获得'牒'字");
+        GameLogger.LogDev("TutorialManager: 开始重复检查玩家是否获得'牒'字");
         
         // 等待牒显示的通知
         while (!dieShown)
@@ -699,7 +699,7 @@ public class TutorialManager : MonoBehaviour
             yield return new WaitForSeconds(0.1f);
         }
         
-        Debug.Log("TutorialManager: 收到牒显示通知，自动进入下一步");
+        GameLogger.LogDev("TutorialManager: 收到牒显示通知，自动进入下一步");
         // 禁用回车键响应
         if (playerController != null && playerController.GetCurrentPlayer() != null)
         {
@@ -730,24 +730,24 @@ public class TutorialManager : MonoBehaviour
 
     private void HandleSelectAndSplit()
     {
-        Debug.Log("TutorialManager: HandleSelectAndSplit - 开始执行");
+        GameLogger.LogDev("TutorialManager: HandleSelectAndSplit - 开始执行");
         
         // 启用教程模式，防止ButtonController自动启用拆按钮
         if (ButtonController.Instance != null)
         {
             ButtonController.Instance.SetTutorialMode(true);
-            Debug.Log("TutorialManager: HandleSelectAndSplit - 已启用教程模式");
+            GameLogger.LogDev("TutorialManager: HandleSelectAndSplit - 已启用教程模式");
         }
         
         // 先禁用拆按钮，确保在显示提示之前就禁用
         if (splitButton != null)
         {
             splitButton.interactable = false;
-            Debug.Log("TutorialManager: HandleSelectAndSplit - 已禁用拆按钮");
+            GameLogger.LogDev("TutorialManager: HandleSelectAndSplit - 已禁用拆按钮");
         }
         else
         {
-            Debug.LogError("TutorialManager: HandleSelectAndSplit - splitButton为空!");
+            GameLogger.LogError("TutorialManager: HandleSelectAndSplit - splitButton为空!");
         }
         
         // 设置表情和提示文本
@@ -757,7 +757,7 @@ public class TutorialManager : MonoBehaviour
         // 高亮拆按钮（即使它是禁用的）
         if (splitButton != null)
         {
-            Debug.Log($"TutorialManager: HandleSelectAndSplit - 调用HighlightUITarget，目标: {splitButton.name}");
+            GameLogger.LogDev($"TutorialManager: HandleSelectAndSplit - 调用HighlightUITarget，目标: {splitButton.name}");
             HighlightUITarget(splitButton.transform);
         }
         
@@ -768,17 +768,17 @@ public class TutorialManager : MonoBehaviour
         if (ButtonController.Instance != null)
         {
             ButtonController.Instance.EnableCharacterSelection();
-            Debug.Log("TutorialManager: HandleSelectAndSplit - 已启用字符选择");
+            GameLogger.LogDev("TutorialManager: HandleSelectAndSplit - 已启用字符选择");
         }
         
         // 调整教学Panel位置，避免遮挡底部UI
         AdjustTutorialPanelPosition();
-        Debug.Log("TutorialManager: HandleSelectAndSplit - 执行完成");
+        GameLogger.LogDev("TutorialManager: HandleSelectAndSplit - 执行完成");
     }
 
     private void HandleAfterSplit()
     {
-        Debug.Log("TutorialManager: HandleAfterSplit - 开始执行");
+        GameLogger.LogDev("TutorialManager: HandleAfterSplit - 开始执行");
         
         DisablePlayerMovement();
         SetGuideExpression(exprHappy);
@@ -794,45 +794,45 @@ public class TutorialManager : MonoBehaviour
         if (ButtonController.Instance != null)
         {
             ButtonController.Instance.SetTutorialMode(false);
-            Debug.Log("TutorialManager: HandleAfterSplit - 已关闭教程模式");
+            GameLogger.LogDev("TutorialManager: HandleAfterSplit - 已关闭教程模式");
         }
         
         // 重新禁用字符选择
         if (ButtonController.Instance != null)
         {
             ButtonController.Instance.DisableCharacterSelection();
-            Debug.Log("TutorialManager: HandleAfterSplit - 已重新禁用字符选择");
+            GameLogger.LogDev("TutorialManager: HandleAfterSplit - 已重新禁用字符选择");
         }
 
         // 显示继续按钮，等待玩家点击
         continueButton.gameObject.SetActive(true);
         EnableUIInteraction(); // 启用UI交互以便继续按钮可用
         
-        Debug.Log("TutorialManager: HandleAfterSplit - 执行完成");
+        GameLogger.LogDev("TutorialManager: HandleAfterSplit - 执行完成");
     }
 
     private void HandleSelectAndCombine()
     {
-        Debug.Log("TutorialManager: HandleSelectAndCombine - 开始执行");
-        Debug.Log("TutorialManager: HandleSelectAndCombine - 第一行代码执行");
-        Debug.Log("TutorialManager: HandleSelectAndCombine - 立即输出测试");
+        GameLogger.LogDev("TutorialManager: HandleSelectAndCombine - 开始执行");
+        GameLogger.LogDev("TutorialManager: HandleSelectAndCombine - 第一行代码执行");
+        GameLogger.LogDev("TutorialManager: HandleSelectAndCombine - 立即输出测试");
         
         // 启用教程模式，防止ButtonController自动启用拼按钮
         if (ButtonController.Instance != null)
         {
             ButtonController.Instance.SetTutorialMode(true);
-            Debug.Log("TutorialManager: HandleSelectAndCombine - 已启用教程模式");
+            GameLogger.LogDev("TutorialManager: HandleSelectAndCombine - 已启用教程模式");
         }
         
         // 先禁用拼按钮，确保在显示提示之前就禁用
         if (combineButton != null)
         {
             combineButton.interactable = false;
-            Debug.Log("TutorialManager: HandleSelectAndCombine - 已禁用拼按钮");
+            GameLogger.LogDev("TutorialManager: HandleSelectAndCombine - 已禁用拼按钮");
         }
         else
         {
-            Debug.LogError("TutorialManager: HandleSelectAndCombine - combineButton为空!");
+            GameLogger.LogError("TutorialManager: HandleSelectAndCombine - combineButton为空!");
         }
         
         // 设置表情和提示文本
@@ -842,7 +842,7 @@ public class TutorialManager : MonoBehaviour
         // 高亮拼按钮（即使它是禁用的）
         if (combineButton != null)
         {
-            Debug.Log($"TutorialManager: HandleSelectAndCombine - 调用HighlightUITarget，目标: {combineButton.name}");
+            GameLogger.LogDev($"TutorialManager: HandleSelectAndCombine - 调用HighlightUITarget，目标: {combineButton.name}");
             HighlightUITarget(combineButton.transform);
         }
         
@@ -853,12 +853,12 @@ public class TutorialManager : MonoBehaviour
         if (ButtonController.Instance != null)
         {
             ButtonController.Instance.EnableCharacterSelection();
-            Debug.Log("TutorialManager: HandleSelectAndCombine - 已启用字符选择");
+            GameLogger.LogDev("TutorialManager: HandleSelectAndCombine - 已启用字符选择");
         }
 
         // 调整教学Panel位置，避免遮挡底部UI
         AdjustTutorialPanelPosition();
-        Debug.Log("TutorialManager: HandleSelectAndCombine - 执行完成");
+        GameLogger.LogDev("TutorialManager: HandleSelectAndCombine - 执行完成");
     }
 
     private void HandleAfterCombine()
@@ -877,14 +877,14 @@ public class TutorialManager : MonoBehaviour
         if (ButtonController.Instance != null)
         {
             ButtonController.Instance.SetTutorialMode(false);
-            Debug.Log("TutorialManager: HandleAfterCombine - 已关闭教程模式");
+            GameLogger.LogDev("TutorialManager: HandleAfterCombine - 已关闭教程模式");
         }
         
         // 重新禁用字符选择
         if (ButtonController.Instance != null)
         {
             ButtonController.Instance.DisableCharacterSelection();
-            Debug.Log("TutorialManager: HandleAfterCombine - 已重新禁用字符选择");
+            GameLogger.LogDev("TutorialManager: HandleAfterCombine - 已重新禁用字符选择");
         }
 
         // 显示继续按钮，等待玩家点击
@@ -924,7 +924,7 @@ public class TutorialManager : MonoBehaviour
     /// </summary>
     private IEnumerator AutoTriggerCharacterFlyButton()
     {
-        Debug.Log("TutorialManager: 开始自动触发CharacterFlyButton点击事件");
+        GameLogger.LogDev("TutorialManager: 开始自动触发CharacterFlyButton点击事件");
         
         // 等待一小段时间让玩家看到提示文字
         yield return new WaitForSeconds(1f);
@@ -933,7 +933,7 @@ public class TutorialManager : MonoBehaviour
         CharacterFlyButton characterFlyButton = FindObjectOfType<CharacterFlyButton>();
         if (characterFlyButton != null)
         {
-            Debug.Log("TutorialManager: 找到CharacterFlyButton，自动触发点击事件");
+            GameLogger.LogDev("TutorialManager: 找到CharacterFlyButton，自动触发点击事件");
             
             // 通过反射调用私有方法OnFlyButtonClicked
             var method = typeof(CharacterFlyButton).GetMethod("OnFlyButtonClicked", 
@@ -942,18 +942,18 @@ public class TutorialManager : MonoBehaviour
             if (method != null)
             {
                 method.Invoke(characterFlyButton, null);
-                Debug.Log("TutorialManager: 成功触发CharacterFlyButton的点击事件");
+                GameLogger.LogDev("TutorialManager: 成功触发CharacterFlyButton的点击事件");
             }
             else
             {
-                Debug.LogError("TutorialManager: 无法找到CharacterFlyButton的OnFlyButtonClicked方法");
+                GameLogger.LogError("TutorialManager: 无法找到CharacterFlyButton的OnFlyButtonClicked方法");
                 // 如果无法通过反射调用，则直接调用TutorialManager的方法
                 OnCharacterFlyButtonClicked();
             }
         }
         else
         {
-            Debug.LogWarning("TutorialManager: 未找到CharacterFlyButton组件，直接调用飞舞逻辑");
+            GameLogger.LogWarning("TutorialManager: 未找到CharacterFlyButton组件，直接调用飞舞逻辑");
             // 如果没有找到CharacterFlyButton，则直接调用飞舞逻辑
             OnCharacterFlyButtonClicked();
         }
@@ -967,7 +967,7 @@ public class TutorialManager : MonoBehaviour
     {
         if (currentStep == TutorialStep.CharacterFly)
         {
-            Debug.Log("TutorialManager: CharacterFlyButton被点击，开始文字飞舞动画");
+            GameLogger.LogDev("TutorialManager: CharacterFlyButton被点击，开始文字飞舞动画");
             
             // 隐藏继续按钮，防止重复点击
             continueButton.gameObject.SetActive(false);
@@ -977,7 +977,7 @@ public class TutorialManager : MonoBehaviour
         }
         else
         {
-            Debug.Log($"TutorialManager: CharacterFlyButton被点击，但当前步骤不是CharacterFly，当前步骤: {currentStep}");
+            GameLogger.LogDev($"TutorialManager: CharacterFlyButton被点击，但当前步骤不是CharacterFly，当前步骤: {currentStep}");
         }
     }
     
@@ -986,7 +986,7 @@ public class TutorialManager : MonoBehaviour
     /// </summary>
     private IEnumerator CharacterFlyButtonSequence()
     {
-        Debug.Log("TutorialManager: 开始CharacterFlyButton文字飞舞序列");
+        GameLogger.LogDev("TutorialManager: 开始CharacterFlyButton文字飞舞序列");
         
         if (ButtonController.Instance != null)
         {
@@ -998,14 +998,14 @@ public class TutorialManager : MonoBehaviour
                 Vector2 startPosition = characterFlyButton.GetButtonPosition();
                 Vector2 endPosition = characterFlyButton.GetTargetPosition();
                 
-                Debug.Log($"TutorialManager: 使用CharacterFlyButton位置 - 起始位置={startPosition}, 目标位置={endPosition}");
+                GameLogger.LogDev($"TutorialManager: 使用CharacterFlyButton位置 - 起始位置={startPosition}, 目标位置={endPosition}");
                 
                 // 从可用字符串列表中删除"蝶"字
                 StringSelector stringSelector = ButtonController.Instance.GetStringSelector();
                 if (stringSelector != null)
                 {
                     stringSelector.RemoveAvailableString("蝶");
-                    Debug.Log("TutorialManager: 从可用字符串列表中删除'蝶'字");
+                    GameLogger.LogDev("TutorialManager: 从可用字符串列表中删除'蝶'字");
                 }
                 
                 // 开始"蝶"字飞舞动画，起点为按钮位置
@@ -1017,11 +1017,11 @@ public class TutorialManager : MonoBehaviour
                     yield return new WaitForSeconds(0.1f);
                 }
                 
-                Debug.Log("TutorialManager: CharacterFlyButton文字飞舞动画完成");
+                GameLogger.LogDev("TutorialManager: CharacterFlyButton文字飞舞动画完成");
             }
             else
             {
-                Debug.LogWarning("TutorialManager: 未找到CharacterFlyButton组件，使用默认逻辑");
+                GameLogger.LogWarning("TutorialManager: 未找到CharacterFlyButton组件，使用默认逻辑");
                 
                 // 获取"蝶"字的目标位置
                 Transform targetTransform = PublicData.GetTargetPositionForCharacter("蝶");
@@ -1044,11 +1044,11 @@ public class TutorialManager : MonoBehaviour
                             endPosition = childRectTransform.anchoredPosition;
                         }
                     }
-                    Debug.Log($"TutorialManager: 获取到'蝶'字目标位置: {endPosition}");
+                    GameLogger.LogDev($"TutorialManager: 获取到'蝶'字目标位置: {endPosition}");
                 }
                 else
                 {
-                    Debug.LogWarning("TutorialManager: 未找到'蝶'字的目标位置，使用默认位置");
+                    GameLogger.LogWarning("TutorialManager: 未找到'蝶'字的目标位置，使用默认位置");
                 }
                 
                 // 从可用字符串列表中删除"蝶"字
@@ -1056,7 +1056,7 @@ public class TutorialManager : MonoBehaviour
                 if (stringSelector != null)
                 {
                     stringSelector.RemoveAvailableString("蝶");
-                    Debug.Log("TutorialManager: 从可用字符串列表中删除'蝶'字");
+                    GameLogger.LogDev("TutorialManager: 从可用字符串列表中删除'蝶'字");
                 }
                 
                 // 开始"蝶"字飞舞动画，起点为屏幕正中间
@@ -1068,12 +1068,12 @@ public class TutorialManager : MonoBehaviour
                     yield return new WaitForSeconds(0.1f);
                 }
                 
-                Debug.Log("TutorialManager: 默认文字飞舞动画完成");
+                GameLogger.LogDev("TutorialManager: 默认文字飞舞动画完成");
             }
         }
         else
         {
-            Debug.LogWarning("TutorialManager: 未找到 ButtonController 实例，跳过飞舞动画");
+            GameLogger.LogWarning("TutorialManager: 未找到 ButtonController 实例，跳过飞舞动画");
         }
         
         // 动画完成后自动进入下一步
@@ -1156,7 +1156,7 @@ public class TutorialManager : MonoBehaviour
         continueButton.gameObject.SetActive(true);
         EnableUIInteraction(); // 启用UI交互以便继续按钮可用
 
-        Debug.Log("TutorialManager: 延迟显示继续按钮完成");
+        GameLogger.LogDev("TutorialManager: 延迟显示继续按钮完成");
     }
 
     // 延迟禁用玩家移动的协程
@@ -1170,7 +1170,7 @@ public class TutorialManager : MonoBehaviour
         DisablePlayerSwitching(); // 禁用玩家切换
         DisableEnterKey(); // 禁用回车键响应
         
-        Debug.Log("TutorialManager: 延迟禁用玩家移动和回车键响应完成");
+        GameLogger.LogDev("TutorialManager: 延迟禁用玩家移动和回车键响应完成");
     }
 
     public void OnPlayerTransformed()
@@ -1183,19 +1183,19 @@ public class TutorialManager : MonoBehaviour
                 Player currentPlayer = playerController.GetCurrentPlayer();
                 if (currentPlayer.CarryCharacter == "伏")
                 {
-                    Debug.Log("TutorialManager: 玩家获得'伏'字，显示继续按钮");
+                    GameLogger.LogDev("TutorialManager: 玩家获得'伏'字，显示继续按钮");
                     // 玩家已经获得"伏"字，显示继续按钮
                     continueButton.gameObject.SetActive(true);
                     EnableUIInteraction();
                 }
                 else
                 {
-                    Debug.Log($"TutorialManager: 玩家当前携带字符为 '{currentPlayer.CarryCharacter}'，需要获得'伏'字");
+                    GameLogger.LogDev($"TutorialManager: 玩家当前携带字符为 '{currentPlayer.CarryCharacter}'，需要获得'伏'字");
                 }
             }
             else
             {
-                Debug.LogWarning("TutorialManager: 无法获取当前玩家信息");
+                GameLogger.LogWarning("TutorialManager: 无法获取当前玩家信息");
             }
         }
     }
@@ -1204,12 +1204,12 @@ public class TutorialManager : MonoBehaviour
     {
         if (word == "虫" && currentStep == TutorialStep.MoveToGrass)
         {
-            Debug.Log("TutorialManager: 获得'虫'字，但需要等待点击继续按钮");
+            GameLogger.LogDev("TutorialManager: 获得'虫'字，但需要等待点击继续按钮");
             // 不自动跳转，等待玩家点击继续按钮
         }
         if (word == "牒" && currentStep == TutorialStep.MoveToDie)
         {
-            Debug.Log("TutorialManager: 获得'牒'字，但需要等待点击继续按钮");
+            GameLogger.LogDev("TutorialManager: 获得'牒'字，但需要等待点击继续按钮");
             // 不自动跳转，等待玩家点击继续按钮
         }
     }
@@ -1218,7 +1218,7 @@ public class TutorialManager : MonoBehaviour
     {
         if (sourceWord == "牒" && currentStep == TutorialStep.SelectAndSplit)
         {
-            Debug.Log("TutorialManager: 拆分'牒'字成功，自动跳转到下一步");
+            GameLogger.LogUser("TutorialManager: 拆分'牒'字成功，自动跳转到下一步");
             // 自动跳转到下一步
             GoToNextStep();
         }
@@ -1226,16 +1226,16 @@ public class TutorialManager : MonoBehaviour
 
     public void OnCombineSuccess(string resultWord)
     {
-        Debug.Log($"TutorialManager: OnCombineSuccess - 被调用，参数: {resultWord}，当前步骤: {currentStep}");
+        GameLogger.LogDev($"TutorialManager: OnCombineSuccess - 被调用，参数: {resultWord}，当前步骤: {currentStep}");
         if (resultWord == "蝶" && currentStep == TutorialStep.SelectAndCombine)
         {
-            Debug.Log("TutorialManager: 合成'蝶'字成功，自动跳转到下一步");
+            GameLogger.LogUser("TutorialManager: 合成'蝶'字成功，自动跳转到下一步");
             // 自动跳转到下一步
             GoToNextStep();
         }
         else
         {
-            Debug.Log($"TutorialManager: OnCombineSuccess - 条件不满足，resultWord: {resultWord}, currentStep: {currentStep}");
+            GameLogger.LogDev($"TutorialManager: OnCombineSuccess - 条件不满足，resultWord: {resultWord}, currentStep: {currentStep}");
         }
     }
     
@@ -1247,12 +1247,12 @@ public class TutorialManager : MonoBehaviour
         // 在教程模式中，只有在特定步骤才允许字符选择
         if (ButtonController.Instance != null && ButtonController.Instance.IsTutorialMode())
         {
-            Debug.Log("TutorialManager: 当前处于教程模式，检查是否允许字符选择");
+            GameLogger.LogDev("TutorialManager: 当前处于教程模式，检查是否允许字符选择");
             
             // 只有在SelectAndSplit和SelectAndCombine步骤中才允许字符选择
             if (currentStep != TutorialStep.SelectAndSplit && currentStep != TutorialStep.SelectAndCombine)
             {
-                Debug.Log("TutorialManager: 当前步骤不允许字符选择，禁用所有字符按钮");
+                GameLogger.LogDev("TutorialManager: 当前步骤不允许字符选择，禁用所有字符按钮");
                 ButtonController.Instance.DisableCharacterSelection();
                 return;
             }
@@ -1266,7 +1266,7 @@ public class TutorialManager : MonoBehaviour
                 var selectedStrings = ButtonController.Instance.GetStringSelector().SelectedStrings;
                 bool hasDie = selectedStrings.Contains("牒");
                 
-                Debug.Log($"TutorialManager: 字符选择变化 - 选中字符: [{string.Join(", ", selectedStrings)}], 有牒: {hasDie}");
+                GameLogger.LogDev($"TutorialManager: 字符选择变化 - 选中字符: [{string.Join(", ", selectedStrings)}], 有牒: {hasDie}");
                 
                 // 只有当选中"牒"时才启用拆按钮
                 if (hasDie && selectedStrings.Count == 1)
@@ -1274,7 +1274,7 @@ public class TutorialManager : MonoBehaviour
                     if (splitButton != null)
                     {
                         splitButton.interactable = true;
-                        Debug.Log("TutorialManager: 已启用拆按钮（选中了牒）");
+                        GameLogger.LogDev("TutorialManager: 已启用拆按钮（选中了牒）");
                     }
                 }
                 else
@@ -1282,7 +1282,7 @@ public class TutorialManager : MonoBehaviour
                     if (splitButton != null)
                     {
                         splitButton.interactable = false;
-                        Debug.Log("TutorialManager: 已禁用拆按钮（未选中正确的字符）");
+                        GameLogger.LogDev("TutorialManager: 已禁用拆按钮（未选中正确的字符）");
                     }
                 }
             }
@@ -1296,7 +1296,7 @@ public class TutorialManager : MonoBehaviour
                 bool hasChong = selectedStrings.Contains("虫");
                 bool hasYe = selectedStrings.Contains("枼");
                 
-                Debug.Log($"TutorialManager: 字符选择变化 - 选中字符: [{string.Join(", ", selectedStrings)}], 有虫: {hasChong}, 有枼: {hasYe}");
+                GameLogger.LogDev($"TutorialManager: 字符选择变化 - 选中字符: [{string.Join(", ", selectedStrings)}], 有虫: {hasChong}, 有枼: {hasYe}");
                 
                 // 只有当同时选中"虫"和"枼"时才启用拼按钮
                 if (hasChong && hasYe && selectedStrings.Count == 2)
@@ -1304,7 +1304,7 @@ public class TutorialManager : MonoBehaviour
                     if (combineButton != null)
                     {
                         combineButton.interactable = true;
-                        Debug.Log("TutorialManager: 已启用拼按钮（选中了虫和枼）");
+                        GameLogger.LogDev("TutorialManager: 已启用拼按钮（选中了虫和枼）");
                     }
                 }
                 else
@@ -1312,7 +1312,7 @@ public class TutorialManager : MonoBehaviour
                     if (combineButton != null)
                     {
                         combineButton.interactable = false;
-                        Debug.Log("TutorialManager: 已禁用拼按钮（未选中正确的字符）");
+                        GameLogger.LogDev("TutorialManager: 已禁用拼按钮（未选中正确的字符）");
                     }
                 }
             }
@@ -1323,7 +1323,7 @@ public class TutorialManager : MonoBehaviour
     {
         if (currentStep == TutorialStep.SwitchPlayer_Part2)
         {
-            Debug.Log("TutorialManager: 玩家切换成功，但需要等待点击继续按钮");
+            GameLogger.LogDev("TutorialManager: 玩家切换成功，但需要等待点击继续按钮");
             // 不自动跳转，等待玩家点击继续按钮
         }
     }
@@ -1342,18 +1342,18 @@ public class TutorialManager : MonoBehaviour
             // 添加BroadcastManager组件
             BroadcastManager manager = managerObject.AddComponent<BroadcastManager>();
 
-            Debug.Log("TutorialManager: 已创建广播管理器");
+            GameLogger.LogDev("TutorialManager: 已创建广播管理器");
         }
         else
         {
-            Debug.Log("TutorialManager: 广播管理器已存在");
+            GameLogger.LogDev("TutorialManager: 广播管理器已存在");
         }
     }
     
     // 加载下一个场景
     private void LoadNextScene()
     {
-        Debug.Log("TutorialManager: 开始加载下一个场景");
+        GameLogger.LogDev("TutorialManager: 开始加载下一个场景");
         
         // 隐藏教学面板
         if (tutorialPanel != null)
@@ -1371,7 +1371,7 @@ public class TutorialManager : MonoBehaviour
     // 启用所有操作（移动、切换、回车、空格）
     private void EnableAllOperations()
     {
-        Debug.Log("TutorialManager: 准备进入level2，操作将由Level2Manager处理");
+        GameLogger.LogDev("TutorialManager: 准备进入level2，操作将由Level2Manager处理");
         
         // 在level2场景中，Level2Manager会自动启用所有操作
         // 这里只需要确保教学面板被隐藏
@@ -1384,14 +1384,14 @@ public class TutorialManager : MonoBehaviour
         if (ButtonController.Instance != null)
         {
             ButtonController.Instance.EnableCharacterSelection();
-            Debug.Log("TutorialManager: 教程结束时已重新启用字符选择");
+            GameLogger.LogDev("TutorialManager: 教程结束时已重新启用字符选择");
         }
         
         // 重新启用颜色管理功能
         if (playerController != null)
         {
             playerController.EnableColorManagement();
-            Debug.Log("TutorialManager: 教程结束时已重新启用颜色管理");
+            GameLogger.LogDev("TutorialManager: 教程结束时已重新启用颜色管理");
         }
     }
     
@@ -1406,30 +1406,30 @@ public class TutorialManager : MonoBehaviour
         {
             arrowImage.gameObject.SetActive(false);
         }
-        Debug.Log("TutorialManager: 清理高亮UI元素");
+        GameLogger.LogDev("TutorialManager: 清理高亮UI元素");
     }
 
     // 接收广播的方法
     public void ReceiveBroadcast(string broadcastedValue)
     {
-        Debug.Log($"TutorialManager: 接收到广播: {broadcastedValue}");
+        GameLogger.LogDev($"TutorialManager: 接收到广播: {broadcastedValue}");
 
         // 当收到"伏"字的广播时，执行OnPlayerTransformed
         if (broadcastedValue == "伏")
         {
-            Debug.Log("TutorialManager: 收到'伏'字广播，执行OnPlayerTransformed");
+            GameLogger.LogDev("TutorialManager: 收到'伏'字广播，执行OnPlayerTransformed");
             OnPlayerTransformed();
         }
         // 当收到拆分成功的广播时，执行OnSplitSuccess
         else if (broadcastedValue == "split_success")
         {
-            Debug.Log("TutorialManager: 收到拆分成功广播，执行OnSplitSuccess");
+            GameLogger.LogDev("TutorialManager: 收到拆分成功广播，执行OnSplitSuccess");
             OnSplitSuccess("牒");
         }
         // 当收到组合成功的广播时，执行OnCombineSuccess
         else if (broadcastedValue == "combine_success")
         {
-            Debug.Log("TutorialManager: 收到组合成功广播，执行OnCombineSuccess");
+            GameLogger.LogDev("TutorialManager: 收到组合成功广播，执行OnCombineSuccess");
             OnCombineSuccess("蝶");
         }
     }
@@ -1440,12 +1440,12 @@ public class TutorialManager : MonoBehaviour
     {
         if (BroadcastManager.Instance != null)
         {
-            Debug.Log("TutorialManager: 测试发送'伏'字广播");
+            GameLogger.LogDev("TutorialManager: 测试发送'伏'字广播");
             BroadcastManager.Instance.BroadcastToAll("伏");
         }
         else
         {
-            Debug.LogError("TutorialManager: 广播管理器不存在，无法测试广播");
+            GameLogger.LogError("TutorialManager: 广播管理器不存在，无法测试广播");
         }
     }
 
@@ -1454,51 +1454,51 @@ public class TutorialManager : MonoBehaviour
     public void TestDisablePlayerSwitching()
     {
         DisablePlayerSwitching();
-        Debug.Log("TutorialManager: 已禁用玩家切换");
+        GameLogger.LogDev("TutorialManager: 已禁用玩家切换");
     }
 
     [ContextMenu("测试启用玩家切换")]
     public void TestEnablePlayerSwitching()
     {
         EnablePlayerSwitching();
-        Debug.Log("TutorialManager: 已启用玩家切换");
+        GameLogger.LogDev("TutorialManager: 已启用玩家切换");
     }
 
     [ContextMenu("测试玩家切换事件")]
     public void TestPlayerSwitched()
     {
-        Debug.Log("TutorialManager: 测试玩家切换事件");
+        GameLogger.LogDev("TutorialManager: 测试玩家切换事件");
         OnPlayerSwitched();
     }
 
     [ContextMenu("测试合成'蝶'字成功")]
     public void TestCombineDieSuccess()
     {
-        Debug.Log("TutorialManager: 测试合成'蝶'字成功");
+        GameLogger.LogDev("TutorialManager: 测试合成'蝶'字成功");
         OnCombineSuccess("蝶");
     }
 
     [ContextMenu("测试事件系统")]
     public void TestEventSystem()
     {
-        Debug.Log($"TutorialManager: 当前步骤: {currentStep}");
-        Debug.Log($"TutorialManager: 注册的处理函数数量: {stepHandlers.Count}");
-        Debug.Log($"TutorialManager: 注册的转换规则数量: {stepTransitions.Count}");
+        GameLogger.LogDev($"TutorialManager: 当前步骤: {currentStep}");
+        GameLogger.LogDev($"TutorialManager: 注册的处理函数数量: {stepHandlers.Count}");
+        GameLogger.LogDev($"TutorialManager: 注册的转换规则数量: {stepTransitions.Count}");
 
         if (stepHandlers.ContainsKey(currentStep))
         {
-            Debug.Log($"TutorialManager: 当前步骤的处理函数存在");
+            GameLogger.LogDev($"TutorialManager: 当前步骤的处理函数存在");
         }
         else
         {
-            Debug.LogError($"TutorialManager: 当前步骤的处理函数不存在");
+            GameLogger.LogError($"TutorialManager: 当前步骤的处理函数不存在");
         }
     }
 
     [ContextMenu("测试延迟显示继续按钮")]
     public void TestDelayedShowContinueButton()
     {
-        Debug.Log("TutorialManager: 测试延迟显示继续按钮");
+        GameLogger.LogDev("TutorialManager: 测试延迟显示继续按钮");
         StartCoroutine(DelayedShowContinueButton(1f));
     }
 
@@ -1508,11 +1508,11 @@ public class TutorialManager : MonoBehaviour
         if (playerController != null && playerController.GetCurrentPlayer() != null)
         {
             Player currentPlayer = playerController.GetCurrentPlayer();
-            Debug.Log($"TutorialManager: 当前玩家携带字符为 '{currentPlayer.CarryCharacter}'");
+            GameLogger.LogDev($"TutorialManager: 当前玩家携带字符为 '{currentPlayer.CarryCharacter}'");
         }
         else
         {
-            Debug.LogWarning("TutorialManager: 无法获取当前玩家信息");
+            GameLogger.LogWarning("TutorialManager: 无法获取当前玩家信息");
         }
     }
     #endregion
@@ -1524,11 +1524,11 @@ public class TutorialManager : MonoBehaviour
         if (playerController != null)
         {
             playerController.DisableCurrentPlayerMovement();
-            Debug.Log("TutorialManager: 已禁用玩家移动");
+            GameLogger.LogDev("TutorialManager: 已禁用玩家移动");
         }
         else
         {
-            Debug.LogWarning("TutorialManager: PlayerController 为 null，无法禁用玩家移动");
+            GameLogger.LogWarning("TutorialManager: PlayerController 为 null，无法禁用玩家移动");
         }
         
 
@@ -1570,7 +1570,7 @@ public class TutorialManager : MonoBehaviour
         {
             Player currentPlayer = playerController.GetCurrentPlayer();
             currentPlayer.SetEnterKeyEnabled(false);
-            Debug.Log("TutorialManager: 已禁用回车键响应");
+            GameLogger.LogDev("TutorialManager: 已禁用回车键响应");
         }
     }
     
@@ -1581,7 +1581,7 @@ public class TutorialManager : MonoBehaviour
         {
             Player currentPlayer = playerController.GetCurrentPlayer();
             currentPlayer.SetEnterKeyEnabled(true);
-            Debug.Log("TutorialManager: 已启用回车键响应");
+            GameLogger.LogDev("TutorialManager: 已启用回车键响应");
         }
     }
     #endregion
@@ -1612,11 +1612,11 @@ public class TutorialManager : MonoBehaviour
             if (maskImage != null)
             {
                 maskImage.raycastTarget = true;
-                Debug.Log("TutorialManager: 已启用tutorialMask的Raycast Target");
+                GameLogger.LogDev("TutorialManager: 已启用tutorialMask的Raycast Target");
             }
         }
 
-        Debug.Log("TutorialManager: 禁用UI交互");
+        GameLogger.LogDev("TutorialManager: 禁用UI交互");
     }
 
     // 启用UI交互
@@ -1644,11 +1644,11 @@ public class TutorialManager : MonoBehaviour
             if (maskImage != null)
             {
                 maskImage.raycastTarget = false;
-                Debug.Log("TutorialManager: 已禁用tutorialMask的Raycast Target");
+                GameLogger.LogDev("TutorialManager: 已禁用tutorialMask的Raycast Target");
             }
         }
 
-        Debug.Log("TutorialManager: 启用UI交互");
+        GameLogger.LogDev("TutorialManager: 启用UI交互");
     }
     #endregion
 
@@ -1665,14 +1665,14 @@ public class TutorialManager : MonoBehaviour
     {
         if (hintText == null)
         {
-            Debug.LogWarning("TutorialManager: hintText为空，无法设置字体");
+            GameLogger.LogWarning("TutorialManager: hintText为空，无法设置字体");
             return;
         }
         
         // 优先使用编辑器中已配置的字体，如果没有配置则使用代码设置的字体
         if (hintText.font != null)
         {
-            Debug.Log($"TutorialManager: 提示文本使用编辑器配置的字体: {hintText.font.name}");
+            GameLogger.LogDev($"TutorialManager: 提示文本使用编辑器配置的字体: {hintText.font.name}");
             return;
         }
         
@@ -1690,11 +1690,11 @@ public class TutorialManager : MonoBehaviour
         {
             hintText.font = targetFont;
             hintText.ForceMeshUpdate();
-            Debug.Log($"TutorialManager: 提示文本字体设置完成: {targetFont.name}");
+            GameLogger.LogDev($"TutorialManager: 提示文本字体设置完成: {targetFont.name}");
         }
         else
         {
-            Debug.LogWarning("TutorialManager: 无法为提示文本设置字体");
+            GameLogger.LogWarning("TutorialManager: 无法为提示文本设置字体");
         }
     }
     
@@ -1704,14 +1704,14 @@ public class TutorialManager : MonoBehaviour
         TextMeshProUGUI continueButtonText = continueButton?.GetComponentInChildren<TextMeshProUGUI>();
         if (continueButtonText == null)
         {
-            Debug.LogWarning("TutorialManager: continueButtonText为空，无法设置字体");
+            GameLogger.LogWarning("TutorialManager: continueButtonText为空，无法设置字体");
             return;
         }
         
         // 优先使用编辑器中已配置的字体，如果没有配置则使用代码设置的字体
         if (continueButtonText.font != null)
         {
-            Debug.Log($"TutorialManager: 按钮文本使用编辑器配置的字体: {continueButtonText.font.name}");
+            GameLogger.LogDev($"TutorialManager: 按钮文本使用编辑器配置的字体: {continueButtonText.font.name}");
             return;
         }
         
@@ -1729,11 +1729,11 @@ public class TutorialManager : MonoBehaviour
         {
             continueButtonText.font = targetFont;
             continueButtonText.ForceMeshUpdate();
-            Debug.Log($"TutorialManager: 按钮文本字体设置完成: {targetFont.name}");
+            GameLogger.LogDev($"TutorialManager: 按钮文本字体设置完成: {targetFont.name}");
         }
         else
         {
-            Debug.LogWarning("TutorialManager: 无法为按钮文本设置字体");
+            GameLogger.LogWarning("TutorialManager: 无法为按钮文本设置字体");
         }
     }
     
@@ -1747,7 +1747,7 @@ public class TutorialManager : MonoBehaviour
             TMP_FontAsset font = stringSelector.GetChineseFont();
             if (font != null)
             {
-                Debug.Log($"TutorialManager: 从StringSelector获取{fontType}备用字体: {font.name}");
+                GameLogger.LogDev($"TutorialManager: 从StringSelector获取{fontType}备用字体: {font.name}");
                 return font;
             }
         }
@@ -1756,11 +1756,11 @@ public class TutorialManager : MonoBehaviour
         TMP_FontAsset defaultFont = Resources.Load<TMP_FontAsset>("Fonts/SourceHanSerifCN-Heavy SDF 1");
         if (defaultFont != null)
         {
-            Debug.Log($"TutorialManager: 为{fontType}加载默认字体: {defaultFont.name}");
+            GameLogger.LogDev($"TutorialManager: 为{fontType}加载默认字体: {defaultFont.name}");
             return defaultFont;
         }
         
-        Debug.LogWarning($"TutorialManager: 无法获取{fontType}的备用字体");
+        GameLogger.LogWarning($"TutorialManager: 无法获取{fontType}的备用字体");
         return null;
     }
     #endregion
@@ -1777,7 +1777,7 @@ public class TutorialManager : MonoBehaviour
     {
         if (arrowImage == null || arrowImage.canvas == null) 
         {
-            Debug.LogWarning("TutorialManager: TrySetArrowAnchoredFromScreen - arrowImage或canvas为空");
+            GameLogger.LogWarning("TutorialManager: TrySetArrowAnchoredFromScreen - arrowImage或canvas为空");
             return false;
         }
 
@@ -1786,8 +1786,8 @@ public class TutorialManager : MonoBehaviour
         Camera uiCam = canvas.renderMode == RenderMode.ScreenSpaceOverlay ? null : canvas.worldCamera;
 
         // 详细日志输出，用于调试
-        Debug.Log($"TutorialManager: TrySetArrowAnchoredFromScreen - 箭头Canvas: {canvas.name}, 渲染模式: {canvas.renderMode}, 相机: {(uiCam != null ? uiCam.name : "null")}");
-        Debug.Log($"TutorialManager: TrySetArrowAnchoredFromScreen - Canvas尺寸: {canvasRect.sizeDelta}, 缩放: {canvasRect.localScale}");
+        GameLogger.LogDev($"TutorialManager: TrySetArrowAnchoredFromScreen - 箭头Canvas: {canvas.name}, 渲染模式: {canvas.renderMode}, 相机: {(uiCam != null ? uiCam.name : "null")}");
+        GameLogger.LogDev($"TutorialManager: TrySetArrowAnchoredFromScreen - Canvas尺寸: {canvasRect.sizeDelta}, 缩放: {canvasRect.localScale}");
 
         if (RectTransformUtility.ScreenPointToLocalPointInRectangle(canvasRect, screenPos, uiCam, out Vector2 localPos))
         {
@@ -1800,14 +1800,14 @@ public class TutorialManager : MonoBehaviour
             Vector3 lp = arrowRect.localPosition;
             arrowRect.localPosition = new Vector3(lp.x, lp.y, 0f);
             
-            Debug.Log($"TutorialManager: 箭头定位成功 - 屏幕坐标: {screenPos}, 局部坐标: {localPos}, 角度: {angle}, 翻转: {flip}");
-            Debug.Log($"TutorialManager: 箭头最终位置 - anchoredPosition: {arrowRect.anchoredPosition}, localPosition: {arrowRect.localPosition}");
+            GameLogger.LogDev($"TutorialManager: 箭头定位成功 - 屏幕坐标: {screenPos}, 局部坐标: {localPos}, 角度: {angle}, 翻转: {flip}");
+            GameLogger.LogDev($"TutorialManager: 箭头最终位置 - anchoredPosition: {arrowRect.anchoredPosition}, localPosition: {arrowRect.localPosition}");
             return true;
         }
         else
         {
-            Debug.LogWarning($"TutorialManager: 屏幕坐标转换失败 - 屏幕坐标: {screenPos}");
-            Debug.LogWarning($"TutorialManager: Canvas信息 - 模式: {canvas.renderMode}, 相机: {(uiCam != null ? uiCam.name : "null")}, Canvas尺寸: {canvasRect.sizeDelta}");
+            GameLogger.LogWarning($"TutorialManager: 屏幕坐标转换失败 - 屏幕坐标: {screenPos}");
+            GameLogger.LogWarning($"TutorialManager: Canvas信息 - 模式: {canvas.renderMode}, 相机: {(uiCam != null ? uiCam.name : "null")}, Canvas尺寸: {canvasRect.sizeDelta}");
             return false;
         }
     }
@@ -1842,7 +1842,7 @@ public class TutorialManager : MonoBehaviour
         }
 
         Vector3 screenPos = RectTransformUtility.WorldToScreenPoint(targetCam, worldCenter);
-        Debug.Log($"TutorialManager: GetScreenPositionOfRectTransform - {rt.name}: worldCenter={worldCenter}, screenPos={screenPos}");
+        GameLogger.LogDev($"TutorialManager: GetScreenPositionOfRectTransform - {rt.name}: worldCenter={worldCenter}, screenPos={screenPos}");
         return screenPos;
     }
     #endregion
@@ -1858,7 +1858,7 @@ public class TutorialManager : MonoBehaviour
             if (panelImage != null)
             {
                 panelImage.raycastTarget = false;
-                Debug.Log("TutorialManager: 已禁用教学Panel的Raycast Target");
+                GameLogger.LogDev("TutorialManager: 已禁用教学Panel的Raycast Target");
             }
             
             // 同时禁用Panel内所有子对象的Raycast Target
@@ -1868,7 +1868,7 @@ public class TutorialManager : MonoBehaviour
                 childImage.raycastTarget = false;
             }
             
-            Debug.Log($"TutorialManager: 已禁用教学Panel及其{childImages.Length}个子对象的Raycast Target");
+            GameLogger.LogDev($"TutorialManager: 已禁用教学Panel及其{childImages.Length}个子对象的Raycast Target");
         }
         
         // 禁用所有可能遮挡的UI元素的Raycast Target
@@ -1924,7 +1924,7 @@ public class TutorialManager : MonoBehaviour
                 disabledCount++;
             }
             
-            Debug.Log($"TutorialManager: 在Canvas '{canvas.name}' 中禁用了 {disabledCount} 个UI元素的Raycast Target");
+            GameLogger.LogDev($"TutorialManager: 在Canvas '{canvas.name}' 中禁用了 {disabledCount} 个UI元素的Raycast Target");
         }
         
         // 特别禁用Circle和Arrow的Raycast Target
@@ -1946,7 +1946,7 @@ public class TutorialManager : MonoBehaviour
                 imageName.Contains("圈") || imageName.Contains("箭头"))
             {
                 image.raycastTarget = false;
-                Debug.Log($"TutorialManager: 已禁用 {image.name} 的Raycast Target");
+                GameLogger.LogDev($"TutorialManager: 已禁用 {image.name} 的Raycast Target");
             }
         }
         
@@ -1957,7 +1957,7 @@ public class TutorialManager : MonoBehaviour
         //     if (highlightImage != null)
         //     {
         //         highlightImage.raycastTarget = false;
-        //         Debug.Log("TutorialManager: 已禁用highlightBox的Raycast Target");
+        //         GameLogger.LogDev("TutorialManager: 已禁用highlightBox的Raycast Target");
         //     }
         // }
         
@@ -1965,7 +1965,7 @@ public class TutorialManager : MonoBehaviour
         if (arrowImage != null)
         {
             arrowImage.raycastTarget = false;
-            Debug.Log("TutorialManager: 已禁用arrowImage的Raycast Target");
+            GameLogger.LogDev("TutorialManager: 已禁用arrowImage的Raycast Target");
         }
     }
     
@@ -1984,7 +1984,7 @@ public class TutorialManager : MonoBehaviour
                 imageName.Contains("圈") || imageName.Contains("箭头"))
             {
                 image.raycastTarget = true;
-                Debug.Log($"TutorialManager: 已恢复 {image.name} 的Raycast Target");
+                GameLogger.LogDev($"TutorialManager: 已恢复 {image.name} 的Raycast Target");
             }
         }
         
@@ -1995,7 +1995,7 @@ public class TutorialManager : MonoBehaviour
         //     if (highlightImage != null)
         //     {
         //         highlightImage.raycastTarget = true;
-        //         Debug.Log("TutorialManager: 已恢复highlightBox的Raycast Target");
+        //         GameLogger.LogDev("TutorialManager: 已恢复highlightBox的Raycast Target");
         //     }
         // }
         
@@ -2003,7 +2003,7 @@ public class TutorialManager : MonoBehaviour
         if (arrowImage != null)
         {
             arrowImage.raycastTarget = true;
-            Debug.Log("TutorialManager: 已恢复arrowImage的Raycast Target");
+            GameLogger.LogDev("TutorialManager: 已恢复arrowImage的Raycast Target");
         }
     }
     
@@ -2043,7 +2043,7 @@ public class TutorialManager : MonoBehaviour
                 restoredCount++;
             }
             
-            Debug.Log($"TutorialManager: 在Canvas '{canvas.name}' 中恢复了 {restoredCount} 个UI元素的Raycast Target");
+            GameLogger.LogDev($"TutorialManager: 在Canvas '{canvas.name}' 中恢复了 {restoredCount} 个UI元素的Raycast Target");
         }
         
         // 特别恢复Circle和Arrow的Raycast Target
@@ -2060,7 +2060,7 @@ public class TutorialManager : MonoBehaviour
             if (panelImage != null)
             {
                 panelImage.raycastTarget = true;
-                Debug.Log("TutorialManager: 已恢复教学Panel的Raycast Target");
+                GameLogger.LogDev("TutorialManager: 已恢复教学Panel的Raycast Target");
             }
             
             // 恢复Panel内所有子对象的Raycast Target
@@ -2070,7 +2070,7 @@ public class TutorialManager : MonoBehaviour
                 childImage.raycastTarget = true;
             }
             
-            Debug.Log($"TutorialManager: 已恢复教学Panel及其{childImages.Length}个子对象的Raycast Target");
+            GameLogger.LogDev($"TutorialManager: 已恢复教学Panel及其{childImages.Length}个子对象的Raycast Target");
         }
         
         // 恢复所有UI元素的Raycast Target
@@ -2080,28 +2080,28 @@ public class TutorialManager : MonoBehaviour
     private void CheckComponentReferences()
     {
         if (arrowImage == null)
-            Debug.LogError("TutorialManager: arrowImage 未设置!");
+            GameLogger.LogError("TutorialManager: arrowImage 未设置!");
             
         // if (highlightBox == null)
-        //     Debug.LogError("TutorialManager: highlightBox 未设置!");
+        //     GameLogger.LogError("TutorialManager: highlightBox 未设置!");
             
         if (guideCharacterImage == null)
-            Debug.LogError("TutorialManager: guideCharacterImage 未设置!");
+            GameLogger.LogError("TutorialManager: guideCharacterImage 未设置!");
             
         if (arrowLeft == null)
-            Debug.LogError("TutorialManager: arrowLeft 未设置!");
+            GameLogger.LogError("TutorialManager: arrowLeft 未设置!");
             
         if (arrowDownLeft == null)
-            Debug.LogError("TutorialManager: arrowDownLeft 未设置!");
+            GameLogger.LogError("TutorialManager: arrowDownLeft 未设置!");
             
         if (dogObject == null)
-            Debug.LogWarning("TutorialManager: dogObject 未设置!");
+            GameLogger.LogWarning("TutorialManager: dogObject 未设置!");
             
         if (grassObject == null)
-            Debug.LogWarning("TutorialManager: grassObject 未设置!");
+            GameLogger.LogWarning("TutorialManager: grassObject 未设置!");
             
         if (dieObject == null)
-            Debug.LogWarning("TutorialManager: dieObject 未设置!");
+            GameLogger.LogWarning("TutorialManager: dieObject 未设置!");
     }
     
     // 设置引导人物表情
@@ -2118,7 +2118,7 @@ public class TutorialManager : MonoBehaviour
     {
         if (arrowImage == null || guideCharacterImage == null || target == null)
         {
-            Debug.LogWarning("TutorialManager: PointAtTarget - 缺少必要的组件引用");
+            GameLogger.LogWarning("TutorialManager: PointAtTarget - 缺少必要的组件引用");
             return;
         }
 
@@ -2166,7 +2166,7 @@ public class TutorialManager : MonoBehaviour
     {
         // if (highlightBox == null || target == null)
         // {
-        //     Debug.LogWarning("TutorialManager: HighlightUITarget - 缺少必要的组件引用");
+        //     GameLogger.LogWarning("TutorialManager: HighlightUITarget - 缺少必要的组件引用");
         //     return;
         // }
 
@@ -2205,11 +2205,11 @@ public class TutorialManager : MonoBehaviour
     {
         if (arrowImage == null || guideCharacterImage == null)
         {
-            Debug.LogWarning("TutorialManager: SetupArrowForUI - 缺少必要的组件引用");
+            GameLogger.LogWarning("TutorialManager: SetupArrowForUI - 缺少必要的组件引用");
             return;
         }
         
-        Debug.Log($"TutorialManager: SetupArrowForUI - 目标UI元素: {targetRect.name}");
+        GameLogger.LogDev($"TutorialManager: SetupArrowForUI - 目标UI元素: {targetRect.name}");
         
         // 确保箭头在最上层，避免被底部栏等UI遮挡
         BringArrowToFront();
@@ -2235,24 +2235,24 @@ public class TutorialManager : MonoBehaviour
             arrowImage.rectTransform.SetAsLastSibling();
             // 禁止射线拦截，确保不影响底部栏交互
             arrowImage.raycastTarget = false;
-            Debug.Log("TutorialManager: 已将箭头置于根Canvas最上层");
+            GameLogger.LogDev("TutorialManager: 已将箭头置于根Canvas最上层");
         }
         else
         {
-            Debug.LogWarning("TutorialManager: 无法找到根Canvas，箭头置顶失败");
+            GameLogger.LogWarning("TutorialManager: 无法找到根Canvas，箭头置顶失败");
         }
     }
 
     // 同一Canvas内的直接UI坐标定位
     private void SetupArrowForUIDirectly(RectTransform targetRect)
     {
-        Debug.Log("TutorialManager: 使用直接UI坐标定位");
+        GameLogger.LogDev("TutorialManager: 使用直接UI坐标定位");
 
         // 获取箭头所在的父级RectTransform，这将作为我们的统一坐标系
         RectTransform arrowParentRT = arrowImage.rectTransform.parent as RectTransform;
         if (arrowParentRT == null)
         {
-            Debug.LogError("TutorialManager: 箭头的父节点没有RectTransform！");
+            GameLogger.LogError("TutorialManager: 箭头的父节点没有RectTransform！");
             return;
         }
 
@@ -2264,7 +2264,7 @@ public class TutorialManager : MonoBehaviour
         Vector2 guidePos = arrowParentRT.InverseTransformPoint(guideWorldPos);
         Vector2 targetPos = arrowParentRT.InverseTransformPoint(targetWorldPos);
 
-        Debug.Log($"TutorialManager: SetupArrowForUIDirectly - 引导人物UI坐标(统一坐标系): {guidePos}, 目标UI坐标(统一坐标系): {targetPos}");
+        GameLogger.LogDev($"TutorialManager: SetupArrowForUIDirectly - 引导人物UI坐标(统一坐标系): {guidePos}, 目标UI坐标(统一坐标系): {targetPos}");
 
         // 3. 基于统一坐标系的计算
         Vector2 direction = (targetPos - guidePos).normalized;
@@ -2299,21 +2299,21 @@ public class TutorialManager : MonoBehaviour
             arrowImage.sprite = arrowLeft;
         }
 
-        Debug.Log($"TutorialManager: SetupArrowForUIDirectly - 箭头位置: {arrowPos}, 角度: {angle}");
+        GameLogger.LogDev($"TutorialManager: SetupArrowForUIDirectly - 箭头位置: {arrowPos}, 角度: {angle}");
     }
     
     // 不同Canvas间的屏幕坐标转换定位
     private void SetupArrowForUIWithScreenCoords(RectTransform targetRect)
     {
-        Debug.Log("TutorialManager: 使用屏幕坐标转换定位");
+        GameLogger.LogDev("TutorialManager: 使用屏幕坐标转换定位");
         
         // 正确获取引导人物的屏幕坐标（UI元素需要正确转换）
         Vector3 guideScreenPos = GetScreenPositionOfRectTransform(guideCharacterImage.rectTransform);
-        Debug.Log($"TutorialManager: SetupArrowForUIWithScreenCoords - 引导人物屏幕坐标: {guideScreenPos}");
+        GameLogger.LogDev($"TutorialManager: SetupArrowForUIWithScreenCoords - 引导人物屏幕坐标: {guideScreenPos}");
         
         // 正确获取目标UI元素的屏幕坐标
         Vector3 targetScreenPos = GetScreenPositionOfRectTransform(targetRect);
-        Debug.Log($"TutorialManager: SetupArrowForUIWithScreenCoords - 目标UI屏幕坐标: {targetScreenPos}");
+        GameLogger.LogDev($"TutorialManager: SetupArrowForUIWithScreenCoords - 目标UI屏幕坐标: {targetScreenPos}");
         
         // 计算从引导人物到目标的方向向量
         Vector3 direction = (targetScreenPos - guideScreenPos).normalized;
@@ -2351,7 +2351,7 @@ public class TutorialManager : MonoBehaviour
     {
         if (arrowImage == null || guideCharacterImage == null)
         {
-            Debug.LogWarning("TutorialManager: SetupArrowForWorldObject - 缺少必要的组件引用");
+            GameLogger.LogWarning("TutorialManager: SetupArrowForWorldObject - 缺少必要的组件引用");
             return;
         }
         
@@ -2404,16 +2404,16 @@ public class TutorialManager : MonoBehaviour
     // 虫显示通知方法
     public void OnChongShown()
     {
-        Debug.Log("TutorialManager: 收到虫显示通知");
+        GameLogger.LogDev("TutorialManager: 收到虫显示通知");
         chongShown = true;
     }
     
     // 牒显示通知方法
     public void OnDieShown()
     {
-        Debug.Log("TutorialManager: 收到牒显示通知，设置dieShown为true");
+        GameLogger.LogDev("TutorialManager: 收到牒显示通知，设置dieShown为true");
         dieShown = true;
-        Debug.Log($"TutorialManager: dieShown状态: {dieShown}");
+        GameLogger.LogDev($"TutorialManager: dieShown状态: {dieShown}");
     }
     #endregion
 }

@@ -12,7 +12,7 @@ public class BroadcastReceiver : MonoBehaviour
     {
         if (enableBroadcastLogging)
         {
-            Debug.Log($"BroadcastReceiver: 对象 '{gameObject.name}' (类型: {objectType}) 接收到广播: {broadcastedValue}");
+            GameLogger.LogDev($"BroadcastReceiver: 对象 '{gameObject.name}' (类型: {objectType}) 接收到广播: {broadcastedValue}");
         }
         
         // 根据广播的值执行不同的逻辑
@@ -45,7 +45,7 @@ public class BroadcastReceiver : MonoBehaviour
     // 处理雨广播
     private void HandleRainBroadcast()
     {
-        Debug.Log($"对象 {gameObject.name} 执行雨相关逻辑");
+        GameLogger.LogDev($"对象 {gameObject.name} 执行雨相关逻辑");
         // 可以在这里添加雨相关的效果
         // 比如改变颜色、播放音效、触发粒子效果等
     }
@@ -53,28 +53,28 @@ public class BroadcastReceiver : MonoBehaviour
     // 处理风广播
     private void HandleWindBroadcast()
     {
-        Debug.Log($"对象 {gameObject.name} 执行风相关逻辑");
+        GameLogger.LogDev($"对象 {gameObject.name} 执行风相关逻辑");
         // 可以在这里添加风相关的效果
     }
     
     // 处理火广播
     private void HandleFireBroadcast()
     {
-        Debug.Log($"对象 {gameObject.name} 执行火相关逻辑");
+        GameLogger.LogDev($"对象 {gameObject.name} 执行火相关逻辑");
         // 可以在这里添加火相关的效果
     }
     
     // 处理停广播
     private void HandleStopBroadcast()
     {
-        Debug.Log($"对象 {gameObject.name} 执行停相关逻辑");
+        GameLogger.LogDev($"对象 {gameObject.name} 执行停相关逻辑");
         // 可以在这里添加停相关的效果
     }
     
     // 处理默认广播
     private void HandleDefaultBroadcast(string value)
     {
-        Debug.Log($"对象 {gameObject.name} 执行默认广播逻辑: {value}");
+        GameLogger.LogDev($"对象 {gameObject.name} 执行默认广播逻辑: {value}");
         // 可以在这里添加默认的广播处理逻辑
     }
 }

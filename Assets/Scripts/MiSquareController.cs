@@ -31,11 +31,11 @@ public class MiSquareController : MonoBehaviour
         
         if (imageComponent == null)
         {
-            Debug.LogError($"MiSquareController: 对象 '{gameObject.name}' 没有Image组件");
+            GameLogger.LogError($"MiSquareController: 对象 '{gameObject.name}' 没有Image组件");
         }
         else
         {
-            Debug.Log($"MiSquareController: 对象 '{gameObject.name}' 初始化完成");
+            GameLogger.LogDev($"MiSquareController: 对象 '{gameObject.name}' 初始化完成");
         }
     }
     
@@ -44,7 +44,7 @@ public class MiSquareController : MonoBehaviour
     {
         if (imageComponent == null)
         {
-            Debug.LogError("Image组件为空，无法设置sprite");
+            GameLogger.LogError("Image组件为空，无法设置sprite");
             return;
         }
         
@@ -71,12 +71,12 @@ public class MiSquareController : MonoBehaviour
             
             if (enableLogging)
             {
-                Debug.Log($"MiSquareController: 已设置{miZiGeType}米字格sprite为字符 '{character}'");
+                GameLogger.LogDev($"MiSquareController: 已设置{miZiGeType}米字格sprite为字符 '{character}'");
             }
         }
         else
         {
-            Debug.LogWarning($"MiSquareController: 未找到字符 '{character}' 对应的{miZiGeType}米字格Sprite");
+            GameLogger.LogWarning($"MiSquareController: 未找到字符 '{character}' 对应的{miZiGeType}米字格Sprite");
         }
     }
     
@@ -85,7 +85,7 @@ public class MiSquareController : MonoBehaviour
     {
         if (imageComponent == null)
         {
-            Debug.LogError("Image组件为空，无法设置sprite");
+            GameLogger.LogError("Image组件为空，无法设置sprite");
             return;
         }
         
@@ -98,12 +98,12 @@ public class MiSquareController : MonoBehaviour
             
             if (enableLogging)
             {
-                Debug.Log($"MiSquareController: 已设置普通sprite为字符 '{character}'");
+                GameLogger.LogDev($"MiSquareController: 已设置普通sprite为字符 '{character}'");
             }
         }
         else
         {
-            Debug.LogWarning($"MiSquareController: 未找到字符 '{character}' 对应的普通Sprite");
+            GameLogger.LogWarning($"MiSquareController: 未找到字符 '{character}' 对应的普通Sprite");
         }
     }
     
@@ -123,7 +123,7 @@ public class MiSquareController : MonoBehaviour
             
             if (enableLogging)
             {
-                Debug.Log("MiSquareController: 已清除sprite");
+                GameLogger.LogDev("MiSquareController: 已清除sprite");
             }
         }
     }
@@ -138,7 +138,7 @@ public class MiSquareController : MonoBehaviour
     public void SetImage(Image image)
     {
         imageComponent = image;
-        Debug.Log($"MiSquareController: Image已设置为: {image?.gameObject.name ?? "null"}");
+        GameLogger.LogDev($"MiSquareController: Image已设置为: {image?.gameObject.name ?? "null"}");
     }
     
     // 获取Image引用
@@ -153,7 +153,7 @@ public class MiSquareController : MonoBehaviour
         miZiGeType = type;
         if (enableLogging)
         {
-            Debug.Log($"MiSquareController: 米字格类型已设置为 {type}");
+            GameLogger.LogDev($"MiSquareController: 米字格类型已设置为 {type}");
         }
     }
     

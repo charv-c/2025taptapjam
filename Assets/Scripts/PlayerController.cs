@@ -49,7 +49,7 @@ public class PlayerController : MonoBehaviour
         }
         else
         {
-            Debug.LogWarning("场景中没有找到Player组件！");
+            GameLogger.LogWarning("场景中没有找到Player组件！");
         }
     }
 
@@ -86,7 +86,7 @@ public class PlayerController : MonoBehaviour
             UpdatePlayerColors();
         }
 
-        Debug.Log($"切换到玩家 {currentPlayerIndex + 1}");
+        GameLogger.LogDev($"切换到玩家 {currentPlayerIndex + 1}");
     }
 
     void SetCurrentPlayer(int index)
@@ -203,11 +203,11 @@ public class PlayerController : MonoBehaviour
             currentPlayer.SetInputEnabled(false);
             // 重置输入值，确保玩家停止移动
             currentPlayer.SetInput(0f, 0f);
-            Debug.Log($"PlayerController: 已禁用玩家 {currentPlayerIndex + 1} 的移动");
+            GameLogger.LogDev($"PlayerController: 已禁用玩家 {currentPlayerIndex + 1} 的移动");
         }
         else
         {
-            Debug.LogWarning("PlayerController: currentPlayer 为 null，无法禁用移动");
+            GameLogger.LogWarning("PlayerController: currentPlayer 为 null，无法禁用移动");
         }
     }
 
@@ -227,7 +227,7 @@ public class PlayerController : MonoBehaviour
         }
         else
         {
-            Debug.LogWarning($"无效的玩家索引: {index}，玩家总数: {players.Count}");
+            GameLogger.LogWarning($"无效的玩家索引: {index}，玩家总数: {players.Count}");
         }
     }
 
@@ -261,7 +261,7 @@ public class PlayerController : MonoBehaviour
     {
         if (!enableColorManagement)
         {
-            Debug.LogWarning("PlayerController: 颜色管理已禁用，跳过更新玩家颜色。");
+            GameLogger.LogWarning("PlayerController: 颜色管理已禁用，跳过更新玩家颜色。");
             return;
         }
 
@@ -282,7 +282,7 @@ public class PlayerController : MonoBehaviour
                 }
             }
         }
-        Debug.Log($"PlayerController: 已更新玩家颜色状态，当前操控玩家: {currentPlayerIndex + 1}");
+        GameLogger.LogDev($"PlayerController: 已更新玩家颜色状态，当前操控玩家: {currentPlayerIndex + 1}");
     }
     
     /// <summary>
@@ -292,7 +292,7 @@ public class PlayerController : MonoBehaviour
     {
         if (!enableColorManagement)
         {
-            Debug.LogWarning("PlayerController: 颜色管理已禁用，跳过恢复玩家颜色。");
+            GameLogger.LogWarning("PlayerController: 颜色管理已禁用，跳过恢复玩家颜色。");
             return;
         }
 
@@ -303,7 +303,7 @@ public class PlayerController : MonoBehaviour
                 player.RestoreNormalColor();
             }
         }
-        Debug.Log("PlayerController: 已恢复所有玩家正常颜色");
+        GameLogger.LogDev("PlayerController: 已恢复所有玩家正常颜色");
     }
     
     /// <summary>
@@ -313,7 +313,7 @@ public class PlayerController : MonoBehaviour
     {
         if (!enableColorManagement)
         {
-            Debug.LogWarning("PlayerController: 颜色管理已禁用，跳过设置玩家为灰色。");
+            GameLogger.LogWarning("PlayerController: 颜色管理已禁用，跳过设置玩家为灰色。");
             return;
         }
 
@@ -324,7 +324,7 @@ public class PlayerController : MonoBehaviour
                 player.SetGrayedOut();
             }
         }
-        Debug.Log("PlayerController: 已将所有玩家设置为灰色");
+        GameLogger.LogDev("PlayerController: 已将所有玩家设置为灰色");
     }
     
     /// <summary>
@@ -333,7 +333,7 @@ public class PlayerController : MonoBehaviour
     public void EnableColorManagement()
     {
         enableColorManagement = true;
-        Debug.Log("PlayerController: 已启用颜色管理");
+        GameLogger.LogDev("PlayerController: 已启用颜色管理");
     }
     
     /// <summary>
@@ -342,7 +342,7 @@ public class PlayerController : MonoBehaviour
     public void DisableColorManagement()
     {
         enableColorManagement = false;
-        Debug.Log("PlayerController: 已禁用颜色管理");
+        GameLogger.LogDev("PlayerController: 已禁用颜色管理");
     }
     
     /// <summary>

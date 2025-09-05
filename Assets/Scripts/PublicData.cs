@@ -332,18 +332,18 @@ public class PublicData : MonoBehaviour
             /*if (AudioManager.Instance != null)
             {
                 AudioManager.Instance.StopBGM();
-                Debug.Log("PublicData: 已停止当前场景的BGM");
+                GameLogger.LogDev("PublicData: 已停止当前场景的BGM");
             }*/
             
             // 所有目标完成，切换到下一个场景
             if (!string.IsNullOrEmpty(sceneName))
             {
-                Debug.Log($"所有目标完成，切换到场景: {sceneName}");
+                GameLogger.LogDev($"所有目标完成，切换到场景: {sceneName}");
                 SceneManager.LoadScene(sceneName);
             }
             else
             {
-                Debug.LogWarning("场景名称未设置，无法切换场景");
+                GameLogger.LogWarning("场景名称未设置，无法切换场景");
             }
         }
     }
@@ -360,7 +360,7 @@ public class PublicData : MonoBehaviour
             {
                 // 禁用门的Highlight组件
                 highlight.enabled = false;
-                Debug.Log($"禁用门的highlight: {highlight.gameObject.name}");
+                GameLogger.LogDev($"禁用门的highlight: {highlight.gameObject.name}");
             }
         }
     }

@@ -74,13 +74,13 @@ public class ButtonController : MonoBehaviour
         if (stringSelector != null)
         {
             stringSelector.OnAvailableStringsChanged += OnAvailableStringsChanged;
-            Debug.Log("ButtonController: 已订阅StringSelector的可用字符串变化事件");
+            GameLogger.LogDev("ButtonController: 已订阅StringSelector的可用字符串变化事件");
         }
     }
 
     private void OnSplitButtonClicked()
     {
-        Debug.Log("ButtonController: OnSplitButtonClicked() 开始执行");
+        GameLogger.LogDev("ButtonController: OnSplitButtonClicked() 开始执行");
         // 飞行动画期间禁止操作
         if (isFlyingAnimationActive) return;
         
@@ -176,11 +176,11 @@ public class ButtonController : MonoBehaviour
             // 添加BroadcastManager组件
             BroadcastManager manager = managerObject.AddComponent<BroadcastManager>();
 
-            Debug.Log("ButtonController: 已创建广播管理器");
+            GameLogger.LogDev("ButtonController: 已创建广播管理器");
         }
         else
         {
-            Debug.Log("ButtonController: 广播管理器已存在");
+            GameLogger.LogDev("ButtonController: 广播管理器已存在");
         }
     }
     
@@ -210,36 +210,36 @@ public class ButtonController : MonoBehaviour
     
     private void splitletter()
     {
-        Debug.Log("ButtonController: splitletter() 开始执行");
+        GameLogger.LogDev("ButtonController: splitletter() 开始执行");
         
         if (stringSelector != null)
         {
             int selectedCount = stringSelector.GetSelectionCount();
-            Debug.Log($"ButtonController: 当前选中字符数量: {selectedCount}");
+            GameLogger.LogDev($"ButtonController: 当前选中字符数量: {selectedCount}");
             
             if (selectedCount != 1)
             {
-                Debug.LogWarning($"ButtonController: 选中字符数量不正确，期望1个，实际{selectedCount}个，清除选择");
+                GameLogger.LogWarning($"ButtonController: 选中字符数量不正确，期望1个，实际{selectedCount}个，清除选择");
                 stringSelector.ClearSelection();
                 return;
             }
             
             string selectedString = stringSelector.FirstSelectedString;
-            Debug.Log($"ButtonController: 选中的字符: '{selectedString}'");
+            GameLogger.LogDev($"ButtonController: 选中的字符: '{selectedString}'");
             
             if (!string.IsNullOrEmpty(selectedString))
             {
-                Debug.Log($"ButtonController: 检查字符 '{selectedString}' 是否可以拆分");
+                GameLogger.LogDev($"ButtonController: 检查字符 '{selectedString}' 是否可以拆分");
                 
                 if (PublicData.CanSplitString(selectedString))
                 {
                     var (part1, part2) = PublicData.GetStringSplit(selectedString);
-                    Debug.Log($"ButtonController: 字符 '{selectedString}' 可以拆分，结果为: '{part1}' 和 '{part2}'");
+                    GameLogger.LogDev($"ButtonController: 字符 '{selectedString}' 可以拆分，结果为: '{part1}' 和 '{part2}'");
                     
                     if (AudioManager.Instance != null && AudioManager.Instance.sfxSplitSuccess != null)
                     {
                         AudioManager.Instance.PlaySFX(AudioManager.Instance.sfxSplitSuccess);
-                        Debug.Log("ButtonController: 播放拆分成功音效");
+                        GameLogger.LogDev("ButtonController: 播放拆分成功音效");
                     }
 
                     // 记录被拆字符的原始索引
@@ -248,67 +248,67 @@ public class ButtonController : MonoBehaviour
 
                     // 清除选择
                     stringSelector.ClearSelection();
-                    Debug.Log("ButtonController: 清除选择");
+                    GameLogger.LogDev("ButtonController: 清除选择");
 
                     // 在原位置替换为拆分结果：先移除原字符，再按顺序插入两个结果
                     stringSelector.RemoveAvailableStringAt(oldIndex);
-                    Debug.Log($"ButtonController: 从索引 {oldIndex} 处移除 '{selectedString}'");
+                    GameLogger.LogDev($"ButtonController: 从索引 {oldIndex} 处移除 '{selectedString}'");
 
                     stringSelector.InsertAvailableStringAt(part1, oldIndex);
-                    Debug.Log($"ButtonController: 在索引 {oldIndex} 插入 '{part1}'");
+                    GameLogger.LogDev($"ButtonController: 在索引 {oldIndex} 插入 '{part1}'");
 
                     stringSelector.InsertAvailableStringAt(part2, oldIndex + 1);
-                    Debug.Log($"ButtonController: 在索引 {oldIndex + 1} 插入 '{part2}'");
+                    GameLogger.LogDev($"ButtonController: 在索引 {oldIndex + 1} 插入 '{part2}'");
                     
                     stringSelector.SetMaxSelectionCount(2);
-                    Debug.Log("ButtonController: 设置最大选择数量为2");
+                    GameLogger.LogDev("ButtonController: 设置最大选择数量为2");
                     
-                    // 发送拆分成功广播：兼容旧事件 + 新格式“拆{被拆字符}”
+                    // 发送拆分成功广播：兼容旧事件 + 新格式"拆{被拆字符}"
                     if (BroadcastManager.Instance != null)
                     {
                         BroadcastManager.Instance.BroadcastToAll("split_success");
                         BroadcastManager.Instance.BroadcastToAll($"拆{selectedString}");
-                        Debug.Log($"ButtonController: 发送拆分成功广播 (split_success, 拆{selectedString})");
+                        GameLogger.LogUser($"ButtonController: 发送拆分成功广播 (split_success, 拆{selectedString})");
                     }
                     
-                    Debug.Log("ButtonController: 拆分操作完成");
+                    GameLogger.LogUser("ButtonController: 拆分操作完成");
                 }
                 else
                 {
-                    Debug.LogWarning($"ButtonController: 字符 '{selectedString}' 无法拆分");
+                    GameLogger.LogWarning($"ButtonController: 字符 '{selectedString}' 无法拆分");
                     
                     if (AudioManager.Instance != null && AudioManager.Instance.sfxOperationFailure != null)
                     {
                         AudioManager.Instance.PlaySFX(AudioManager.Instance.sfxOperationFailure);
-                        Debug.Log("ButtonController: 播放操作失败音效");
+                        GameLogger.LogDev("ButtonController: 播放操作失败音效");
                     }
                     stringSelector.ClearSelection();
-                    Debug.Log("ButtonController: 清除选择");
+                    GameLogger.LogDev("ButtonController: 清除选择");
                 }
             }
             else
             {
-                Debug.LogWarning("ButtonController: 选中的字符为空");
+                GameLogger.LogWarning("ButtonController: 选中的字符为空");
             }
         }
         else
         {
-            Debug.LogError("ButtonController: stringSelector为空，无法执行拆分操作");
+            GameLogger.LogError("ButtonController: stringSelector为空，无法执行拆分操作");
         }
     }
     
     private void combineletter()
     {
-        Debug.Log("ButtonController: combineletter() 开始执行");
+        GameLogger.LogDev("ButtonController: combineletter() 开始执行");
         
         if (stringSelector != null)
         {
             int selectedCount = stringSelector.GetSelectionCount();
-            Debug.Log($"ButtonController: 当前选中字符数量: {selectedCount}");
+            GameLogger.LogDev($"ButtonController: 当前选中字符数量: {selectedCount}");
             
             if (selectedCount != 2)
             {
-                Debug.LogWarning($"ButtonController: 选中字符数量不正确，期望2个，实际{selectedCount}个，清除选择");
+                GameLogger.LogWarning($"ButtonController: 选中字符数量不正确，期望2个，实际{selectedCount}个，清除选择");
                 stringSelector.ClearSelection();
                 return;
             }
@@ -316,19 +316,19 @@ public class ButtonController : MonoBehaviour
             List<string> selectedStrings = stringSelector.SelectedStrings;
             string firstString = selectedStrings[0];
             string secondString = selectedStrings[1];
-            Debug.Log($"ButtonController: 选中的字符: '{firstString}' 和 '{secondString}'");
+            GameLogger.LogDev($"ButtonController: 选中的字符: '{firstString}' 和 '{secondString}'");
             
             string originalString = PublicData.FindOriginalString(firstString, secondString);
-            Debug.Log($"ButtonController: 查找原始字符，结果: '{originalString}'");
+            GameLogger.LogDev($"ButtonController: 查找原始字符，结果: '{originalString}'");
             
             if (originalString != null)
             {
-                Debug.Log($"ButtonController: 找到原始字符 '{originalString}'，开始组合操作");
+                GameLogger.LogDev($"ButtonController: 找到原始字符 '{originalString}'，开始组合操作");
                 
                 if (AudioManager.Instance != null && AudioManager.Instance.sfxCombineSuccess != null)
                 {
                     AudioManager.Instance.PlaySFX(AudioManager.Instance.sfxCombineSuccess);
-                    Debug.Log("ButtonController: 播放组合成功音效");
+                    GameLogger.LogDev("ButtonController: 播放组合成功音效");
                 }
 
                 // 记录两个选中字符中靠前的索引，作为结果插入位置
@@ -338,88 +338,88 @@ public class ButtonController : MonoBehaviour
 
                 // 清除选择
                 stringSelector.ClearSelection();
-                Debug.Log("ButtonController: 清除选择");
+                GameLogger.LogDev("ButtonController: 清除选择");
 
                 // 先按索引大的先移除，避免下标偏移
                 if (indices.Count >= 2)
                 {
                     int idxA = indices[1];
                     stringSelector.RemoveAvailableStringAt(idxA);
-                    Debug.Log($"ButtonController: 从索引 {idxA} 处移除第二个选中字符");
+                    GameLogger.LogDev($"ButtonController: 从索引 {idxA} 处移除第二个选中字符");
                 }
                 if (indices.Count >= 1)
                 {
                     int idxB = indices[0];
                     stringSelector.RemoveAvailableStringAt(idxB);
-                    Debug.Log($"ButtonController: 从索引 {idxB} 处移除第一个选中字符");
+                    GameLogger.LogDev($"ButtonController: 从索引 {idxB} 处移除第一个选中字符");
                 }
                 
                 if (PublicData.IsCharacterInTargetList(originalString))
                 {
-                    Debug.Log($"ButtonController: 字符 '{originalString}' 在目标列表中");
+                    GameLogger.LogDev($"ButtonController: 字符 '{originalString}' 在目标列表中");
                     
                     Transform targetPosition = PublicData.GetTargetPositionForCharacter(originalString);
-                    Debug.Log($"ButtonController: 获取目标位置: {targetPosition?.name ?? "null"}");
+                    GameLogger.LogDev($"ButtonController: 获取目标位置: {targetPosition?.name ?? "null"}");
                     
                     if (targetPosition != null)
                     {
-                        Debug.Log($"ButtonController: 目标位置有效，准备播放飞行动画");
+                        GameLogger.LogDev($"ButtonController: 目标位置有效，准备播放飞行动画");
                         
                         // 在原位置插入合成结果
                         stringSelector.InsertAvailableStringAt(originalString, insertIndex);
-                        Debug.Log($"ButtonController: 在索引 {insertIndex} 插入 '{originalString}'");
+                        GameLogger.LogDev($"ButtonController: 在索引 {insertIndex} 插入 '{originalString}'");
                         
                         // 延迟一秒后播放飞行动画
                         StartCoroutine(DelayedFlyingAnimation(originalString, targetPosition));
-                        Debug.Log($"ButtonController: 启动飞行动画协程，字符: '{originalString}'");
+                        GameLogger.LogDev($"ButtonController: 启动飞行动画协程，字符: '{originalString}'");
                     }
                     else
                     {
-                        Debug.LogWarning($"ButtonController: 目标位置为空，直接添加字符 '{originalString}'");
+                        GameLogger.LogWarning($"ButtonController: 目标位置为空，直接添加字符 '{originalString}'");
                         stringSelector.InsertAvailableStringAt(originalString, insertIndex);
                     }
                 }
                 else
                 {
-                    Debug.Log($"ButtonController: 字符 '{originalString}' 不在目标列表中，直接添加");
+                    GameLogger.LogDev($"ButtonController: 字符 '{originalString}' 不在目标列表中，直接添加");
                     stringSelector.AddAvailableString(originalString);
                 }
                 
                 stringSelector.RecreateAllButtonsPublic();
-                Debug.Log("ButtonController: 重新创建所有按钮");
+                GameLogger.LogDev("ButtonController: 重新创建所有按钮");
                 
                 stringSelector.SetMaxSelectionCount(2);
-                Debug.Log("ButtonController: 设置最大选择数量为2");
+                GameLogger.LogDev("ButtonController: 设置最大选择数量为2");
                 
                 stringSelector.ClearSelection();
-                Debug.Log("ButtonController: 清除选择");
+                GameLogger.LogDev("ButtonController: 清除选择");
                 
-                // 发送组合成功广播：兼容旧事件 + 新格式“合{合成结果}”
+                // 发送组合成功广播：兼容旧事件 + 新格式"拼{部件1}{部件2}"用于提示显示
                 if (BroadcastManager.Instance != null)
                 {
                     BroadcastManager.Instance.BroadcastToAll("combine_success");
-                    BroadcastManager.Instance.BroadcastToAll($"合{originalString}");
-                    Debug.Log($"ButtonController: 发送组合成功广播 (combine_success, 合{originalString})");
+                    BroadcastManager.Instance.BroadcastToAll($"拼{firstString}{secondString}");
+                    GameLogger.LogUser($"ButtonController: 发送组合成功广播 (combine_success, 拼{firstString}{secondString})");
                 }
-                Debug.Log($"合成结果: {originalString}");
-                Debug.Log("ButtonController: 组合操作完成");
+                GameLogger.LogUser($"合成结果: {originalString}");
+                GameLogger.LogUser("ButtonController: 组合操作完成");
             }
             else
             {
-                Debug.LogWarning($"ButtonController: 无法找到字符 '{firstString}' 和 '{secondString}' 的组合结果");
+                GameLogger.LogWarning($"ButtonController: 无法找到字符 '{firstString}' 和 '{secondString}' 的组合结果");
                 
                 if (AudioManager.Instance != null && AudioManager.Instance.sfxOperationFailure != null)
                 {
                     AudioManager.Instance.PlaySFX(AudioManager.Instance.sfxOperationFailure);
-                    Debug.Log("ButtonController: 播放操作失败音效");
+                    GameLogger.LogDev("ButtonController: 播放操作失败音效");
                 }
                 stringSelector.ClearSelection();
-                Debug.Log("ButtonController: 清除选择");
+                GameLogger.LogDev("ButtonController: 清除选择");
             }
         }
         else
         {
-            Debug.LogError("ButtonController: stringSelector为空，无法执行组合操作");
+            GameLogger.LogError("ButtonController: stringSelector为空，无法执行组合操作");
         }
     }
     
@@ -460,7 +460,7 @@ public class ButtonController : MonoBehaviour
         if (stringSelector != null)
         {
             stringSelector.OnAvailableStringsChanged += OnAvailableStringsChanged;
-            Debug.Log("ButtonController: 已订阅新的StringSelector的可用字符串变化事件");
+            GameLogger.LogDev("ButtonController: 已订阅新的StringSelector的可用字符串变化事件");
         }
     }
     
@@ -511,7 +511,7 @@ public class ButtonController : MonoBehaviour
             stringSelector.SetAllCharacterButtonsInteractable(!tutorialMode);
         }
         
-        Debug.Log($"ButtonController: 教程模式已设置为 {tutorialMode}");
+        GameLogger.LogDev($"ButtonController: 教程模式已设置为 {tutorialMode}");
     }
     
     /// <summary>
@@ -523,7 +523,7 @@ public class ButtonController : MonoBehaviour
         {
             stringSelector.DisableAllCharacterButtons();
         }
-        Debug.Log("ButtonController: 已禁用字符选择功能");
+        GameLogger.LogDev("ButtonController: 已禁用字符选择功能");
     }
     
     /// <summary>
@@ -535,7 +535,7 @@ public class ButtonController : MonoBehaviour
         {
             stringSelector.EnableAllCharacterButtons();
         }
-        Debug.Log("ButtonController: 已启用字符选择功能");
+        GameLogger.LogDev("ButtonController: 已启用字符选择功能");
     }
     
     /// <summary>
@@ -550,7 +550,7 @@ public class ButtonController : MonoBehaviour
     // 处理可用字符串变化事件
     private void OnAvailableStringsChanged()
     {
-        Debug.Log("ButtonController: 收到可用字符串变化事件，刷新按钮显示");
+        GameLogger.LogDev("ButtonController: 收到可用字符串变化事件，刷新按钮显示");
         
         // 刷新按钮显示
         RefreshButtonDisplay();
@@ -570,7 +570,7 @@ public class ButtonController : MonoBehaviour
             // 更新按钮状态
             UpdateButtonStates(stringSelector.GetSelectionCount());
             
-            Debug.Log($"ButtonController: 按钮显示已刷新，当前可用字符串数量: {stringSelector.GetAvailableStringCount()}");
+            GameLogger.LogDev($"ButtonController: 按钮显示已刷新，当前可用字符串数量: {stringSelector.GetAvailableStringCount()}");
         }
     }
     
@@ -580,7 +580,7 @@ public class ButtonController : MonoBehaviour
         if (stringSelector != null)
         {
             stringSelector.OnAvailableStringsChanged -= OnAvailableStringsChanged;
-            Debug.Log("ButtonController: 已取消订阅StringSelector的可用字符串变化事件");
+            GameLogger.LogDev("ButtonController: 已取消订阅StringSelector的可用字符串变化事件");
         }
     }
     
@@ -637,7 +637,7 @@ public class ButtonController : MonoBehaviour
             Transform buttonContainer = stringSelector.GetButtonContainer();
             if (buttonContainer != null)
             {
-                Debug.Log($"查找字符按钮: {character}, 按钮容器子物体数量: {buttonContainer.childCount}");
+                GameLogger.LogDev($"查找字符按钮: {character}, 按钮容器子物体数量: {buttonContainer.childCount}");
                 
                 // 遍历所有按钮找到对应字符的按钮
                 for (int i = 0; i < buttonContainer.childCount; i++)
@@ -649,14 +649,14 @@ public class ButtonController : MonoBehaviour
                         TMPro.TextMeshProUGUI buttonText = buttonTransform.GetComponentInChildren<TMPro.TextMeshProUGUI>();
                         if (buttonText != null)
                         {
-                            Debug.Log($"按钮 {i}: 文本={buttonText.text}");
+                            GameLogger.LogDev($"按钮 {i}: 文本={buttonText.text}");
                             if (buttonText.text == character)
                             {
                                 RectTransform buttonRectTransform = buttonTransform as RectTransform;
                                 if (buttonRectTransform != null)
                                 {
                                     Vector2 position = buttonRectTransform.anchoredPosition;
-                                    Debug.Log($"找到字符按钮: {character}, 位置: {position}");
+                                    GameLogger.LogDev($"找到字符按钮: {character}, 位置: {position}");
                                     return position;
                                 }
                             }
@@ -666,7 +666,7 @@ public class ButtonController : MonoBehaviour
             }
         }
         
-        Debug.Log($"未找到字符按钮: {character}, 使用默认位置");
+        GameLogger.LogDev($"未找到字符按钮: {character}, 使用默认位置");
         // 如果找不到按钮位置，使用屏幕中央
         return Vector2.zero;
     }
@@ -680,7 +680,7 @@ public class ButtonController : MonoBehaviour
         Vector2 targetUIPosition = GetTargetUIPosition(targetPosition);
         
         // 调试信息
-        Debug.Log($"飞行动画开始: 字符={character}, 起始位置={startPosition}, 目标位置={targetUIPosition}");
+        GameLogger.LogDev($"飞行动画开始: 字符={character}, 起始位置={startPosition}, 目标位置={targetUIPosition}");
         
         float duration = 1.5f; // 增加动画时长
         float elapsedTime = 0f;
@@ -688,7 +688,7 @@ public class ButtonController : MonoBehaviour
         if (AudioManager.Instance != null && AudioManager.Instance.sfxGoalFlyIn != null)
         {
             AudioManager.Instance.PlaySFX(AudioManager.Instance.sfxGoalFlyIn);
-            Debug.Log("ButtonController: 播放目标飞入音效");
+            GameLogger.LogDev("ButtonController: 播放目标飞入音效");
         }
         
         while (elapsedTime < duration)
@@ -711,7 +711,7 @@ public class ButtonController : MonoBehaviour
         rectTransform.anchoredPosition = targetUIPosition;
         rectTransform.localScale = Vector3.one;
         
-        Debug.Log($"飞行动画完成: 字符={character}");
+        GameLogger.LogUser($"飞行动画完成: 字符={character}");
         
         // 标记目标字符为已完成
         PublicData.MarkTargetAsCompleted(character);
@@ -746,14 +746,14 @@ public class ButtonController : MonoBehaviour
     // 获取目标位置的UI坐标
     private Vector2 GetTargetUIPosition(Transform targetPosition)
     {
-        Debug.Log($"获取目标位置: {targetPosition?.name}");
+        GameLogger.LogDev($"获取目标位置: {targetPosition?.name}");
         
         // 如果目标位置是UI元素，直接获取其anchoredPosition
         RectTransform targetRectTransform = targetPosition as RectTransform;
         if (targetRectTransform != null)
         {
             Vector2 position = targetRectTransform.anchoredPosition;
-            Debug.Log($"目标位置是RectTransform: {position}");
+            GameLogger.LogDev($"目标位置是RectTransform: {position}");
             return position;
         }
         
@@ -762,11 +762,11 @@ public class ButtonController : MonoBehaviour
         if (childRectTransform != null)
         {
             Vector2 position = childRectTransform.anchoredPosition;
-            Debug.Log($"目标位置子物体是RectTransform: {position}");
+            GameLogger.LogDev($"目标位置子物体是RectTransform: {position}");
             return position;
         }
         
-        Debug.Log($"未找到有效的目标位置，使用默认位置");
+        GameLogger.LogDev($"未找到有效的目标位置，使用默认位置");
         // 如果都找不到，返回屏幕中央
         return Vector2.zero;
     }
@@ -793,14 +793,14 @@ public class ButtonController : MonoBehaviour
     {
         if (isLevel1Flying)
         {
-            Debug.LogWarning("ButtonController: 已有Level1字符在飞行中，忽略新的飞行请求");
+            GameLogger.LogWarning("ButtonController: 已有Level1字符在飞行中，忽略新的飞行请求");
             return;
         }
         
         // 使用新的统一飞行接口，终点使用 Inspector 指定的 targetPosition
         if (targetPosition == null)
         {
-            Debug.LogError("ButtonController: 目标位置未设置");
+            GameLogger.LogError("ButtonController: 目标位置未设置");
             return;
         }
         Fly(character, targetPosition);
@@ -815,13 +815,13 @@ public class ButtonController : MonoBehaviour
     {
         if (isLevel1Flying)
         {
-            Debug.LogWarning("ButtonController: 已有Level1字符在飞行中，忽略新的飞行请求");
+            GameLogger.LogWarning("ButtonController: 已有Level1字符在飞行中，忽略新的飞行请求");
             return;
         }
         
         if (targetPosition == null)
         {
-            Debug.LogError("ButtonController: 目标位置未设置");
+            GameLogger.LogError("ButtonController: 目标位置未设置");
             return;
         }
         
@@ -888,7 +888,7 @@ public class ButtonController : MonoBehaviour
 
         if (targetCanvas == null)
         {
-            Debug.LogError("ButtonController: 未找到Canvas，无法执行飞行动画");
+            GameLogger.LogError("ButtonController: 未找到Canvas，无法执行飞行动画");
             return;
         }
 
