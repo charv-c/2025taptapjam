@@ -443,11 +443,11 @@ public class HintManager : MonoBehaviour
 
             if (anyCollectableActive)
             {
-                return "天地间似乎还有⽂字，仔细观察⼀番吧";
+                return "天地间似乎还有文字，仔细观察一番吧";
             }
             else
             {
-                return "万物⻬备，看看⽬标字如何拆分组合吧";
+                return "万物齐备，看看目标字如何拆分组合吧";
             }
         }
 
