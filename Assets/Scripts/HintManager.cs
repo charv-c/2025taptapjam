@@ -31,6 +31,11 @@ public class HintManager : MonoBehaviour
     private bool isExpanded = false;                    // 当前是否展开
     private Sprite initialButtonSprite;                 // 按钮初始底图
     
+    [Header("自动隐藏设置")]
+    [SerializeField] private float autoHideDelay = 1f;  // 自动隐藏延迟时间（秒）
+    private Coroutine autoHideCoroutine;                // 自动隐藏协程
+    private bool isMouseOverHint = false;               // 鼠标是否悬停在提示区域
+    
     [Header("按钮状态切换")]
     [SerializeField] private Sprite expandedButtonSprite;  // 展开时的按钮底图
     
@@ -128,6 +133,128 @@ public class HintManager : MonoBehaviour
 
         // 确保中文字体可用
         EnsureChineseFontForHintText();
+        
+        // 设置鼠标悬停检测
+        SetupMouseHoverDetection();
+    }
+    
+    /// <summary>
+    /// 设置鼠标悬停检测
+    /// </summary>
+    private void SetupMouseHoverDetection()
+    {
+        // 为hintButton添加鼠标悬停检测
+        if (hintButton != null)
+        {
+            var buttonTrigger = hintButton.gameObject.GetComponent<EventTrigger>();
+            if (buttonTrigger == null)
+            {
+                buttonTrigger = hintButton.gameObject.AddComponent<EventTrigger>();
+            }
+            if (buttonTrigger.triggers == null)
+            {
+                buttonTrigger.triggers = new System.Collections.Generic.List<EventTrigger.Entry>();
+            }
+            
+            // 鼠标进入事件
+            var enterEntry = new EventTrigger.Entry { eventID = EventTriggerType.PointerEnter };
+            enterEntry.callback.AddListener((eventData) => OnMouseEnterHint());
+            buttonTrigger.triggers.Add(enterEntry);
+            
+            // 鼠标离开事件
+            var exitEntry = new EventTrigger.Entry { eventID = EventTriggerType.PointerExit };
+            exitEntry.callback.AddListener((eventData) => OnMouseExitHint());
+            buttonTrigger.triggers.Add(exitEntry);
+        }
+        
+        // 为hintImage添加鼠标悬停检测
+        if (hintImage != null)
+        {
+            var imageTrigger = hintImage.gameObject.GetComponent<EventTrigger>();
+            if (imageTrigger == null)
+            {
+                imageTrigger = hintImage.gameObject.AddComponent<EventTrigger>();
+            }
+            if (imageTrigger.triggers == null)
+            {
+                imageTrigger.triggers = new System.Collections.Generic.List<EventTrigger.Entry>();
+            }
+            
+            // 鼠标进入事件
+            var enterEntry = new EventTrigger.Entry { eventID = EventTriggerType.PointerEnter };
+            enterEntry.callback.AddListener((eventData) => OnMouseEnterHint());
+            imageTrigger.triggers.Add(enterEntry);
+            
+            // 鼠标离开事件
+            var exitEntry = new EventTrigger.Entry { eventID = EventTriggerType.PointerExit };
+            exitEntry.callback.AddListener((eventData) => OnMouseExitHint());
+            imageTrigger.triggers.Add(exitEntry);
+        }
+    }
+    
+    /// <summary>
+    /// 鼠标进入提示区域
+    /// </summary>
+    private void OnMouseEnterHint()
+    {
+        isMouseOverHint = true;
+        // 取消自动隐藏计时器
+        if (autoHideCoroutine != null)
+        {
+            StopCoroutine(autoHideCoroutine);
+            autoHideCoroutine = null;
+        }
+        Debug.Log("HintManager: 鼠标进入提示区域，取消自动隐藏");
+    }
+    
+    /// <summary>
+    /// 鼠标离开提示区域
+    /// </summary>
+    private void OnMouseExitHint()
+    {
+        isMouseOverHint = false;
+        // 如果提示已展开且鼠标离开，立即启动自动隐藏计时器
+        if (isExpanded && hintImage != null && hintImage.gameObject.activeSelf)
+        {
+            StartAutoHideTimer();
+            Debug.Log("HintManager: 鼠标离开提示区域，启动自动隐藏计时器");
+        }
+    }
+    
+    /// <summary>
+    /// 启动自动隐藏计时器
+    /// </summary>
+    private void StartAutoHideTimer()
+    {
+        if (autoHideCoroutine != null)
+        {
+            StopCoroutine(autoHideCoroutine);
+        }
+        autoHideCoroutine = StartCoroutine(AutoHideCoroutine());
+    }
+    
+    /// <summary>
+    /// 自动隐藏协程 - 从鼠标离开提示区域开始计时
+    /// </summary>
+    private IEnumerator AutoHideCoroutine()
+    {
+        yield return new WaitForSeconds(autoHideDelay);
+        
+        // 检查是否仍然需要隐藏（鼠标不在提示区域且提示仍然展开）
+        if (!isMouseOverHint && isExpanded && hintImage != null && hintImage.gameObject.activeSelf)
+        {
+            Debug.Log("HintManager: 鼠标离开提示区域超过1秒，自动隐藏提示");
+            // 切换按钮底图为初始状态
+            if (hintButton != null && hintButton.image != null && initialButtonSprite != null)
+            {
+                hintButton.image.sprite = initialButtonSprite;
+            }
+            // 隐藏文字并收起
+            HideHintText();
+            StartCollapseAnimation();
+        }
+        
+        autoHideCoroutine = null;
     }
     
     /// <summary>
@@ -219,6 +346,13 @@ public class HintManager : MonoBehaviour
         // 若当前已展开，则收起，并切回按钮初始底图
         if (hintImage != null && hintImage.gameObject.activeSelf && isExpanded)
         {
+            // 取消自动隐藏计时器
+            if (autoHideCoroutine != null)
+            {
+                StopCoroutine(autoHideCoroutine);
+                autoHideCoroutine = null;
+            }
+            
             if (hintButton != null && hintButton.image != null && initialButtonSprite != null)
             {
                 hintButton.image.sprite = initialButtonSprite;
@@ -550,8 +684,16 @@ public class HintManager : MonoBehaviour
             widthAnimationCoroutine = null;
         }
         
+        // 清理自动隐藏计时器
+        if (autoHideCoroutine != null)
+        {
+            StopCoroutine(autoHideCoroutine);
+            autoHideCoroutine = null;
+        }
+        
         isAnimating = false;
         isExpanded = false;
+        isMouseOverHint = false;
         
         // 重置按钮底图为初始状态
         if (hintButton != null && hintButton.image != null && initialButtonSprite != null)
@@ -623,6 +765,12 @@ public class HintManager : MonoBehaviour
         if (widthAnimationCoroutine != null)
         {
             StopCoroutine(widthAnimationCoroutine);
+        }
+        
+        // 清理自动隐藏协程
+        if (autoHideCoroutine != null)
+        {
+            StopCoroutine(autoHideCoroutine);
         }
         
         // 移除按钮事件监听
