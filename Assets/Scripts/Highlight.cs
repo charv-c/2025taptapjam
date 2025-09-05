@@ -345,19 +345,14 @@ public class Highlight : MonoBehaviour
         // 只有在对象不可收集时才执行 carryletter / 其他交互逻辑
         if (player != null && !string.IsNullOrEmpty(player.CarryCharacter))
         {
-            // 化字条件：只有当玩家当前携带"人"字且该对象在可化字列表中时，才能触发化字
-            if (PublicData.listofhua.Contains(letter) && player.CarryCharacter == "人")
+            // 放宽条件：无论玩家当前携带什么字符，只要该对象在可化字列表中，均触发化字
+            if (PublicData.listofhua.Contains(letter))
             {
-                GameLogger.LogDev($"FunctionA: '{letter}' 在可化字列表中且玩家携带'人'字，触发化字");
+                GameLogger.LogDev($"FunctionA: '{letter}' 在可化字列表中，触发化字（忽略玩家当前携带字符）");
                 ChangeMi();
                 // 仅恢复与当前携带字符对应的被禁用高亮，并禁用当前对象高亮
                 TransferDisabledHighlightToCurrent();
                 return;
-            }
-            else if (PublicData.listofhua.Contains(letter) && player.CarryCharacter != "人")
-            {
-                GameLogger.LogDev($"FunctionA: '{letter}' 在可化字列表中但玩家携带'{player.CarryCharacter}'而非'人'字，无法化字");
-                return; // 无反应，直接返回
             }
             else if (player.CarryCharacter == "侠")
             {
