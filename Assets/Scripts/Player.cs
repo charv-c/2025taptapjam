@@ -10,6 +10,9 @@ public class Player : MonoBehaviour
     [Header("初始位置设置")]
     [SerializeField] private bool useCustomStartPosition = false; // 是否使用自定义初始位置
     [SerializeField] private Vector3 customStartPosition = Vector3.zero; // 自定义初始位置
+    
+    [Header("初始携带字符设置")]
+    [SerializeField] private string initialCarryCharacter = "人"; // 初始携带字符
 
     private Camera mainCamera;
     private float screenWidth;
@@ -51,6 +54,9 @@ public class Player : MonoBehaviour
         
         // 设置初始位置
         SetInitialPosition();
+        
+        // 设置初始携带字符
+        SetCarryCharacter(initialCarryCharacter);
         
         // 确保初始位置符合移动限制
         ClampToScreen();
@@ -643,5 +649,33 @@ public class Player : MonoBehaviour
             spriteRenderer.color = color;
             GameLogger.LogDev($"Player: 已设置自定义颜色: {color}");
         }
+    }
+    
+    /// <summary>
+    /// 设置初始携带字符
+    /// </summary>
+    /// <param name="character">初始携带字符</param>
+    public void SetInitialCarryCharacter(string character)
+    {
+        initialCarryCharacter = character;
+        GameLogger.LogDev($"Player: 已设置初始携带字符为 '{character}'");
+    }
+    
+    /// <summary>
+    /// 获取初始携带字符
+    /// </summary>
+    /// <returns>初始携带字符</returns>
+    public string GetInitialCarryCharacter()
+    {
+        return initialCarryCharacter;
+    }
+    
+    /// <summary>
+    /// 重置为初始携带字符
+    /// </summary>
+    public void ResetToInitialCarryCharacter()
+    {
+        SetCarryCharacter(initialCarryCharacter);
+        GameLogger.LogDev($"Player: 已重置携带字符为初始值 '{initialCarryCharacter}'");
     }
 } 

@@ -28,6 +28,18 @@ public class PublicData : MonoBehaviour
     [Header("场景设置")]
     [SerializeField] private string nextSceneName = "NextLevel";
     
+    [Header("字符串拆分映射")]
+    [SerializeField] private List<StringSplitMapping> stringSplitMappingsList = new List<StringSplitMapping>();
+    
+    [Header("化字列表")]
+    [SerializeField] private List<string> listofhuaList = new List<string>();
+    
+    [Header("字符串键值对映射")]
+    [SerializeField] private List<StringKeyValueMapping> stringKeyValuePairsList = new List<StringKeyValueMapping>();
+    
+    [Header("自动提示字典")]
+    [SerializeField] private List<StringKeyValueMapping> autoHintDictList = new List<StringKeyValueMapping>();
+    
     public static List<string> targetList = new List<string>()
     {
         "金", "相", "便", "间"
@@ -140,6 +152,7 @@ public class PublicData : MonoBehaviour
         }
         
         InitializeSpriteDictionary();
+        InitializeStringMappings();
     }
     
     private void InitializeSpriteDictionary()
@@ -171,6 +184,43 @@ public class PublicData : MonoBehaviour
             if (!string.IsNullOrEmpty(mapping.character) && mapping.sprite != null)
             {
                 rightMiZiGeSprites[mapping.character] = mapping.sprite;
+            }
+        }
+    }
+    
+    private void InitializeStringMappings()
+    {
+        // 初始化字符串拆分映射
+        stringSplitMappings.Clear();
+        foreach (var mapping in stringSplitMappingsList)
+        {
+            if (!string.IsNullOrEmpty(mapping.key) && !string.IsNullOrEmpty(mapping.value1) && !string.IsNullOrEmpty(mapping.value2))
+            {
+                stringSplitMappings[mapping.key] = (mapping.value1, mapping.value2);
+            }
+        }
+        
+        // 初始化化字列表
+        listofhua.Clear();
+        listofhua.AddRange(listofhuaList);
+        
+        // 初始化字符串键值对映射
+        stringKeyValuePairs.Clear();
+        foreach (var mapping in stringKeyValuePairsList)
+        {
+            if (!string.IsNullOrEmpty(mapping.key) && !string.IsNullOrEmpty(mapping.value))
+            {
+                stringKeyValuePairs[mapping.key] = mapping.value;
+            }
+        }
+        
+        // 初始化自动提示字典
+        autoHintDict.Clear();
+        foreach (var mapping in autoHintDictList)
+        {
+            if (!string.IsNullOrEmpty(mapping.key) && !string.IsNullOrEmpty(mapping.value))
+            {
+                autoHintDict[mapping.key] = mapping.value;
             }
         }
     }
@@ -439,6 +489,54 @@ public class PublicData : MonoBehaviour
                 return GetAllLeftMiZiGeCharacters(); // 默认返回左米字格字符
         }
     }
+    
+    // 公共方法：添加字符串拆分映射
+    public void AddStringSplitMapping(string key, string value1, string value2)
+    {
+        var mapping = new StringSplitMapping { key = key, value1 = value1, value2 = value2 };
+        stringSplitMappingsList.Add(mapping);
+        stringSplitMappings[key] = (value1, value2);
+    }
+    
+    // 公共方法：添加字符串键值对映射
+    public void AddStringKeyValueMapping(string key, string value)
+    {
+        var mapping = new StringKeyValueMapping { key = key, value = value };
+        stringKeyValuePairsList.Add(mapping);
+        stringKeyValuePairs[key] = value;
+    }
+    
+    // 公共方法：添加自动提示映射
+    public void AddAutoHintMapping(string key, string value)
+    {
+        var mapping = new StringKeyValueMapping { key = key, value = value };
+        autoHintDictList.Add(mapping);
+        autoHintDict[key] = value;
+    }
+    
+    // 公共方法：添加化字字符
+    public void AddHuaCharacter(string character)
+    {
+        if (!listofhuaList.Contains(character))
+        {
+            listofhuaList.Add(character);
+            listofhua.Add(character);
+        }
+    }
+    
+    // 公共方法：清空所有映射
+    public void ClearAllMappings()
+    {
+        stringSplitMappingsList.Clear();
+        stringKeyValuePairsList.Clear();
+        autoHintDictList.Clear();
+        listofhuaList.Clear();
+        
+        stringSplitMappings.Clear();
+        stringKeyValuePairs.Clear();
+        autoHintDict.Clear();
+        listofhua.Clear();
+    }
 }
 
 [System.Serializable]
@@ -459,4 +557,27 @@ public class CharacterTransformMapping
     
     [Tooltip("对应的目标位置Transform")]
     public Transform targetTransform;
+}
+
+[System.Serializable]
+public class StringSplitMapping
+{
+    [Tooltip("原始字符串")]
+    public string key;
+    
+    [Tooltip("拆分后的第一部分")]
+    public string value1;
+    
+    [Tooltip("拆分后的第二部分")]
+    public string value2;
+}
+
+[System.Serializable]
+public class StringKeyValueMapping
+{
+    [Tooltip("键")]
+    public string key;
+    
+    [Tooltip("值")]
+    public string value;
 }

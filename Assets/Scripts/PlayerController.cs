@@ -9,6 +9,9 @@ public class PlayerController : MonoBehaviour
     
     [Header("颜色管理设置")]
     [SerializeField] private bool enableColorManagement = true; // 是否启用颜色管理
+    
+    [Header("初始携带字符设置")]
+    [SerializeField] private List<string> initialCarryCharacters = new List<string>() { "人", "人" }; // 每个玩家的初始携带字符
 
     private int currentPlayerIndex = 0;
     private Player currentPlayer;
@@ -22,7 +25,7 @@ public class PlayerController : MonoBehaviour
             players.AddRange(foundPlayers);
         }
 
-        // 首先禁用所有玩家的输入，并设置玩家类型
+        // 首先禁用所有玩家的输入，并设置玩家类型和初始携带字符
         for (int i = 0; i < players.Count; i++)
         {
             Player player = players[i];
@@ -31,6 +34,20 @@ public class PlayerController : MonoBehaviour
                 player.SetInputEnabled(false);
                 // 设置玩家类型：第一个为Player1（左半边），第二个为Player2（右半边）
                 player.SetPlayerType(i == 0);
+                
+                // 设置初始携带字符
+                if (i < initialCarryCharacters.Count)
+                {
+                    string initialCarry = initialCarryCharacters[i];
+                    player.SetCarryCharacter(initialCarry);
+                    GameLogger.LogDev($"PlayerController: 设置玩家 {i + 1} 的初始携带字符为 '{initialCarry}'");
+                }
+                else
+                {
+                    // 如果没有配置初始字符，使用默认的"人"
+                    player.SetCarryCharacter("人");
+                    GameLogger.LogDev($"PlayerController: 玩家 {i + 1} 没有配置初始携带字符，使用默认值 '人'");
+                }
             }
         }
 
@@ -352,5 +369,54 @@ public class PlayerController : MonoBehaviour
     public bool IsColorManagementEnabled()
     {
         return enableColorManagement;
+    }
+    
+    /// <summary>
+    /// 设置指定玩家的初始携带字符
+    /// </summary>
+    /// <param name="playerIndex">玩家索引</param>
+    /// <param name="carryCharacter">携带字符</param>
+    public void SetInitialCarryCharacter(int playerIndex, string carryCharacter)
+    {
+        if (playerIndex >= 0 && playerIndex < initialCarryCharacters.Count)
+        {
+            initialCarryCharacters[playerIndex] = carryCharacter;
+            GameLogger.LogDev($"PlayerController: 已设置玩家 {playerIndex + 1} 的初始携带字符为 '{carryCharacter}'");
+        }
+        else
+        {
+            GameLogger.LogWarning($"PlayerController: 无效的玩家索引 {playerIndex}，玩家总数: {initialCarryCharacters.Count}");
+        }
+    }
+    
+    /// <summary>
+    /// 获取指定玩家的初始携带字符
+    /// </summary>
+    /// <param name="playerIndex">玩家索引</param>
+    /// <returns>初始携带字符</returns>
+    public string GetInitialCarryCharacter(int playerIndex)
+    {
+        if (playerIndex >= 0 && playerIndex < initialCarryCharacters.Count)
+        {
+            return initialCarryCharacters[playerIndex];
+        }
+        return "人"; // 默认值
+    }
+    
+    /// <summary>
+    /// 重置所有玩家为初始携带字符
+    /// </summary>
+    public void ResetAllPlayersToInitialCarryCharacters()
+    {
+        for (int i = 0; i < players.Count; i++)
+        {
+            Player player = players[i];
+            if (player != null)
+            {
+                string initialCarry = GetInitialCarryCharacter(i);
+                player.SetCarryCharacter(initialCarry);
+                GameLogger.LogDev($"PlayerController: 已重置玩家 {i + 1} 的携带字符为初始值 '{initialCarry}'");
+            }
+        }
     }
 }
