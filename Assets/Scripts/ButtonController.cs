@@ -28,6 +28,13 @@ public class ButtonController : MonoBehaviour
     [SerializeField] private TMP_FontAsset chineseFont; // 中文字体
     [SerializeField] private float flyingFontSize = 50f; // 飞行动画中文字大小
     
+    [Header("彩蛋提示框设置")]
+    [SerializeField] private GameObject easterEggMask; // 彩蛋遮罩层（阻止背景交互）
+    [SerializeField] private GameObject easterEggPanel; // 彩蛋提示框面板
+    [SerializeField] private TextMeshProUGUI easterEggText; // 彩蛋提示文本
+    [SerializeField] private Image easterEggGuideImage; // 彩蛋引导员图像
+    [SerializeField] private Button easterEggContinueButton; // 彩蛋继续按钮
+    
     // 单例模式，方便其他脚本访问
     public static ButtonController Instance { get; private set; }
     
@@ -57,6 +64,16 @@ public class ButtonController : MonoBehaviour
         EnsureBroadcastManagerExists();
         
         if (messageText != null) messageText.gameObject.SetActive(false);
+        
+        // 初始化彩蛋提示框和遮罩（确保开始时隐藏）
+        if (easterEggMask != null)
+        {
+            easterEggMask.SetActive(false);
+        }
+        if (easterEggPanel != null)
+        {
+            easterEggPanel.SetActive(false);
+        }
         
         UpdateButtonStates(0);
         
@@ -317,6 +334,13 @@ public class ButtonController : MonoBehaviour
             string firstString = selectedStrings[0];
             string secondString = selectedStrings[1];
             GameLogger.LogDev($"ButtonController: 选中的字符: '{firstString}' 和 '{secondString}'");
+            
+            // Level3彩蛋检测：一+土=王
+            if (IsLevel3Scene() && IsEasterEggCombination(firstString, secondString))
+            {
+                HandleLevel3EasterEgg(firstString, secondString);
+                return;
+            }
             
             string originalString = PublicData.FindOriginalString(firstString, secondString);
             GameLogger.LogDev($"ButtonController: 查找原始字符，结果: '{originalString}'");
@@ -968,4 +992,197 @@ public class ButtonController : MonoBehaviour
 
         SetFlyingAnimationActive(false);
     }
+    
+    #region Level3 彩蛋功能
+    
+    /// <summary>
+    /// 检测当前场景是否为Level3
+    /// </summary>
+    private bool IsLevel3Scene()
+    {
+        string currentSceneName = UnityEngine.SceneManagement.SceneManager.GetActiveScene().name;
+        bool isLevel3 = currentSceneName.ToLower().Contains("level3") || currentSceneName.ToLower().Contains("3");
+        GameLogger.LogDev($"ButtonController: 当前场景: {currentSceneName}, 是否为Level3: {isLevel3}");
+        return isLevel3;
+    }
+    
+    /// <summary>
+    /// 检测是否为彩蛋组合：一+土
+    /// </summary>
+    private bool IsEasterEggCombination(string first, string second)
+    {
+        bool isEasterEgg = (first == "一" && second == "土") || (first == "土" && second == "一");
+        if (isEasterEgg)
+        {
+            GameLogger.LogDev($"ButtonController: 检测到Level3彩蛋组合: '{first}' + '{second}'");
+        }
+        return isEasterEgg;
+    }
+    
+    /// <summary>
+    /// 处理Level3彩蛋逻辑
+    /// </summary>
+    private void HandleLevel3EasterEgg(string first, string second)
+    {
+        GameLogger.LogUser("ButtonController: 触发Level3彩蛋！一+土=王");
+        
+        // 播放成功音效
+        if (AudioManager.Instance != null && AudioManager.Instance.sfxCombineSuccess != null)
+        {
+            AudioManager.Instance.PlaySFX(AudioManager.Instance.sfxCombineSuccess);
+            GameLogger.LogDev("ButtonController: 播放彩蛋成功音效");
+        }
+        
+        // 记录选中字符的索引位置
+        List<int> indices = stringSelector.GetSelectedIndices();
+        indices.Sort();
+        int insertIndex = indices.Count > 0 ? indices[0] : 0;
+        
+        // 清除选择
+        stringSelector.ClearSelection();
+        GameLogger.LogDev("ButtonController: 清除选择");
+        
+        // 移除选中的字符（按索引大的先移除，避免下标偏移）
+        if (indices.Count >= 2)
+        {
+            int idxA = indices[1];
+            stringSelector.RemoveAvailableStringAt(idxA);
+            GameLogger.LogDev($"ButtonController: 从索引 {idxA} 处移除第二个选中字符");
+        }
+        if (indices.Count >= 1)
+        {
+            int idxB = indices[0];
+            stringSelector.RemoveAvailableStringAt(idxB);
+            GameLogger.LogDev($"ButtonController: 从索引 {idxB} 处移除第一个选中字符");
+        }
+        
+        // 在原位置添加"王"字作为彩蛋奖励
+        stringSelector.InsertAvailableStringAt("王", insertIndex);
+        GameLogger.LogDev($"ButtonController: 在索引 {insertIndex} 插入彩蛋奖励字符 '王'");
+        
+        // 重新创建按钮显示
+        stringSelector.RecreateAllButtonsPublic();
+        GameLogger.LogDev("ButtonController: 重新创建所有按钮");
+        
+        // 重置选择状态
+        stringSelector.SetMaxSelectionCount(2);
+        stringSelector.ClearSelection();
+        
+        // 显示彩蛋提示框
+        ShowEasterEggNotification("知音难觅，亦如王者之路。将这份「王」者之证好生收藏，或许在未来的旅途中另有他用。");
+        
+        // 同时发送广播消息（保持兼容性）
+        if (BroadcastManager.Instance != null)
+        {
+            BroadcastManager.Instance.BroadcastToAll("combine_success");
+            BroadcastManager.Instance.BroadcastToAll("拼一土");
+            GameLogger.LogUser("ButtonController: 发送彩蛋广播消息 (combine_success, 拼一土)");
+        }
+        
+        GameLogger.LogUser("ButtonController: Level3彩蛋处理完成，获得'王'字！");
+    }
+    
+    /// <summary>
+    /// 显示彩蛋通知提示框
+    /// </summary>
+    /// <param name="message">提示消息</param>
+    private void ShowEasterEggNotification(string message)
+    {
+        if (easterEggPanel == null)
+        {
+            GameLogger.LogWarning("ButtonController: 彩蛋提示框未设置，无法显示彩蛋通知");
+            return;
+        }
+        
+        // 先显示遮罩层（阻止背景交互）
+        if (easterEggMask != null)
+        {
+            easterEggMask.SetActive(true);
+            GameLogger.LogDev("ButtonController: 显示彩蛋遮罩，阻止背景交互");
+        }
+        else
+        {
+            GameLogger.LogWarning("ButtonController: 彩蛋遮罩未设置，可能无法完全阻止背景交互");
+        }
+        
+        // 显示彩蛋面板
+        easterEggPanel.SetActive(true);
+        
+        // 设置提示文本
+        if (easterEggText != null)
+        {
+            easterEggText.text = message;
+        }
+        
+        // 设置继续按钮事件
+        if (easterEggContinueButton != null)
+        {
+            easterEggContinueButton.onClick.RemoveAllListeners();
+            easterEggContinueButton.onClick.AddListener(HideEasterEggNotification);
+        }
+        
+        // 开始E键监听协程
+        StartCoroutine(EasterEggEKeyListener());
+        
+        GameLogger.LogDev($"ButtonController: 显示彩蛋通知: {message}");
+    }
+    
+    /// <summary>
+    /// E键监听协程
+    /// </summary>
+    private System.Collections.IEnumerator EasterEggEKeyListener()
+    {
+        while (easterEggPanel != null && easterEggPanel.activeInHierarchy)
+        {
+            if (Input.GetKeyDown(KeyCode.E))
+            {
+                HideEasterEggNotification();
+                yield break;
+            }
+            yield return null;
+        }
+    }
+    
+    /// <summary>
+    /// 隐藏彩蛋通知提示框
+    /// </summary>
+    private void HideEasterEggNotification()
+    {
+        // 隐藏彩蛋面板
+        if (easterEggPanel != null)
+        {
+            easterEggPanel.SetActive(false);
+        }
+        
+        // 隐藏遮罩层（恢复背景交互）
+        if (easterEggMask != null)
+        {
+            easterEggMask.SetActive(false);
+            GameLogger.LogDev("ButtonController: 隐藏彩蛋遮罩，恢复背景交互");
+        }
+        
+        // 在隐藏提示框后，将解字台中的"王"字移除
+        RemoveWangCharacterFromSelector();
+        
+        GameLogger.LogDev("ButtonController: 隐藏彩蛋通知");
+    }
+    
+    /// <summary>
+    /// 从解字台中移除"王"字
+    /// </summary>
+    private void RemoveWangCharacterFromSelector()
+    {
+        if (stringSelector != null)
+        {
+            stringSelector.RemoveAvailableString("王");
+            stringSelector.RecreateAllButtonsPublic();
+            GameLogger.LogDev("ButtonController: 已从解字台移除王字");
+        }
+        else
+        {
+            GameLogger.LogWarning("ButtonController: stringSelector为空，无法移除王字");
+        }
+    }
+    
+    #endregion
 }
