@@ -36,6 +36,21 @@ public class Level3Manager : MonoBehaviour
     
     private void Start()
     {
+        // 播放关卡BGM
+        if (AudioManager.Instance != null)
+        {
+            AudioManager.Instance.PlayBGM(AudioManager.Instance.bgmLevel3);
+            
+            if (showDebugInfo)
+            {
+                Debug.Log("Level3Manager: 开始播放知音篇主题BGM");
+            }
+        }
+        else
+        {
+            Debug.LogWarning("Level3Manager: AudioManager实例未找到，无法播放BGM");
+        }
+        
         // 初始化季节状态
         InitializeSeason();
         
