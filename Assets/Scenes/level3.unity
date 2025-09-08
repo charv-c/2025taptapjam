@@ -5135,6 +5135,55 @@ PrefabInstance:
     m_AddedGameObjects: []
     m_AddedComponents: []
   m_SourcePrefab: {fileID: 100100000, guid: 10f0f1eb8e3504a42b5cd966ea4fdffa, type: 3}
+--- !u!1 &1017100536
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 7
+  m_Component:
+  - component: {fileID: 1017100538}
+  - component: {fileID: 1017100537}
+  m_Layer: 0
+  m_HasEditorInfo: 1
+  m_Name: Level3Manager
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!114 &1017100537
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1017100536}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: a5f33a779ea161c4fbb4392a04bb9fa9, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  currentSeason: 0
+  seasonTransitionDuration: 1
+  enableSeasonTransition: 1
+  showDebugInfo: 0
+--- !u!4 &1017100538
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1017100536}
+  serializedVersion: 2
+  m_LocalRotation: {x: -0, y: -0, z: -0, w: 1}
+  m_LocalPosition: {x: -2.692479, y: 0.55176055, z: -9.924154}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 0}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!43 &1069174021
 Mesh:
   m_ObjectHideFlags: 0
@@ -8017,6 +8066,8 @@ MonoBehaviour:
     value: "\u8001"
   - key: "\u5B5F"
     value: "\u751F"
+  - key: "\u82BD"
+    value: "\u6EE9"
   autoHintDictList:
   - key: "\u5B50\u79BE\u5B63"
     value: "\u300C\u5B50\u300D\u5165\u300C\u79BE\u300D\u4E0B\uFF0C\u662F\u4E3A\u56DB\u65F6\u4E4B\u300C\u5B63\u300D"
@@ -10252,6 +10303,7 @@ MonoBehaviour:
   leafObject: {fileID: 285197685}
   oldObject: {fileID: 1137994560}
   lifeObject: {fileID: 949753335}
+  level3CollectedStrings: []
 --- !u!4 &2072580607
 Transform:
   m_ObjectHideFlags: 0
@@ -10979,6 +11031,7 @@ SceneRoots:
   - {fileID: 559521857}
   - {fileID: 348881969}
   - {fileID: 2072580607}
+  - {fileID: 1017100538}
   - {fileID: 1486836938}
   - {fileID: 1294710681}
   - {fileID: 1841797332}
