@@ -26,6 +26,7 @@ public class AudioManager : MonoBehaviour
     public AudioClip bgmRainy;      // 用于关卡下雨阶段的BGM [cite: 8]
     public AudioClip bgmSunny;      // 雨停后的BGM [cite: 8]
     public AudioClip bgmTutorial;   // 教程阶段的BGM [cite: 8]
+    public AudioClip bgmLevel3;     // 知音篇：古琴台主题BGM，体现高山流水意境
 
     [Header("音效 (SFX)")]
     public AudioClip sfxUIClick;             // 关卡UI按钮交互音效 [cite: 12]
@@ -39,6 +40,7 @@ public class AudioManager : MonoBehaviour
     public AudioClip sfxSelectWord;          // 在解字台选中文字 [cite: 12]
     public AudioClip sfxGoalFlyIn;           // 目标字飞入诗句的核心奖励音效 [cite: 12]
     public AudioClip sfxWin;                 // 关卡胜利音效
+    public AudioClip sfxGuqinPlay;           // 与解语琴交互时的琴弦音效（Level3
 
     [Header("环境音 (Ambient)")]
     public AudioClip ambientRain;            // 循环播放的背景雨声 [cite: 12]
@@ -134,6 +136,16 @@ public class AudioManager : MonoBehaviour
         }
         ambientSource.Stop();
         ambientSource.volume = initialAmbientVolume; // 恢复音量以便下次播放
+    }
+
+    // --- 知音篇专用音效方法 ---
+
+    /// <summary>
+    /// 播放古琴交互音效（含季节切换&文字反转）
+    /// </summary>
+    public void PlayGuqinInteraction()
+    {
+        PlaySFX(sfxGuqinPlay);
     }
 
     // --- BGM停止控制 ---
