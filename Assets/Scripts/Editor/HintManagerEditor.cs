@@ -16,7 +16,6 @@ public class HintManagerEditor : Editor
     private SerializedProperty leafObjectProp;
     private SerializedProperty oldObjectProp;
     private SerializedProperty lifeObjectProp;
-    private SerializedProperty level3CollectedStringsProp;
 
     private void OnEnable()
     {
@@ -30,7 +29,6 @@ public class HintManagerEditor : Editor
         leafObjectProp = serializedObject.FindProperty("leafObject");
         oldObjectProp = serializedObject.FindProperty("oldObject");
         lifeObjectProp = serializedObject.FindProperty("lifeObject");
-        level3CollectedStringsProp = serializedObject.FindProperty("level3CollectedStrings");
     }
 
     public override void OnInspectorGUI()
@@ -40,7 +38,7 @@ public class HintManagerEditor : Editor
         // 绘制默认的Inspector，但排除我们要自定义的属性
         DrawPropertiesExcluding(serializedObject, 
             "currentScene", "rainObject", "childObject", "hunterObject", "kingObject", "sunObjects",
-            "leafObject", "oldObject", "lifeObject", "level3CollectedStrings");
+            "leafObject", "oldObject", "lifeObject");
 
         EditorGUILayout.Space();
         
@@ -68,10 +66,6 @@ public class HintManagerEditor : Editor
             EditorGUILayout.PropertyField(leafObjectProp, new GUIContent("叶 (Leaf)"));
             EditorGUILayout.PropertyField(oldObjectProp, new GUIContent("老 (Old)"));
             EditorGUILayout.PropertyField(lifeObjectProp, new GUIContent("生 (Life)"));
-
-            EditorGUILayout.Space();
-            EditorGUILayout.LabelField("Level3收集（获得过的字符串）", EditorStyles.boldLabel);
-            EditorGUILayout.PropertyField(level3CollectedStringsProp, new GUIContent("已收集字符串"), true);
         }
 
         serializedObject.ApplyModifiedProperties();

@@ -126,6 +126,36 @@ public class BroadcastManager : MonoBehaviour
         return null;
     }
     
+    /// <summary>
+    /// 检查广播历史中是否存在指定的广播消息
+    /// </summary>
+    /// <param name="broadcastMessage">要检查的广播消息</param>
+    /// <returns>是否存在</returns>
+    public bool HasBroadcastHistory(string broadcastMessage)
+    {
+        if (string.IsNullOrEmpty(broadcastMessage)) return false;
+        return broadcastHistory.Contains(broadcastMessage);
+    }
     
+    /// <summary>
+    /// 获取广播历史记录（只读）
+    /// </summary>
+    /// <returns>广播历史记录</returns>
+    public IReadOnlyList<string> GetBroadcastHistory()
+    {
+        return broadcastHistory.AsReadOnly();
+    }
+    
+    /// <summary>
+    /// 清空广播历史记录
+    /// </summary>
+    public void ClearBroadcastHistory()
+    {
+        broadcastHistory.Clear();
+        if (enableDebugMode)
+        {
+            GameLogger.LogDev("BroadcastManager: 广播历史记录已清空");
+        }
+    }
     
 }

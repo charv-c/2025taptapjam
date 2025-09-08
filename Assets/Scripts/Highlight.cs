@@ -269,11 +269,11 @@ public class Highlight : MonoBehaviour
                 stringSelector.AddAvailableString(letter);
                 GameLogger.LogDev($"AddLetterToAvailableList: 字符 '{letter}' 已添加到可用字符串列表");
 
-                // 若当前为Level3场景，则同步记录到HintManager的Level3收集列表
-                var hintManager = FindObjectOfType<HintManager>();
-                if (hintManager != null && hintManager.CurrentSceneType == SceneType.Level3)
+                // 若当前为Level3场景，则同步记录到Level3Manager的收集列表
+                var level3Manager = FindObjectOfType<Level3Manager>();
+                if (level3Manager != null)
                 {
-                    hintManager.Level3AddCollectedString(letter);
+                    level3Manager.AddCollectedString(letter);
                     GameLogger.LogDev($"AddLetterToAvailableList: Level3 收集记录 + '{letter}'");
                 }
             }
@@ -330,6 +330,50 @@ public class Highlight : MonoBehaviour
                 {
                     GameLogger.LogDev($"FunctionA: 玩家携带字符'{player?.CarryCharacter}'，不能收集'王'对象，无反应");
                     return; // 无反应，直接返回
+                }
+            }
+            
+            // 特殊处理："琴"对象发送广播"琴"+carryletter
+            if (letter == "琴")
+            {
+                if (player != null && !string.IsNullOrEmpty(player.CarryCharacter))
+                {
+                    string broadcastMessage = $"琴{player.CarryCharacter}";
+                    if (BroadcastManager.Instance != null)
+                    {
+                        BroadcastManager.Instance.BroadcastToAll(broadcastMessage);
+                        GameLogger.LogDev($"FunctionA: 琴对象发送广播 '{broadcastMessage}'");
+                    }
+                    
+                    // 琴对象不销毁，保持可重复交互
+                    return;
+                }
+                else
+                {
+                    GameLogger.LogDev($"FunctionA: 玩家携带字符为空，琴对象无反应");
+                    return;
+                }
+            }
+            
+            // 特殊处理："滩"对象发送广播"滩"+carryletter
+            if (letter == "滩")
+            {
+                if (player != null && !string.IsNullOrEmpty(player.CarryCharacter))
+                {
+                    string broadcastMessage = $"滩{player.CarryCharacter}";
+                    if (BroadcastManager.Instance != null)
+                    {
+                        BroadcastManager.Instance.BroadcastToAll(broadcastMessage);
+                        GameLogger.LogDev($"FunctionA: 滩对象发送广播 '{broadcastMessage}'");
+                    }
+                    
+                    // 滩对象不销毁，保持可重复交互
+                    return;
+                }
+                else
+                {
+                    GameLogger.LogDev($"FunctionA: 玩家携带字符为空，滩对象无反应");
+                    return;
                 }
             }
             

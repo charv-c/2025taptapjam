@@ -1,4 +1,5 @@
 using UnityEngine;
+using System.Collections.Generic;
 
 /// <summary>
 /// Level3场景的季节类型枚举
@@ -24,8 +25,14 @@ public class Level3Manager : MonoBehaviour
     [Header("调试设置")]
     [SerializeField] private bool showDebugInfo = true;
     
+    [Header("收集设置")]
+    [SerializeField] private List<string> collectedStrings = new List<string>();
+    
     // 事件：季节切换时触发
     public System.Action<SeasonType> OnSeasonChanged;
+    
+    // 事件：收集到新字符串时触发
+    public System.Action<string> OnStringCollected;
     
     private void Start()
     {
@@ -172,10 +179,7 @@ public class Level3Manager : MonoBehaviour
         
         // 春季效果实现
         // 例如：改变背景、调整光照、显示春季元素等
-        
-        // 查找并启用春季相关的对象
-        EnableSeasonObjects("Spring");
-        DisableSeasonObjects("Summer");
+        // 不再显隐物体；仅保留季节状态
     }
     
     /// <summary>
@@ -190,10 +194,7 @@ public class Level3Manager : MonoBehaviour
         
         // 夏季效果实现
         // 例如：改变背景、调整光照、显示夏季元素等
-        
-        // 查找并启用夏季相关的对象
-        EnableSeasonObjects("Summer");
-        DisableSeasonObjects("Spring");
+        // 不再显隐物体；仅保留季节状态
     }
     
     /// <summary>
@@ -206,7 +207,7 @@ public class Level3Manager : MonoBehaviour
         
         foreach (GameObject obj in allObjects)
         {
-            if (obj.name.Contains(seasonTag) || obj.CompareTag(seasonTag))
+            if (obj.name.Contains(seasonTag))
             {
                 obj.SetActive(true);
                 
@@ -235,7 +236,7 @@ public class Level3Manager : MonoBehaviour
         
         foreach (GameObject obj in allObjects)
         {
-            if (obj.name.Contains(seasonTag) || obj.CompareTag(seasonTag))
+            if (obj.name.Contains(seasonTag))
             {
                 obj.SetActive(false);
                 
@@ -316,5 +317,154 @@ public class Level3Manager : MonoBehaviour
     public void DebugToggleSeason()
     {
         ToggleSeason();
+    }
+    
+    // ============= 收集字符串管理 =============
+    
+    /// <summary>
+    /// 添加收集到的字符串
+    /// </summary>
+    /// <param name="value">要添加的字符串</param>
+    public void AddCollectedString(string value)
+    {
+        if (string.IsNullOrWhiteSpace(value)) return;
+        
+        if (collectedStrings == null) 
+            collectedStrings = new List<string>();
+            
+        if (!collectedStrings.Contains(value))
+        {
+            collectedStrings.Add(value);
+            
+            if (showDebugInfo)
+            {
+                Debug.Log($"Level3Manager: 收集到新字符串 '{value}'，当前总数: {collectedStrings.Count}");
+            }
+            
+            // 触发收集事件
+            OnStringCollected?.Invoke(value);
+        }
+        else
+        {
+            if (showDebugInfo)
+            {
+                Debug.Log($"Level3Manager: 字符串 '{value}' 已存在，跳过添加");
+            }
+        }
+    }
+    
+    /// <summary>
+    /// 检查是否已收集指定字符串
+    /// </summary>
+    /// <param name="value">要检查的字符串</param>
+    /// <returns>是否已收集</returns>
+    public bool HasCollectedString(string value)
+    {
+        if (string.IsNullOrWhiteSpace(value)) return false;
+        return collectedStrings != null && collectedStrings.Contains(value);
+    }
+    
+    /// <summary>
+    /// 获取已收集的字符串列表（只读）
+    /// </summary>
+    /// <returns>已收集的字符串列表</returns>
+    public IReadOnlyList<string> GetCollectedStrings()
+    {
+        if (collectedStrings == null) return System.Array.Empty<string>();
+        return collectedStrings.AsReadOnly();
+    }
+    
+    /// <summary>
+    /// 获取已收集的字符串数量
+    /// </summary>
+    /// <returns>已收集的字符串数量</returns>
+    public int GetCollectedCount()
+    {
+        return collectedStrings?.Count ?? 0;
+    }
+    
+    /// <summary>
+    /// 清空已收集的字符串列表
+    /// </summary>
+    public void ClearCollectedStrings()
+    {
+        if (collectedStrings != null)
+        {
+            int count = collectedStrings.Count;
+            collectedStrings.Clear();
+            
+            if (showDebugInfo)
+            {
+                Debug.Log($"Level3Manager: 清空了 {count} 个已收集的字符串");
+            }
+        }
+    }
+    
+    /// <summary>
+    /// 检查是否已收集所有目标字符串
+    /// </summary>
+    /// <param name="targetStrings">目标字符串列表</param>
+    /// <returns>是否已收集所有目标</returns>
+    public bool HasCollectedAllTargets(List<string> targetStrings)
+    {
+        if (targetStrings == null || targetStrings.Count == 0) return true;
+        if (collectedStrings == null) return false;
+        
+        foreach (string target in targetStrings)
+        {
+            if (!collectedStrings.Contains(target))
+            {
+                return false;
+            }
+        }
+        
+        return true;
+    }
+    
+    /// <summary>
+    /// 获取未收集的目标字符串
+    /// </summary>
+    /// <param name="targetStrings">目标字符串列表</param>
+    /// <returns>未收集的字符串列表</returns>
+    public List<string> GetUncollectedTargets(List<string> targetStrings)
+    {
+        List<string> uncollected = new List<string>();
+        
+        if (targetStrings == null || targetStrings.Count == 0) return uncollected;
+        if (collectedStrings == null)
+        {
+            uncollected.AddRange(targetStrings);
+            return uncollected;
+        }
+        
+        foreach (string target in targetStrings)
+        {
+            if (!collectedStrings.Contains(target))
+            {
+                uncollected.Add(target);
+            }
+        }
+        
+        return uncollected;
+    }
+    
+    // 调试方法：在Inspector中调用
+    [ContextMenu("清空收集列表")]
+    public void DebugClearCollectedStrings()
+    {
+        ClearCollectedStrings();
+    }
+    
+    [ContextMenu("显示收集列表")]
+    public void DebugShowCollectedStrings()
+    {
+        if (collectedStrings == null || collectedStrings.Count == 0)
+        {
+            Debug.Log("Level3Manager: 收集列表为空");
+        }
+        else
+        {
+            Debug.Log($"Level3Manager: 已收集 {collectedStrings.Count} 个字符串: [{string.Join(", ", collectedStrings)}]");
+        }
     }
 }

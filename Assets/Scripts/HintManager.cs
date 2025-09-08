@@ -70,8 +70,6 @@ public class HintManager : MonoBehaviour
     [SerializeField] private GameObject oldObject;      // 老
     [SerializeField] private GameObject lifeObject;     // 生
 
-    [Header("Level3收集（获得过的字符串）")]
-    [SerializeField] private List<string> level3CollectedStrings = new List<string>();
 
     private PlayerController playerController;
 
@@ -225,7 +223,7 @@ public class HintManager : MonoBehaviour
             StopCoroutine(autoHideCoroutine);
             autoHideCoroutine = null;
         }
-        Debug.Log("HintManager: 鼠标进入提示区域，取消自动隐藏");
+        //Debug.Log("HintManager: 鼠标进入提示区域，取消自动隐藏");
     }
     
     /// <summary>
@@ -238,7 +236,7 @@ public class HintManager : MonoBehaviour
         if (isExpanded && hintImage != null && hintImage.gameObject.activeSelf)
         {
             StartAutoHideTimer();
-            Debug.Log("HintManager: 鼠标离开提示区域，启动自动隐藏计时器");
+            //Debug.Log("HintManager: 鼠标离开提示区域，启动自动隐藏计时器");
         }
     }
     
@@ -264,7 +262,7 @@ public class HintManager : MonoBehaviour
         // 检查是否仍然需要隐藏（鼠标不在提示区域且提示仍然展开）
         if (!isMouseOverHint && isExpanded && hintImage != null && hintImage.gameObject.activeSelf)
         {
-            Debug.Log("HintManager: 鼠标离开提示区域超过1秒，自动隐藏提示");
+            //Debug.Log("HintManager: 鼠标离开提示区域超过1秒，自动隐藏提示");
             // 切换按钮底图为初始状态
             if (hintButton != null && hintButton.image != null && initialButtonSprite != null)
             {
@@ -295,7 +293,7 @@ public class HintManager : MonoBehaviour
             HideHintText();
             isExpanded = false;
             
-            Debug.Log($"HintManager: 提示图片初始化完成，初始宽度: {initialWidth}");
+            //Debug.Log($"HintManager: 提示图片初始化完成，初始宽度: {initialWidth}");
         }
         else
         {
@@ -356,11 +354,11 @@ public class HintManager : MonoBehaviour
     /// </summary>
     public void OnHintButtonClicked()
     {
-        Debug.Log("HintManager: 提示按钮被点击");
+        //Debug.Log("HintManager: 提示按钮被点击");
         
         if (isAnimating)
         {
-            Debug.Log("HintManager: 动画正在进行中，忽略点击");
+            //Debug.Log("HintManager: 动画正在进行中，忽略点击");
             return;
         }
 
@@ -458,7 +456,7 @@ public class HintManager : MonoBehaviour
         if (hintImage != null)
         {
             hintImage.gameObject.SetActive(true);
-            Debug.Log("HintManager: 提示图片已显示");
+            //Debug.Log("HintManager: 提示图片已显示");
         }
     }
     
@@ -545,12 +543,13 @@ public class HintManager : MonoBehaviour
         }
 
         // 第一优先级：检查是否需要状态重置（玩家处于化字状态，且该形态对应互动均已完成）
-        if (!string.IsNullOrEmpty(carry) && carry != "人")
+        string initialCarryCharacter = GetCurrentPlayerInitialCarryCharacter();
+        if (!string.IsNullOrEmpty(carry) && carry != initialCarryCharacter)
         {
             if (IsCarryFormInteractionsCompleted(carry))
             {
                 // 唯一的"状态重置提示"
-                return "此形态之事已毕，先回归「人」再继续吧";
+                return $"此形态之事已毕，先回归「{initialCarryCharacter}」再继续吧";
             }
         }
 
@@ -630,32 +629,261 @@ public class HintManager : MonoBehaviour
     // 获取Level3场景的提示候选列表
     private List<string> GetLevel3HintCandidates(string carry)
     {
-        // 第一优先级：核心谜题检查（占位，暂不实现具体逻辑）
-        string corePuzzleHint = GetLevel3CorePuzzleHint();
-        if (!string.IsNullOrEmpty(corePuzzleHint))
+        // 第一优先级：核心谜题检查
+        List<string> corePuzzleHints = GetLevel3CorePuzzleHints(carry);
+        if (corePuzzleHints.Count > 0)
         {
-            return new List<string> { corePuzzleHint };
+            // 从提示池中随机选择一条
+            int randomIndex = Random.Range(0, corePuzzleHints.Count);
+            return new List<string> { corePuzzleHints[randomIndex] };
         }
+        
+        // 如果没有核心谜题提示，返回空列表
+        return new List<string>();
+        
 
-        // 第二优先级：收集与收尾检查
-        // 1) 若场景仍有可收集的文字，则仅给出收集提示
-        // 2) 若已无可收集的文字，则给出最终合成提示
-        bool anyCollectableActive = AnyCollectableActiveInScene();
-        if (anyCollectableActive)
-        {
-            return new List<string> { "场中仍有未拾取的文字，先将它们收集齐全" };
-        }
-        else
-        {
-            return new List<string> { "万物齐备，开始最终合成吧" };
-        }
     }
 
-    // Level3 核心谜题检查（占位，保留扩展点）
-    private string GetLevel3CorePuzzleHint()
+    // Level3 核心谜题检查 - 返回所有满足条件的提示
+    private List<string> GetLevel3CorePuzzleHints(string carry)
     {
-        // TODO: 在此添加Level3核心谜题的前置校验与定向提示
-        return null;
+        List<string> hintPool = new List<string>();
+        
+        // 调试信息
+        GameLogger.LogDev($"GetLevel3CorePuzzleHints: carry='{carry}'");
+        
+        // 1. 琴互动检查
+        bool qinEligible = IsQinInteractionEligible(carry);
+        GameLogger.LogDev($"琴互动检查: {qinEligible}");
+        if (qinEligible)
+        {
+            string qinHint = GetQinInteractionHint(carry);
+            hintPool.Add(qinHint);
+            GameLogger.LogDev($"添加琴互动提示: {qinHint}");
+        }
+        
+        // 2. 滩互动检查
+        List<string> beachHints = GetBeachInteractionHints(carry);
+        GameLogger.LogDev($"滩互动提示数量: {beachHints.Count}");
+        hintPool.AddRange(beachHints);
+        
+        // 3. 其他场景目标检查
+        List<string> sceneTargetHints = GetSceneTargetHints();
+        GameLogger.LogDev($"场景目标提示数量: {sceneTargetHints.Count}");
+        hintPool.AddRange(sceneTargetHints);
+        
+        GameLogger.LogDev($"总提示数量: {hintPool.Count}");
+        return hintPool;
+    }
+    
+    // 检查琴互动是否满足条件
+    private bool IsQinInteractionEligible(string carry)
+    {
+        GameLogger.LogDev($"IsQinInteractionEligible: carry='{carry}'");
+        
+        // 玩家为"季"、"雅"、"孤"之一
+        if (carry != "季" && carry != "雅" && carry != "孤")
+        {
+            GameLogger.LogDev($"琴互动检查失败: carry='{carry}' 不是季/雅/孤之一");
+            return false;
+        }
+        
+        // 检查是否与琴互动过（根据广播历史判断）
+        // 提示系统应该在玩家还没有互动时给出提示
+        string broadcastKey = $"琴{carry}";
+        bool hasHistory = HasBroadcastHistory(broadcastKey);
+        GameLogger.LogDev($"琴互动检查: broadcastKey='{broadcastKey}', hasHistory={hasHistory}");
+        return !hasHistory;
+    }
+    
+    // 获取琴互动的具体提示
+    private string GetQinInteractionHint(string carry)
+    {
+        switch (carry)
+        {
+            case "季":
+                return "以「季」拨动琴弦，或可扭转四季";
+            case "雅":
+                return "「雅」音的反面藏有玄机，去问问那把琴";
+            case "孤":
+                return "「孤」身落寞，或许弹琴能带来「欣」喜";
+            default:
+                return "琴声悠扬，或许需要特定的心境才能共鸣";
+        }
+    }
+    
+    // 获取滩互动的提示
+    private List<string> GetBeachInteractionHints(string carry)
+    {
+        List<string> hints = new List<string>();
+        GameLogger.LogDev($"GetBeachInteractionHints: carry='{carry}'");
+        
+        // 检查两个玩家中是否有任何一个的carryCharacter等于"芽"
+        bool hasYaPlayer = HasPlayerWithCarryCharacter("芽");
+        GameLogger.LogDev($"芽玩家检查: hasYaPlayer={hasYaPlayer}");
+        if (hasYaPlayer)
+        {
+            // 检查是否已经与滩互动过（使用当前玩家的carry作为互动标识）
+            bool yaNotInteracted = !HasBroadcastHistory($"滩{carry}");
+            GameLogger.LogDev($"芽互动检查: yaNotInteracted={yaNotInteracted}");
+            if (yaNotInteracted)
+            {
+                hints.Add("夏日已至，正是「芽」在滩涂上生长之时");
+                GameLogger.LogDev("添加芽互动提示");
+            }
+        }
+        
+        // 检查两个玩家中是否有任何一个的carryCharacter等于"籽"
+        bool hasZiPlayer = HasPlayerWithCarryCharacter("籽");
+        GameLogger.LogDev($"籽玩家检查: hasZiPlayer={hasZiPlayer}");
+        if (hasZiPlayer)
+        {
+            // 检查是否已经与滩互动过（使用当前玩家的carry作为互动标识）
+            bool ziNotInteracted = !HasBroadcastHistory($"滩{carry}");
+            GameLogger.LogDev($"籽互动检查: ziNotInteracted={ziNotInteracted}");
+            if (ziNotInteracted)
+            {
+                hints.Add("春意盎然，让「籽」在滩涂上悄悄发芽吧");
+                GameLogger.LogDev("添加籽互动提示");
+            }
+        }
+        
+        // "芽"物体显示，但季节是春季（等待盛夏）
+        bool yaVisible = IsYaObjectVisible();
+        bool isSpring = IsCurrentSeasonSpring();
+        GameLogger.LogDev($"芽物体和季节检查: yaVisible={yaVisible}, isSpring={isSpring}");
+        if (yaVisible && isSpring)
+        {
+            hints.Add("滩涂上的「芽」似乎还在等待盛夏的到来");
+            GameLogger.LogDev("添加芽等待盛夏提示");
+        }
+        
+        GameLogger.LogDev($"滩互动提示总数: {hints.Count}");
+        return hints;
+    }
+    
+    // 获取其他场景目标的提示
+    private List<string> GetSceneTargetHints()
+    {
+        List<string> hints = new List<string>();
+        GameLogger.LogDev("GetSceneTargetHints: 开始检查场景目标");
+        
+        // 检查"孟"与书生互动（未互动过才提示）
+        bool shengTarget = HasUninteractedTarget("生");
+        GameLogger.LogDev($"书生目标检查: {shengTarget}");
+        if (shengTarget)
+        {
+            hints.Add("书生苦思不解，或可请「孟」子点拨一二");
+            GameLogger.LogDev("添加书生互动提示");
+        }
+        
+        // 检查"蚜"与藤蔓互动（未互动过才提示）
+        bool yeTarget = HasUninteractedTarget("叶");
+        GameLogger.LogDev($"藤蔓目标检查: {yeTarget}");
+        if (yeTarget)
+        {
+            hints.Add("藤蔓遮蔽了山体，让「蚜」虫来帮忙吧");
+            GameLogger.LogDev("添加藤蔓互动提示");
+        }
+        
+        // 检查"穿"与老人互动（未互动过才提示）
+        bool laoTarget = HasUninteractedTarget("老");
+        GameLogger.LogDev($"老人目标检查: {laoTarget}");
+        if (laoTarget)
+        {
+            hints.Add("这位老人，似乎可以「穿」越时光的阻隔");
+            GameLogger.LogDev("添加老人互动提示");
+        }
+        
+        GameLogger.LogDev($"场景目标提示总数: {hints.Count}");
+        return hints;
+    }
+    
+    // 检查广播历史中是否存在指定广播
+    private bool HasBroadcastHistory(string broadcastMessage)
+    {
+        if (BroadcastManager.Instance != null)
+        {
+            return BroadcastManager.Instance.HasBroadcastHistory(broadcastMessage);
+        }
+        return false;
+    }
+    
+    // 检查"芽"物体是否可见
+    private bool IsYaObjectVisible()
+    {
+        Highlight[] allHighlights = FindObjectsOfType<Highlight>();
+        foreach (Highlight highlight in allHighlights)
+        {
+            if (highlight != null && highlight.letter == "芽" && highlight.IsCollectableActive())
+            {
+                return true;
+            }
+        }
+        return false;
+    }
+    
+    // 检查当前季节是否为春季
+    private bool IsCurrentSeasonSpring()
+    {
+        Level3Manager level3Manager = FindObjectOfType<Level3Manager>();
+        return level3Manager != null && level3Manager.IsSpring();
+    }
+    
+    // 检查是否存在未互动的目标
+    private bool HasUninteractedTarget(string targetLetter)
+    {
+        GameLogger.LogDev($"HasUninteractedTarget: 检查目标 '{targetLetter}'");
+        
+        // 首先检查目标是否存在
+        Highlight[] allHighlights = FindObjectsOfType<Highlight>();
+        bool targetExists = false;
+        
+        GameLogger.LogDev($"找到 {allHighlights.Length} 个Highlight对象");
+        foreach (Highlight highlight in allHighlights)
+        {
+            if (highlight != null)
+            {
+                GameLogger.LogDev($"Highlight: letter='{highlight.letter}', IsCollectableActive={highlight.IsCollectableActive()}");
+                if (highlight.letter == targetLetter)
+                {
+                    targetExists = true;
+                    GameLogger.LogDev($"找到匹配的目标: {targetLetter}");
+                    break;
+                }
+            }
+        }
+        
+        // 如果目标不存在，返回false
+        if (!targetExists)
+        {
+            GameLogger.LogDev($"目标 '{targetLetter}' 不存在");
+            return false;
+        }
+        
+        // 检查是否已经互动过（通过广播历史判断）
+        switch (targetLetter)
+        {
+            case "生":
+                // 检查是否有"孟"与书生的互动广播
+                bool shengInteracted = HasBroadcastHistory("孟生");
+                GameLogger.LogDev($"书生互动检查: 孟生={shengInteracted}");
+                return !shengInteracted;
+            case "叶":
+                // 检查是否有"蚜"与藤蔓的互动广播
+                bool yeInteracted = HasBroadcastHistory("蚜叶");
+                GameLogger.LogDev($"藤蔓互动检查: 蚜叶={yeInteracted}");
+                return !yeInteracted;
+            case "老":
+                // 检查是否有"穿"与老人的互动广播
+                bool laoInteracted = HasBroadcastHistory("穿老");
+                GameLogger.LogDev($"老人互动检查: 穿老={laoInteracted}");
+                return !laoInteracted;
+            default:
+                // 其他目标暂时返回true
+                GameLogger.LogDev($"未知目标 '{targetLetter}'，返回true");
+                return true;
+        }
     }
 
     // 是否仍有可收集的文字（基于Highlight的可收集状态）
@@ -787,6 +1015,44 @@ public class HintManager : MonoBehaviour
     }
 
     /// <summary>
+    /// 获取当前玩家的初始携带字符
+    /// </summary>
+    /// <returns>当前玩家的初始携带字符</returns>
+    private string GetCurrentPlayerInitialCarryCharacter()
+    {
+        if (playerController != null)
+        {
+            int currentPlayerIndex = playerController.GetCurrentPlayerIndex();
+            return playerController.GetInitialCarryCharacter(currentPlayerIndex);
+        }
+        return "人"; // 默认值
+    }
+
+    /// <summary>
+    /// 检查两个玩家中是否有任何一个的carryCharacter等于指定字符
+    /// </summary>
+    /// <param name="character">要检查的字符</param>
+    /// <returns>是否有玩家携带该字符</returns>
+    private bool HasPlayerWithCarryCharacter(string character)
+    {
+        if (playerController != null)
+        {
+            // 检查所有玩家
+            for (int i = 0; i < playerController.GetPlayerCount(); i++)
+            {
+                Player player = playerController.GetPlayerByIndex(i);
+                if (player != null && player.CarryCharacter == character)
+                {
+                    GameLogger.LogDev($"找到玩家 {i + 1} 携带字符 '{character}'");
+                    return true;
+                }
+            }
+        }
+        GameLogger.LogDev($"没有玩家携带字符 '{character}'");
+        return false;
+    }
+
+    /// <summary>
     /// 重置提示图片状态
     /// </summary>
     public void ResetHintImage()
@@ -894,43 +1160,4 @@ public class HintManager : MonoBehaviour
         }
     }
 
-    // ============= Level3 收集字符串接口 =============
-    /// <summary>
-    /// 记录一个已获得的字符串（去重，忽略空白）
-    /// </summary>
-    public void Level3AddCollectedString(string value)
-    {
-        if (string.IsNullOrWhiteSpace(value)) return;
-        if (level3CollectedStrings == null) level3CollectedStrings = new List<string>();
-        if (!level3CollectedStrings.Contains(value))
-        {
-            level3CollectedStrings.Add(value);
-        }
-    }
-
-    /// <summary>
-    /// 判断是否已获得指定字符串
-    /// </summary>
-    public bool Level3HasCollectedString(string value)
-    {
-        if (string.IsNullOrWhiteSpace(value)) return false;
-        return level3CollectedStrings != null && level3CollectedStrings.Contains(value);
-    }
-
-    /// <summary>
-    /// 获取已获得字符串的只读副本
-    /// </summary>
-    public IReadOnlyList<string> Level3GetCollectedStrings()
-    {
-        if (level3CollectedStrings == null) return System.Array.Empty<string>();
-        return level3CollectedStrings.AsReadOnly();
-    }
-
-    /// <summary>
-    /// 清空已获得的字符串列表
-    /// </summary>
-    public void Level3ClearCollectedStrings()
-    {
-        if (level3CollectedStrings != null) level3CollectedStrings.Clear();
-    }
 }
