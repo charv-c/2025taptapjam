@@ -482,4 +482,24 @@ public class Level3Manager : MonoBehaviour
             Debug.Log($"Level3Manager: 已收集 {collectedStrings.Count} 个字符串: [{string.Join(", ", collectedStrings)}]");
         }
     }
+
+    // ===== 广播接收 =====
+    public void ReceiveBroadcast(string broadcastedValue)
+    {
+        if (string.IsNullOrEmpty(broadcastedValue)) return;
+        if (showDebugInfo)
+        {
+            GameLogger.LogDev($"Level3Manager: 收到广播 '{broadcastedValue}'");
+        }
+
+        // 收到“琴季”时，切换季节
+        if (broadcastedValue == "琴季")
+        {
+            if (showDebugInfo)
+            {
+                GameLogger.LogDev("Level3Manager: 收到'琴季'广播，执行季节切换");
+            }
+            ToggleSeason();
+        }
+    }
 }
