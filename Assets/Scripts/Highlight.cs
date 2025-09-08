@@ -758,6 +758,37 @@ public class Highlight : MonoBehaviour
         }
     }
     
+    // 通用：添加任意值到可用字符串列表
+    private void AddValueToAvailableList(string value)
+    {
+        if (string.IsNullOrEmpty(value)) return;
+        // 播放取字音效（与其他添加函数保持一致）
+        if (AudioManager.Instance != null && AudioManager.Instance.sfxAcquire != null)
+        {
+            AudioManager.Instance.PlaySFX(AudioManager.Instance.sfxAcquire);
+            GameLogger.LogDev($"Highlight: 播放取字音效（{value}）");
+        }
+        
+        if (ButtonController.Instance != null)
+        {
+            StringSelector stringSelector = ButtonController.Instance.GetStringSelector();
+            if (stringSelector != null)
+            {
+                GameLogger.LogDev($"Highlight: 正在添加字符 '{value}' 到可用字符串列表");
+                stringSelector.AddAvailableString(value);
+                GameLogger.LogDev($"Highlight: 字符 '{value}' 已添加到可用字符串列表");
+            }
+            else
+            {
+                GameLogger.LogError($"Highlight: StringSelector为空，无法添加字符 '{value}'");
+            }
+        }
+        else
+        {
+            GameLogger.LogError($"Highlight: ButtonController.Instance为空，无法添加字符 '{value}'");
+        }
+    }
+    
 
     
     private void BroadcastCarryLetterValue(string carryLetter)
@@ -870,6 +901,92 @@ public class Highlight : MonoBehaviour
                         GameLogger.LogDev($"收到'侠'广播: 已广播收集提示 '王'");
                     }
                 }
+            }
+        }
+        else if (broadcastedValue == "蚜")
+        {
+            GameLogger.LogDev($"收到'蚜'广播，当前对象letter={letter}");
+            if (letter == "叶")
+            {
+                HideObject();
+            }
+            else if (letter == "穴")
+            {
+                ShowObject();
+            }
+        }
+        else if (broadcastedValue == "穿")
+        {
+            GameLogger.LogDev($"收到'穿'广播，当前对象letter={letter}");
+            if (letter == "老")
+            {
+                HideObject();
+            }
+            else if (letter == "童")
+            {
+                ShowObject();
+            }
+        }
+        else if (broadcastedValue == "孟")
+        {
+            GameLogger.LogDev($"收到'孟'广播，当前对象letter={letter}");
+            if (letter == "生")
+            {
+                HideObject();
+            }
+            else if (letter == "时")
+            {
+                ShowObject();
+            }
+        }
+        else if (broadcastedValue == "琴雅")
+        {
+            GameLogger.LogDev($"收到'琴雅'广播，当前对象letter={letter}");
+            // 1) 获得可用字符串："俗"
+            AddValueToAvailableList("俗");
+
+            // 2) 删除所有 letter == "隹" 的对象上的 Highlight 脚本
+            Highlight[] all = FindObjectsOfType<Highlight>(true);
+            int removed = 0;
+            foreach (var h in all)
+            {
+                if (h != null && h.letter == "隹")
+                {
+                    Object.Destroy(h);
+                    removed++;
+                }
+            }
+            GameLogger.LogDev($"已从 {removed} 个对象上移除 Highlight（letter=='隹'）");
+        }
+        else if (broadcastedValue == "琴孤")
+        {
+            GameLogger.LogDev($"收到'琴孤'广播，当前对象letter={letter}");
+            // 1) 获得可用字符串："欣"
+            AddValueToAvailableList("欣");
+
+            // 2) 删除所有 letter == "瓜" 的对象上的 Highlight 脚本
+            Highlight[] all = FindObjectsOfType<Highlight>(true);
+            int removed = 0;
+            foreach (var h in all)
+            {
+                if (h != null && h.letter == "瓜")
+                {
+                    Object.Destroy(h);
+                    removed++;
+                }
+            }
+            GameLogger.LogDev($"已从 {removed} 个对象上移除 Highlight（letter=='瓜'）");
+        }
+        else if (broadcastedValue == "季夏")
+        {
+            GameLogger.LogDev($"收到'季夏'广播，当前对象letter={letter}");
+            if (letter == "芽")
+            {
+                HideObject();
+            }
+            else if (letter == "瓜")
+            {
+                ShowObject();
             }
         }
         else if (broadcastedValue == "芽")

@@ -90,9 +90,18 @@ public class Level3Manager : MonoBehaviour
                     p.SetEnterKeyEnabled(true);
                 }
             }
+
+            // 参照Level2：设置当前玩家索引、启用切换与颜色更新
+            if (playerController.GetPlayerCount() > 0)
+            {
+                playerController.SetCurrentPlayerIndex(0);
+            }
+            playerController.EnablePlayerSwitching();
+            playerController.UpdatePlayerColors();
+
             if (showDebugInfo)
             {
-                GameLogger.LogDev("Level3Manager: 下一帧已强制启用玩家移动与输入");
+                GameLogger.LogDev("Level3Manager: 已启用移动/输入，并更新玩家颜色与切换状态");
             }
         }
         else
@@ -145,6 +154,16 @@ public class Level3Manager : MonoBehaviour
         
         // 触发季节切换事件
         OnSeasonChanged?.Invoke(currentSeason);
+
+        // 广播季节切换（用于让“芽”->“瓜”等联动）
+        if (BroadcastManager.Instance != null && previousSeason == SeasonType.Spring && currentSeason == SeasonType.Summer)
+        {
+            BroadcastManager.Instance.BroadcastToAll("季夏");
+            if (showDebugInfo)
+            {
+                GameLogger.LogDev("Level3Manager: 已广播'季夏'以触发季节相关联动");
+            }
+        }
     }
     
     /// <summary>
