@@ -4,6 +4,15 @@ using UnityEngine.EventSystems;
 using System.Collections;
 using System.Collections.Generic;
 using TMPro;
+
+/// <summary>
+/// 场景类型枚举
+/// </summary>
+public enum SceneType
+{
+    Level2,
+    Level3
+}
 /// <summary>
 /// 提示管理器 - 控制提示图片的显示和宽度渐变动画
 /// </summary>
@@ -45,12 +54,24 @@ public class HintManager : MonoBehaviour
     [Header("字体设置")]
     [SerializeField] private TMP_FontAsset chineseFont; // 中文字体（可选）
 
-    [Header("场景目标引用")]
+    [Header("场景设置")]
+    [SerializeField] private SceneType currentScene = SceneType.Level2; // 当前场景类型
+    public SceneType CurrentSceneType { get { return currentScene; } }
+    
+    [Header("Level2场景目标引用")]
     [SerializeField] private GameObject rainObject;     // 雨
     [SerializeField] private GameObject childObject;    // 孩
     [SerializeField] private GameObject hunterObject;   // 猎
     [SerializeField] private GameObject kingObject;     // 王
     [SerializeField] private List<GameObject> sunObjects = new List<GameObject>(); // 多个日（任一显示即可）
+    
+    [Header("Level3场景目标引用")]
+    [SerializeField] private GameObject leafObject;     // 叶
+    [SerializeField] private GameObject oldObject;      // 老
+    [SerializeField] private GameObject lifeObject;     // 生
+
+    [Header("Level3收集（获得过的字符串）")]
+    [SerializeField] private List<string> level3CollectedStrings = new List<string>();
 
     private PlayerController playerController;
 
@@ -511,53 +532,26 @@ public class HintManager : MonoBehaviour
     private string GetRandomEligibleHintText()
     {
         List<string> candidates = new List<string>();
-
-        bool rainVisible = IsObjectEnabled(rainObject);
-        bool childVisible = IsObjectEnabled(childObject);
-        bool hunterVisible = IsObjectEnabled(hunterObject);
-        bool kingVisible = IsObjectEnabled(kingObject);
-        bool sunVisible = IsAnyObjectEnabled(sunObjects); // 多个“日”，任一启用即可
-
         string carry = GetCurrentCarryCharacter();
+
+        // 根据场景类型获取不同的目标状态
+        if (currentScene == SceneType.Level2)
+        {
+            candidates = GetLevel2HintCandidates(carry);
+        }
+        else if (currentScene == SceneType.Level3)
+        {
+            candidates = GetLevel3HintCandidates(carry);
+        }
 
         // 第一优先级：检查是否需要状态重置（玩家处于化字状态，且该形态对应互动均已完成）
         if (!string.IsNullOrEmpty(carry) && carry != "人")
         {
-            if (IsCarryFormInteractionsCompleted(carry, rainVisible, childVisible, hunterVisible, kingVisible, sunVisible))
+            if (IsCarryFormInteractionsCompleted(carry))
             {
-                // 唯一的“状态重置提示”
+                // 唯一的"状态重置提示"
                 return "此形态之事已毕，先回归「人」再继续吧";
             }
-        }
-
-        // 让雨“停”
-        if (rainVisible)
-        {
-            candidates.Add("大雨拦路，想办法让雨「停」下吧");
-        }
-
-        // 寻找“伙”伴（孩启用）
-        if (childVisible)
-        {
-            candidates.Add("孩童孤单，若能为他寻个「伙」伴……");
-        }
-
-        // 让猎人“休”息（猎启用）
-        if (hunterVisible)
-        {
-            candidates.Add("猎人终日巡守，让他稍作「休」息吧");
-        }
-
-        // 需要“侠”士（王启用，且玩家当前carry != 侠）
-        if (kingVisible && carry != "侠")
-        {
-            candidates.Add("猛虎当道，恐怕需要一位「侠」士相助");
-        }
-
-        // 需要“仙”人（雨未启用但日启用）
-        if (!rainVisible && sunVisible)
-        {
-            candidates.Add("日轮高悬，凡人难及，或可化「仙」探寻");
         }
 
         if (candidates.Count == 0)
@@ -589,8 +583,98 @@ public class HintManager : MonoBehaviour
         return candidates[idx];
     }
 
+    // 获取Level2场景的提示候选列表
+    private List<string> GetLevel2HintCandidates(string carry)
+    {
+        List<string> candidates = new List<string>();
+
+        bool rainVisible = IsObjectEnabled(rainObject);
+        bool childVisible = IsObjectEnabled(childObject);
+        bool hunterVisible = IsObjectEnabled(hunterObject);
+        bool kingVisible = IsObjectEnabled(kingObject);
+        bool sunVisible = IsAnyObjectEnabled(sunObjects); // 多个"日"，任一启用即可
+
+        // 让雨"停"
+        if (rainVisible)
+        {
+            candidates.Add("大雨拦路，想办法让雨「停」下吧");
+        }
+
+        // 寻找"伙"伴（孩启用）
+        if (childVisible)
+        {
+            candidates.Add("孩童孤单，若能为他寻个「伙」伴……");
+        }
+
+        // 让猎人"休"息（猎启用）
+        if (hunterVisible)
+        {
+            candidates.Add("猎人终日巡守，让他稍作「休」息吧");
+        }
+
+        // 需要"侠"士（王启用，且玩家当前carry != 侠）
+        if (kingVisible && carry != "侠")
+        {
+            candidates.Add("猛虎当道，恐怕需要一位「侠」士相助");
+        }
+
+        // 需要"仙"人（雨未启用但日启用）
+        if (!rainVisible && sunVisible)
+        {
+            candidates.Add("日轮高悬，凡人难及，或可化「仙」探寻");
+        }
+
+        return candidates;
+    }
+
+    // 获取Level3场景的提示候选列表
+    private List<string> GetLevel3HintCandidates(string carry)
+    {
+        // 第一优先级：核心谜题检查（占位，暂不实现具体逻辑）
+        string corePuzzleHint = GetLevel3CorePuzzleHint();
+        if (!string.IsNullOrEmpty(corePuzzleHint))
+        {
+            return new List<string> { corePuzzleHint };
+        }
+
+        // 第二优先级：收集与收尾检查
+        // 1) 若场景仍有可收集的文字，则仅给出收集提示
+        // 2) 若已无可收集的文字，则给出最终合成提示
+        bool anyCollectableActive = AnyCollectableActiveInScene();
+        if (anyCollectableActive)
+        {
+            return new List<string> { "场中仍有未拾取的文字，先将它们收集齐全" };
+        }
+        else
+        {
+            return new List<string> { "万物齐备，开始最终合成吧" };
+        }
+    }
+
+    // Level3 核心谜题检查（占位，保留扩展点）
+    private string GetLevel3CorePuzzleHint()
+    {
+        // TODO: 在此添加Level3核心谜题的前置校验与定向提示
+        return null;
+    }
+
+    // 是否仍有可收集的文字（基于Highlight的可收集状态）
+    private bool AnyCollectableActiveInScene()
+    {
+        Highlight[] allHighlights = FindObjectsOfType<Highlight>();
+        for (int i = 0; i < allHighlights.Length; i++)
+        {
+            Highlight h = allHighlights[i];
+            if (h != null && h.IsCollectableActive())
+            {
+                return true;
+            }
+        }
+        return false;
+    }
+
     // 判断某化字形态对应的场景互动是否均完成
-    private bool IsCarryFormInteractionsCompleted(string carry, bool rainVisible, bool childVisible, bool hunterVisible, bool kingVisible, bool sunVisible)
+    private bool IsCarryFormInteractionsCompleted(string carry)
     {
         // PublicData.stringKeyValuePairs 定义了形态到目标的映射，如 仙->日、停->雨 等
         string target;
@@ -600,20 +684,49 @@ public class HintManager : MonoBehaviour
             return false;
         }
 
+        if (currentScene == SceneType.Level2)
+        {
+            return IsLevel2TargetCompleted(target);
+        }
+        else if (currentScene == SceneType.Level3)
+        {
+            return IsLevel3TargetCompleted(target);
+        }
+
+        return false;
+    }
+
+    // 判断Level2场景的目标是否完成
+    private bool IsLevel2TargetCompleted(string target)
+    {
         switch (target)
         {
             case "雨":
-                // 雨的互动完成：雨不再可见
-                return !rainVisible;
+                return !IsObjectEnabled(rainObject);
             case "猎":
-                return !hunterVisible;
+                return !IsObjectEnabled(hunterObject);
             case "孩":
-                return !childVisible;
+                return !IsObjectEnabled(childObject);
             case "王":
-                return !kingVisible;
+                return !IsObjectEnabled(kingObject);
             case "日":
-                // 多个日：均处理完毕时场景中不再有可见的日
-                return !sunVisible;
+                return !IsAnyObjectEnabled(sunObjects);
+            default:
+                return false;
+        }
+    }
+
+    // 判断Level3场景的目标是否完成
+    private bool IsLevel3TargetCompleted(string target)
+    {
+        switch (target)
+        {
+            case "叶":
+                return !IsObjectEnabled(leafObject);
+            case "老":
+                return !IsObjectEnabled(oldObject);
+            case "生":
+                return !IsObjectEnabled(lifeObject);
             default:
                 return false;
         }
@@ -759,6 +872,7 @@ public class HintManager : MonoBehaviour
         ResetHintImage();
     }
     
+    
     private void OnDestroy()
     {
         // 清理协程
@@ -778,5 +892,45 @@ public class HintManager : MonoBehaviour
         {
             hintButton.onClick.RemoveListener(OnHintButtonClicked);
         }
+    }
+
+    // ============= Level3 收集字符串接口 =============
+    /// <summary>
+    /// 记录一个已获得的字符串（去重，忽略空白）
+    /// </summary>
+    public void Level3AddCollectedString(string value)
+    {
+        if (string.IsNullOrWhiteSpace(value)) return;
+        if (level3CollectedStrings == null) level3CollectedStrings = new List<string>();
+        if (!level3CollectedStrings.Contains(value))
+        {
+            level3CollectedStrings.Add(value);
+        }
+    }
+
+    /// <summary>
+    /// 判断是否已获得指定字符串
+    /// </summary>
+    public bool Level3HasCollectedString(string value)
+    {
+        if (string.IsNullOrWhiteSpace(value)) return false;
+        return level3CollectedStrings != null && level3CollectedStrings.Contains(value);
+    }
+
+    /// <summary>
+    /// 获取已获得字符串的只读副本
+    /// </summary>
+    public IReadOnlyList<string> Level3GetCollectedStrings()
+    {
+        if (level3CollectedStrings == null) return System.Array.Empty<string>();
+        return level3CollectedStrings.AsReadOnly();
+    }
+
+    /// <summary>
+    /// 清空已获得的字符串列表
+    /// </summary>
+    public void Level3ClearCollectedStrings()
+    {
+        if (level3CollectedStrings != null) level3CollectedStrings.Clear();
     }
 }

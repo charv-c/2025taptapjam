@@ -268,6 +268,14 @@ public class Highlight : MonoBehaviour
                 GameLogger.LogDev($"AddLetterToAvailableList: 正在添加字符 '{letter}' 到可用字符串列表");
                 stringSelector.AddAvailableString(letter);
                 GameLogger.LogDev($"AddLetterToAvailableList: 字符 '{letter}' 已添加到可用字符串列表");
+
+                // 若当前为Level3场景，则同步记录到HintManager的Level3收集列表
+                var hintManager = FindObjectOfType<HintManager>();
+                if (hintManager != null && hintManager.CurrentSceneType == SceneType.Level3)
+                {
+                    hintManager.Level3AddCollectedString(letter);
+                    GameLogger.LogDev($"AddLetterToAvailableList: Level3 收集记录 + '{letter}'");
+                }
             }
             else
             {
@@ -728,6 +736,14 @@ public class Highlight : MonoBehaviour
                 }
             }
         }
+        else if (broadcastedValue == "芽")
+        {
+            GameLogger.LogDev($"收到'芽'广播，当前对象letter={letter}");
+            // 1) 显示场景中没有Highlight脚本的"花"Sprite物体
+            ShowFlowerSpriteWithoutHighlight();
+            // 2) 启用 letter == "鸟" 的高亮对象
+            EnableHighlightByLetter("隹");
+        }
         
     }
     
@@ -971,6 +987,54 @@ public class Highlight : MonoBehaviour
             }
             
             FunctionA();
+        }
+    }
+    
+    // 显示场景中没有Highlight脚本的"花"Sprite物体
+    private void ShowFlowerSpriteWithoutHighlight()
+    {
+        // 查找场景中所有GameObject
+        GameObject[] allObjects = FindObjectsOfType<GameObject>();
+        
+        foreach (GameObject obj in allObjects)
+        {
+            // 检查对象名称是否包含"花"
+            if (obj.name.Contains("花"))
+            {
+                // 检查该对象是否有Highlight脚本
+                Highlight highlightComponent = obj.GetComponent<Highlight>();
+                if (highlightComponent == null)
+                {
+                    // 没有Highlight脚本，显示该对象
+                    SpriteRenderer spriteRenderer = obj.GetComponent<SpriteRenderer>();
+                    if (spriteRenderer != null)
+                    {
+                        spriteRenderer.enabled = true;
+                        GameLogger.LogDev($"显示没有Highlight脚本的'花'对象: {obj.name}");
+                    }
+                    
+                    // 确保GameObject是激活的
+                    if (!obj.activeInHierarchy)
+                    {
+                        obj.SetActive(true);
+                        GameLogger.LogDev($"激活没有Highlight脚本的'花'对象: {obj.name}");
+                    }
+                }
+            }
+        }
+    }
+    
+    // 启用指定letter的Highlight对象
+    private void EnableHighlightByLetter(string targetLetter)
+    {
+        Highlight[] allHighlights = FindObjectsOfType<Highlight>(true);
+        foreach (Highlight highlight in allHighlights)
+        {
+            if (highlight != null && highlight.letter == targetLetter)
+            {
+                highlight.ShowObject();
+                GameLogger.LogDev($"启用letter为'{targetLetter}'的Highlight对象: {highlight.gameObject.name}");
+            }
         }
     }
 }
