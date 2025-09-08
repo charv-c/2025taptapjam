@@ -29,6 +29,7 @@ public class ButtonController : MonoBehaviour
     [SerializeField] private float flyingFontSize = 50f; // 飞行动画中文字大小
     
     [Header("彩蛋提示框设置")]
+    [SerializeField] private GameObject easterEggMask; // 彩蛋遮罩层（阻止背景交互）
     [SerializeField] private GameObject easterEggPanel; // 彩蛋提示框面板
     [SerializeField] private TextMeshProUGUI easterEggText; // 彩蛋提示文本
     [SerializeField] private Image easterEggGuideImage; // 彩蛋引导员图像
@@ -64,7 +65,11 @@ public class ButtonController : MonoBehaviour
         
         if (messageText != null) messageText.gameObject.SetActive(false);
         
-        // 初始化彩蛋提示框（确保开始时隐藏）
+        // 初始化彩蛋提示框和遮罩（确保开始时隐藏）
+        if (easterEggMask != null)
+        {
+            easterEggMask.SetActive(false);
+        }
         if (easterEggPanel != null)
         {
             easterEggPanel.SetActive(false);
@@ -1089,6 +1094,17 @@ public class ButtonController : MonoBehaviour
             return;
         }
         
+        // 先显示遮罩层（阻止背景交互）
+        if (easterEggMask != null)
+        {
+            easterEggMask.SetActive(true);
+            GameLogger.LogDev("ButtonController: 显示彩蛋遮罩，阻止背景交互");
+        }
+        else
+        {
+            GameLogger.LogWarning("ButtonController: 彩蛋遮罩未设置，可能无法完全阻止背景交互");
+        }
+        
         // 显示彩蛋面板
         easterEggPanel.SetActive(true);
         
@@ -1132,9 +1148,17 @@ public class ButtonController : MonoBehaviour
     /// </summary>
     private void HideEasterEggNotification()
     {
+        // 隐藏彩蛋面板
         if (easterEggPanel != null)
         {
             easterEggPanel.SetActive(false);
+        }
+        
+        // 隐藏遮罩层（恢复背景交互）
+        if (easterEggMask != null)
+        {
+            easterEggMask.SetActive(false);
+            GameLogger.LogDev("ButtonController: 隐藏彩蛋遮罩，恢复背景交互");
         }
         
         // 在隐藏提示框后，将解字台中的"王"字移除
