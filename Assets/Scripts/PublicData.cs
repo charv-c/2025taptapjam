@@ -80,6 +80,9 @@ public class PublicData : MonoBehaviour
         {"相", ("木", "目")},
         {"便", ("人", "更")},
         {"间", ("门", "日")},
+        
+        // Level3彩蛋：王字可拆分为一+土
+        {"王", ("一", "土")},
     };
     
     public static List<string> listofhua = new List<string>()
@@ -125,6 +128,10 @@ public class PublicData : MonoBehaviour
         {"拼人更", "有「人」在侧，「更」易行事，此为「便」"},
         {"拼王人", "「王」得「人」心，则江山「全」"},
         {"拼全丷", "「全」字加盖「丷」，点缀成「金」"},
+
+        // Level3关卡特殊彩蛋提示
+        {"拼一土", "人得「一」「土」，可称为「王」"},
+
         // 选择数量限制提示
         {"select_limit", "最多只能选择两个字"},
 

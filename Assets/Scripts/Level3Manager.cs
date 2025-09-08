@@ -24,8 +24,14 @@ public class Level3Manager : MonoBehaviour
     [Header("调试设置")]
     [SerializeField] private bool showDebugInfo = true;
     
+    [Header("Level3彩蛋设置")]
+    [SerializeField] private bool enableEasterEgg = true;
+    [SerializeField] private bool showEasterEggInfo = true;
+    
     // 事件：季节切换时触发
     public System.Action<SeasonType> OnSeasonChanged;
+    // 简单的彩蛋状态跟踪
+    private static bool easterEggTriggered = false;
     
     private void Start()
     {
@@ -36,20 +42,23 @@ public class Level3Manager : MonoBehaviour
             
             if (showDebugInfo)
             {
-                Debug.Log("Level3Manager: 开始播放知音篇主题BGM");
+                GameLogger.LogDev("Level3Manager: 开始播放知音篇主题BGM");
             }
         }
         else
         {
-            Debug.LogWarning("Level3Manager: AudioManager实例未找到，无法播放BGM");
+            GameLogger.LogWarning("Level3Manager: AudioManager实例未找到，无法播放BGM");
         }
         
         // 初始化季节状态
         InitializeSeason();
         
+        // 初始化彩蛋功能
+        InitializeEasterEgg();
+        
         if (showDebugInfo)
         {
-            Debug.Log($"Level3Manager: 初始化完成，当前季节: {currentSeason}");
+            GameLogger.LogDev($"Level3Manager: 初始化完成，当前季节: {currentSeason}");
         }
     }
     
@@ -72,7 +81,7 @@ public class Level3Manager : MonoBehaviour
         {
             if (showDebugInfo)
             {
-                Debug.Log($"Level3Manager: 已经是{newSeason}季节，无需切换");
+                GameLogger.LogDev($"Level3Manager: 已经是{newSeason}季节，无需切换");
             }
             return;
         }
@@ -82,7 +91,7 @@ public class Level3Manager : MonoBehaviour
         
         if (showDebugInfo)
         {
-            Debug.Log($"Level3Manager: 季节切换 {previousSeason} -> {currentSeason}");
+            GameLogger.LogDev($"Level3Manager: 季节切换 {previousSeason} -> {currentSeason}");
         }
         
         // 应用季节效果
@@ -131,7 +140,7 @@ public class Level3Manager : MonoBehaviour
     {
         if (showDebugInfo)
         {
-            Debug.Log($"Level3Manager: 开始季节切换动画 {fromSeason} -> {toSeason}");
+            GameLogger.LogDev($"Level3Manager: 开始季节切换动画 {fromSeason} -> {toSeason}");
         }
         
         // 这里可以添加季节切换的动画效果
@@ -154,7 +163,7 @@ public class Level3Manager : MonoBehaviour
         
         if (showDebugInfo)
         {
-            Debug.Log($"Level3Manager: 季节切换完成 {toSeason}");
+            GameLogger.LogDev($"Level3Manager: 季节切换完成 {toSeason}");
         }
     }
     
@@ -182,7 +191,7 @@ public class Level3Manager : MonoBehaviour
     {
         if (showDebugInfo)
         {
-            Debug.Log("Level3Manager: 应用春季效果");
+            GameLogger.LogDev("Level3Manager: 应用春季效果");
         }
         
         // 春季效果实现
@@ -200,7 +209,7 @@ public class Level3Manager : MonoBehaviour
     {
         if (showDebugInfo)
         {
-            Debug.Log("Level3Manager: 应用夏季效果");
+            GameLogger.LogDev("Level3Manager: 应用夏季效果");
         }
         
         // 夏季效果实现
@@ -234,7 +243,7 @@ public class Level3Manager : MonoBehaviour
                 
                 if (showDebugInfo)
                 {
-                    Debug.Log($"Level3Manager: 启用{seasonTag}对象: {obj.name}");
+                    GameLogger.LogDev($"Level3Manager: 启用{seasonTag}对象: {obj.name}");
                 }
             }
         }
@@ -256,7 +265,7 @@ public class Level3Manager : MonoBehaviour
                 
                 if (showDebugInfo)
                 {
-                    Debug.Log($"Level3Manager: 禁用{seasonTag}对象: {obj.name}");
+                    GameLogger.LogDev($"Level3Manager: 禁用{seasonTag}对象: {obj.name}");
                 }
             }
         }
@@ -282,7 +291,7 @@ public class Level3Manager : MonoBehaviour
         
         if (showDebugInfo)
         {
-            Debug.Log($"Level3Manager: 直接设置季节为: {currentSeason}");
+            GameLogger.LogDev($"Level3Manager: 直接设置季节为: {currentSeason}");
         }
     }
     
@@ -314,6 +323,106 @@ public class Level3Manager : MonoBehaviour
         return currentSeason == SeasonType.Summer;
     }
     
+    #region Level3 彩蛋功能
+    
+    /// <summary>
+    /// 初始化彩蛋功能
+    /// </summary>
+    private void InitializeEasterEgg()
+    {
+        if (!enableEasterEgg)
+        {
+            if (showEasterEggInfo)
+            {
+                GameLogger.LogDev("Level3Manager: 彩蛋功能已禁用");
+            }
+            return;
+        }
+        
+        // 重置彩蛋状态
+        easterEggTriggered = false;
+        
+        if (showEasterEggInfo)
+        {
+            GameLogger.LogDev("Level3Manager: 彩蛋功能初始化完成，等待广播消息");
+        }
+    }
+    
+    /// <summary>
+    /// 广播接收器 - 处理彩蛋广播消息
+    /// </summary>
+    /// <param name="message">广播消息</param>
+    public void ReceiveBroadcast(string message)
+    {
+        if (!enableEasterEgg) return;
+        
+        if (message == "拼一土" && !easterEggTriggered)
+        {
+            HandleEasterEggTriggered();
+        }
+    }
+    
+    /// <summary>
+    /// 处理彩蛋触发逻辑
+    /// </summary>
+    private void HandleEasterEggTriggered()
+    {
+        easterEggTriggered = true;
+        
+        if (showEasterEggInfo)
+        {
+            GameLogger.LogDev("Level3Manager: 彩蛋已触发！玩家发现了隐藏的'王'字彩蛋");
+        }
+        
+        // 播放特殊音效（如果有的话）
+        if (AudioManager.Instance != null && AudioManager.Instance.sfxEasterEgg != null)
+        {
+            // 播放彩蛋音效
+            AudioManager.Instance.PlaySFX(AudioManager.Instance.sfxEasterEgg);
+            GameLogger.LogDev("Level3Manager: 播放彩蛋音效");
+        }
+        else if (AudioManager.Instance != null)
+        {
+            GameLogger.LogWarning("Level3Manager: 彩蛋音效未配置");
+        }
+    }
+    
+    /// <summary>
+    /// 检查彩蛋是否已触发
+    /// </summary>
+    /// <returns>彩蛋是否已触发</returns>
+    public bool IsEasterEggTriggered()
+    {
+        return easterEggTriggered;
+    }
+    
+    /// <summary>
+    /// 重置彩蛋状态
+    /// </summary>
+    public void ResetEasterEgg()
+    {
+        easterEggTriggered = false;
+        if (showEasterEggInfo)
+        {
+            GameLogger.LogDev("Level3Manager: 彩蛋状态已重置");
+        }
+    }
+    
+    /// <summary>
+    /// 设置彩蛋启用状态
+    /// </summary>
+    /// <param name="enabled">是否启用彩蛋</param>
+    public void SetEasterEggEnabled(bool enabled)
+    {
+        enableEasterEgg = enabled;
+        if (showEasterEggInfo)
+        {
+            GameLogger.LogDev($"Level3Manager: 彩蛋功能已{(enabled ? "启用" : "禁用")}");
+        }
+    }
+    
+    #endregion
+    
     // 调试方法：在Inspector中调用
     [ContextMenu("切换到春季")]
     public void DebugSwitchToSpring()
@@ -331,5 +440,24 @@ public class Level3Manager : MonoBehaviour
     public void DebugToggleSeason()
     {
         ToggleSeason();
+    }
+    
+    [ContextMenu("触发彩蛋测试")]
+    public void DebugTriggerEasterEgg()
+    {
+        if (enableEasterEgg)
+        {
+            HandleEasterEggTriggered();
+        }
+        else
+        {
+            GameLogger.LogDev("Level3Manager: 彩蛋功能未启用，无法测试");
+        }
+    }
+    
+    [ContextMenu("重置彩蛋状态")]
+    public void DebugResetEasterEgg()
+    {
+        ResetEasterEgg();
     }
 }
