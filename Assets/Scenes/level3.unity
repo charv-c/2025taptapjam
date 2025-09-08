@@ -2932,7 +2932,7 @@ MonoBehaviour:
   m_OnCullStateChanged:
     m_PersistentCalls:
       m_Calls: []
-  m_Sprite: {fileID: 21300000, guid: 04ddde44046aa484496cced663c44cf7, type: 3}
+  m_Sprite: {fileID: 21300000, guid: af3e7b5152c1bd64c90bf0e58a71dd13, type: 3}
   m_Type: 0
   m_PreserveAspect: 0
   m_FillCenter: 1
@@ -4493,7 +4493,7 @@ MonoBehaviour:
   m_OnCullStateChanged:
     m_PersistentCalls:
       m_Calls: []
-  m_text: "New Text\u5C0F\u72D7\u56DE\u8F66\u95E8"
+  m_text: "\u77E5\u97F3\u96BE\u89C5\uFF0C\u4EA6\u5982\u738B\u8005\u4E4B\u8DEF\u3002\u5C06\u8FD9\u4EFD\u300C\u738B\u300D\u8005\u4E4B\u8BC1\u597D\u751F\u6536\u85CF\uFF0C\u6216\u8BB8\u5728\u672A\u6765\u7684\u65C5\u9014\u4E2D\u53E6\u6709\u4ED6\u7528\u3002"
   m_isRightToLeft: 0
   m_fontAsset: {fileID: 11400000, guid: c1e0078ef3230af45bed4d406e654f0a, type: 2}
   m_sharedMaterial: {fileID: 4017928422446835881, guid: c1e0078ef3230af45bed4d406e654f0a, type: 2}
@@ -5745,6 +5745,8 @@ MonoBehaviour:
   enableSeasonTransition: 1
   showDebugInfo: 0
   collectedStrings: []
+  enableEasterEgg: 1
+  showEasterEggInfo: 1
 --- !u!4 &1017100538
 Transform:
   m_ObjectHideFlags: 0
@@ -9053,8 +9055,8 @@ MonoBehaviour:
     value: "\u62E8\u52A8\u300C\u5B63\u300D\u8282\u4E4B\u5F26\uFF0C\u6625\u590F\u968F\u5FC3\u610F\u800C\u53D8"
   - key: "\u7A7F"
     value: "\u300C\u7A7F\u300D\u8D8A\u5C81\u6708\uFF0C\u8001\u8005\u8FD4\u8FD8\u4E3A\u300C\u7AE5\u300D"
-  - key: 
-    value: 
+  - key: "\u4E00\u571F\u738B"
+    value: "\u77E5\u97F3\u96BE\u89C5\uFF0C\u4EA6\u5982\u738B\u8005\u4E4B\u8DEF\u3002\u5C06\u8FD9\u4EFD\u300C\u738B\u300D\u8005\u4E4B\u8BC1\u597D\u751F\u6536\u85CF\uFF0C\u6216\u8BB8\u5728\u672A\u6765\u7684\u65C5\u9014\u4E2D\u53E6\u6709\u4ED6\u7528\u3002"
   - key: 
     value: 
   - key: 
