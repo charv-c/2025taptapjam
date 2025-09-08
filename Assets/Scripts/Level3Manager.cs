@@ -81,9 +81,17 @@ public class Level3Manager : MonoBehaviour
                     p.SetEnterKeyEnabled(true);
                 }
             }
+            // 统一设置第一个玩家为当前操控者，与Level2一致
+            if (count > 0)
+            {
+                playerController.SetCurrentPlayerIndex(0);
+            }
+            // 启用玩家切换并刷新颜色状态
+            playerController.EnablePlayerSwitching();
+            playerController.UpdatePlayerColors();
             if (showDebugInfo)
             {
-                Debug.Log("Level3Manager: 下一帧已强制启用玩家移动与输入");
+                Debug.Log("Level3Manager: 下一帧已启用所有玩家输入/回车，设置当前玩家为0并启用切换与颜色刷新");
             }
         }
         else
