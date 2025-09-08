@@ -22,11 +22,31 @@ public class Highlight : MonoBehaviour
     
     [Header("收集设置")]
     [SerializeField] private bool collectable = true;
+
+    [Header("显示/隐藏设置")]
+    [Tooltip("是否在开始时隐藏（仅禁用渲染/碰撞/光照，不会禁用GameObject或组件）")]
+    [SerializeField] private bool startHidden = false;
+    [Tooltip("是否连同所有子节点的SpriteRenderer一并切换显示状态")]
+    [SerializeField] private bool affectChildSpriteRenderers = true;
+
+    private SpriteRenderer cachedSpriteRenderer;
+    private Collider2D cachedCollider2D;
     
+    void Awake()
+    {
+        // 缓存常用组件（即使物体或子物体初始为隐藏也能获取）
+        cachedSpriteRenderer = GetComponent<SpriteRenderer>();
+        cachedCollider2D = GetComponent<Collider2D>();
+        light2d = GetComponentInChildren<Light2D>(true);
+    }
+
     void Start()
     {
-        light2d=GetComponentInChildren<Light2D>();
-        light2d.enabled=false;
+        // 确保灯光默认关闭（若存在）
+        if (light2d != null)
+        {
+            light2d.enabled = false;
+        }
         
         // 检查初始状态
         if (letter == "夹")
@@ -48,6 +68,9 @@ public class Highlight : MonoBehaviour
                 gameObject.SetActive(true);
             }
         }
+
+        // 应用初始显示/隐藏状态（不禁用GameObject与组件本身）
+        ApplyHiddenState(startHidden);
     }
 
     // 对外提供：是否为可收集元素且当前处于启用显示状态
@@ -70,6 +93,66 @@ public class Highlight : MonoBehaviour
         if (collider != null && !collider.enabled) return false;
 
         return true;
+    }
+
+    private void ApplyHiddenState(bool hidden)
+    {
+        // 自身SpriteRenderer
+        if (cachedSpriteRenderer != null)
+        {
+            cachedSpriteRenderer.enabled = !hidden;
+        }
+
+        // 子级SpriteRenderer
+        if (affectChildSpriteRenderers)
+        {
+            var childSprites = GetComponentsInChildren<SpriteRenderer>(true);
+            foreach (var sr in childSprites)
+            {
+                sr.enabled = !hidden;
+            }
+        }
+
+        // 碰撞体
+        if (cachedCollider2D != null)
+        {
+            cachedCollider2D.enabled = !hidden;
+        }
+
+        // 灯光
+        if (light2d != null)
+        {
+            light2d.enabled = !hidden && isHighlighted; // 高亮时才开灯
+        }
+    }
+
+    [ContextMenu("显示(仅禁用渲染级隐藏)")]
+    public void Show()
+    {
+        startHidden = false;
+        ApplyHiddenState(false);
+        GameLogger.LogDev($"Highlight: 已显示 {gameObject.name}");
+    }
+
+    [ContextMenu("隐藏(仅禁用渲染级隐藏)")]
+    public void Hide()
+    {
+        startHidden = true;
+        ApplyHiddenState(true);
+        GameLogger.LogDev($"Highlight: 已隐藏 {gameObject.name}");
+    }
+
+    // 在编辑器中改值时即刻生效
+    private void OnValidate()
+    {
+        if (!Application.isPlaying)
+        {
+            // 预览用的安全获取
+            if (cachedSpriteRenderer == null) cachedSpriteRenderer = GetComponent<SpriteRenderer>();
+            if (cachedCollider2D == null) cachedCollider2D = GetComponent<Collider2D>();
+            if (light2d == null) light2d = GetComponentInChildren<Light2D>(true);
+            ApplyHiddenState(startHidden);
+        }
     }
 
     void Update()
@@ -155,8 +238,17 @@ public class Highlight : MonoBehaviour
             return;
         }
         
-        string combinedCharacter = PublicData.FindOriginalString(letter, "人");
-        GameLogger.LogDev($"ChangeMi: 查找合成字符，letter='{letter}' + '人' = '{combinedCharacter}'");
+        string carrier = "人";
+        if (player != null)
+        {
+            string initial = player.GetInitialCarryCharacter();
+            if (!string.IsNullOrEmpty(initial))
+            {
+                carrier = initial;
+            }
+        }
+        string combinedCharacter = PublicData.FindOriginalString(letter, carrier);
+        GameLogger.LogDev($"ChangeMi: 查找合成字符，letter='{letter}' + 初始字符'{carrier}' = '{combinedCharacter}'");
         
         if (combinedCharacter != null)
         {

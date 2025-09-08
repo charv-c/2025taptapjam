@@ -54,9 +54,41 @@ public class Level3Manager : MonoBehaviour
         // 初始化季节状态
         InitializeSeason();
         
+        // 延迟一帧强制启用玩家移动，避免被其他管理器在Start中覆盖
+        StartCoroutine(EnsureEnableMovementNextFrame());
+        
         if (showDebugInfo)
         {
             Debug.Log($"Level3Manager: 初始化完成，当前季节: {currentSeason}");
+        }
+    }
+
+    private System.Collections.IEnumerator EnsureEnableMovementNextFrame()
+    {
+        yield return new WaitForEndOfFrame();
+        PlayerController playerController = FindObjectOfType<PlayerController>();
+        if (playerController != null)
+        {
+            playerController.EnableCurrentPlayerMovement();
+            // 同时确保所有玩家的回车键与输入开启
+            int count = playerController.GetPlayerCount();
+            for (int i = 0; i < count; i++)
+            {
+                Player p = playerController.GetPlayerByIndex(i);
+                if (p != null)
+                {
+                    p.SetInputEnabled(true);
+                    p.SetEnterKeyEnabled(true);
+                }
+            }
+            if (showDebugInfo)
+            {
+                Debug.Log("Level3Manager: 下一帧已强制启用玩家移动与输入");
+            }
+        }
+        else
+        {
+            Debug.LogWarning("Level3Manager: 未找到PlayerController，无法启用玩家移动");
         }
     }
     
