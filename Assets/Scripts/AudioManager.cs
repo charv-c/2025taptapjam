@@ -40,7 +40,8 @@ public class AudioManager : MonoBehaviour
     public AudioClip sfxSelectWord;          // 在解字台选中文字 [cite: 12]
     public AudioClip sfxGoalFlyIn;           // 目标字飞入诗句的核心奖励音效 [cite: 12]
     public AudioClip sfxWin;                 // 关卡胜利音效
-    public AudioClip sfxGuqinPlay;           // 与解语琴交互时的琴弦音效（Level3
+    public AudioClip sfxGuqinPlay;           // 与解语琴交互时的琴弦音效（Level3)
+    public AudioClip sfxEasterEgg;           // 触发彩蛋音效
 
     [Header("环境音 (Ambient)")]
     public AudioClip ambientRain;            // 循环播放的背景雨声 [cite: 12]
