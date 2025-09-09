@@ -447,11 +447,23 @@ public class Highlight : MonoBehaviour
                 }
             }
             
-            // 特殊处理："滩"对象发送广播"滩"+carryletter
+            // 特殊处理："滩"对象调用BeachObject脚本
             if (letter == "滩")
             {
                 if (player != null && !string.IsNullOrEmpty(player.CarryCharacter))
                 {
+                    // 调用BeachObject脚本的滩涂互动逻辑
+                    BeachObject beachObject = GetComponent<BeachObject>();
+                    if (beachObject != null)
+                    {
+                        beachObject.ExecuteBeachInteraction();
+                    }
+                    else
+                    {
+                        GameLogger.LogWarning("FunctionA: 滩对象没有BeachObject脚本组件");
+                    }
+                    
+                    // 发送广播用于其他系统（如提示系统）
                     string broadcastMessage = $"滩{player.CarryCharacter}";
                     if (BroadcastManager.Instance != null)
                     {
@@ -1047,7 +1059,7 @@ public class Highlight : MonoBehaviour
         }
     }
 
-    private void HideObject()
+    public void HideObject()
     {
         SpriteRenderer spriteRenderer = GetComponent<SpriteRenderer>();
         if (spriteRenderer != null)
@@ -1290,4 +1302,5 @@ public class Highlight : MonoBehaviour
             }
         }
     }
+    
 }
