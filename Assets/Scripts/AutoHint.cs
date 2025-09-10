@@ -70,7 +70,11 @@ public class AutoHint : MonoBehaviour
     // 由广播系统调用
     public void ReceiveBroadcast(string message)
     {
+        Debug.Log($"AutoHint: 收到广播消息: '{message}'");
+        
         string content = ResolveValue(message);
+        Debug.Log($"AutoHint: 解析后的内容: '{content}'");
+        
         // 中断并立即隐藏
         StopFlow();
         ImmediateHide();
@@ -79,11 +83,16 @@ public class AutoHint : MonoBehaviour
         if (!string.IsNullOrEmpty(content))
         {
             bool hasTextReceiver = ApplyTextToChildren(content);
+            Debug.Log($"AutoHint: 是否有文本接收者: {hasTextReceiver}");
+            Debug.Log($"AutoHint: 子物体文本数量: {childTexts?.Count ?? 0}");
+            
             // 自适应宽度：若有文本接收者则按文本宽度调整目标Rect宽度
             if (hasTextReceiver)
             {
                 AdjustWidthToText();
+                Debug.Log("AutoHint: 已调整宽度到文本");
             }
+            
             // 若没有文本接收者，尝试将值映射为字符图片到自身 Image
             if (!hasTextReceiver && selfImage != null)
             {
@@ -93,10 +102,25 @@ public class AutoHint : MonoBehaviour
                     selfImage.sprite = sprite;
                     selfImage.enabled = true;
                     selfImage.preserveAspect = true;
+                    Debug.Log($"AutoHint: 已设置字符图片: {sprite.name}");
+                }
+                else
+                {
+                    Debug.LogWarning($"AutoHint: 未找到字符 '{content}' 对应的图片");
                 }
             }
+            else if (!hasTextReceiver)
+            {
+                Debug.LogWarning("AutoHint: 没有文本接收者且selfImage为null，无法显示内容");
+            }
+            
             // 启动淡入-停留-淡出流程
             flowCoroutine = StartCoroutine(Flow());
+            Debug.Log("AutoHint: 已启动显示流程");
+        }
+        else
+        {
+            Debug.LogWarning($"AutoHint: 内容为空，不显示提示");
         }
     }
 
@@ -190,16 +214,27 @@ public class AutoHint : MonoBehaviour
         if (childTexts == null || childTexts.Count == 0)
         {
             CacheChildTexts();
+            Debug.Log($"AutoHint: 重新缓存子物体文本，数量: {childTexts?.Count ?? 0}");
         }
+        
+        Debug.Log($"AutoHint: 开始应用文本到子物体，内容: '{content}'");
+        
         foreach (var t in childTexts)
         {
             if (t != null)
             {
+                Debug.Log($"AutoHint: 设置文本到子物体: {t.gameObject.name}");
                 t.text = content;
                 t.ForceMeshUpdate();
                 applied = true;
             }
+            else
+            {
+                Debug.LogWarning("AutoHint: 发现null的子物体文本组件");
+            }
         }
+        
+        Debug.Log($"AutoHint: 应用文本结果: {applied}");
         return applied;
     }
 

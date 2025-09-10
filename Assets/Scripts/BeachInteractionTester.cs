@@ -102,8 +102,24 @@ public class BeachInteractionTester : MonoBehaviour
         
         Debug.Log("=== 测试：其他字符 ===");
         
-        // 设置玩家携带字符为"人"
-        SetPlayer1CarryCharacter("人");
+        // 设置玩家携带字符为初始字符
+        if (playerController != null)
+        {
+            Player player1 = playerController.GetPlayerByIndex(0);
+            if (player1 != null)
+            {
+                string initialChar = player1.GetInitialCarryCharacter();
+                SetPlayer1CarryCharacter(initialChar);
+            }
+            else
+            {
+                SetPlayer1CarryCharacter("人"); // 备用默认值
+            }
+        }
+        else
+        {
+            SetPlayer1CarryCharacter("人"); // 备用默认值
+        }
         
         // 执行滩涂互动
         ExecuteBeachInteraction();
@@ -185,8 +201,24 @@ public class BeachInteractionTester : MonoBehaviour
     {
         Debug.Log("=== 重置测试环境 ===");
         
-        // 重置玩家携带字符
-        SetPlayer1CarryCharacter("人");
+        // 重置玩家携带字符为初始字符
+        if (playerController != null)
+        {
+            Player player1 = playerController.GetPlayerByIndex(0);
+            if (player1 != null)
+            {
+                string initialChar = player1.GetInitialCarryCharacter();
+                SetPlayer1CarryCharacter(initialChar);
+            }
+            else
+            {
+                SetPlayer1CarryCharacter("人"); // 备用默认值
+            }
+        }
+        else
+        {
+            SetPlayer1CarryCharacter("人"); // 备用默认值
+        }
         
         // 重置季节
         SetSeasonToSpring();

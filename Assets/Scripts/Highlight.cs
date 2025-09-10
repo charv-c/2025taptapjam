@@ -1,5 +1,6 @@
 using System.Collections;
 using System.Collections.Generic;
+using System.Linq;
 using UnityEngine;
 using UnityEngine.Rendering.Universal;
 
@@ -38,6 +39,12 @@ public class Highlight : MonoBehaviour
         cachedSpriteRenderer = GetComponent<SpriteRenderer>();
         cachedCollider2D = GetComponent<Collider2D>();
         light2d = GetComponentInChildren<Light2D>(true);
+        
+        // 如果没有找到Light2D，记录调试信息
+        if (light2d == null)
+        {
+            GameLogger.LogDev($"Highlight: 对象 '{gameObject.name}' 没有Light2D组件，将跳过光照相关操作");
+        }
     }
 
     void Start()
@@ -181,6 +188,16 @@ public class Highlight : MonoBehaviour
             {
                 light2d.enabled = true;
             }
+            
+            // 琴对象的特殊逻辑：通知QinSpecialLogic脚本
+            if (letter == "琴")
+            {
+                QinSpecialLogic qinLogic = GetComponent<QinSpecialLogic>();
+                if (qinLogic != null)
+                {
+                    qinLogic.OnPlayerEnter();
+                }
+            }
         }
     }
     
@@ -195,6 +212,16 @@ public class Highlight : MonoBehaviour
             if (light2d != null)
             {
                 light2d.enabled = false;
+            }
+            
+            // 琴对象的特殊逻辑：通知QinSpecialLogic脚本
+            if (letter == "琴")
+            {
+                QinSpecialLogic qinLogic = GetComponent<QinSpecialLogic>();
+                if (qinLogic != null)
+                {
+                    qinLogic.OnPlayerExit();
+                }
             }
         }
     }
@@ -384,6 +411,31 @@ public class Highlight : MonoBehaviour
     {
         GameLogger.LogDev($"FunctionA: 开始处理交互，对象letter='{letter}'，玩家携带字符='{player?.CarryCharacter}'，collectable={collectable}");
         
+        // 先行处理：琴对象的交互应优先于其它分支，避免被教程/collectable等逻辑短路
+        if (letter == "琴")
+        {
+            GameLogger.LogDev($"FunctionA: 琴对象优先处理分支，玩家携带字符: '{player?.CarryCharacter}'");
+            if (player != null && !string.IsNullOrEmpty(player.CarryCharacter))
+            {
+                QinSpecialLogic qinLogic = GetComponent<QinSpecialLogic>();
+                if (qinLogic != null)
+                {
+                    GameLogger.LogDev($"FunctionA: 调用QinSpecialLogic.OnPlayerInteract('{player.CarryCharacter}')");
+                    qinLogic.OnPlayerInteract(player.CarryCharacter);
+                    GameLogger.LogDev("FunctionA: 琴对象处理完成，返回");
+                }
+                else
+                {
+                    GameLogger.LogWarning($"FunctionA: 琴对象 '{gameObject.name}' 缺少QinSpecialLogic组件");
+                }
+            }
+            else
+            {
+                GameLogger.LogDev("FunctionA: 琴对象处理时玩家携带字符为空");
+            }
+            return;
+        }
+        
         // 特殊处理：草对象和牒对象在教程步骤中的特殊逻辑
         bool handledByTutorial = HandleSpecialTutorialLogic();
         
@@ -391,6 +443,43 @@ public class Highlight : MonoBehaviour
         if (handledByTutorial)
         {
             return;
+        }
+        
+        // 特殊处理："滩"对象调用BeachObject脚本（无论是否可收集）
+        if (letter == "滩")
+        {
+            Debug.Log($"Highlight: 检测到滩对象互动，玩家携带字符: '{player?.CarryCharacter}'");
+            Debug.Log($"Highlight: 当前对象名称: {gameObject.name}");
+            Debug.Log($"Highlight: 当前对象上的组件: {string.Join(", ", GetComponents<MonoBehaviour>().Select(c => c.GetType().Name))}");
+            
+            if (player != null && !string.IsNullOrEmpty(player.CarryCharacter))
+            {
+                // 调用BeachObject脚本的滩涂互动逻辑
+                BeachObject beachObject = GetComponent<BeachObject>();
+                Debug.Log($"Highlight: BeachObject组件状态: {(beachObject != null ? "存在" : "不存在")}");
+                
+                if (beachObject != null)
+                {
+                    Debug.Log($"Highlight: 调用BeachObject.ExecuteBeachInteraction('{player.CarryCharacter}')");
+                    beachObject.ExecuteBeachInteraction(player.CarryCharacter);
+                    Debug.Log($"Highlight: BeachObject.ExecuteBeachInteraction调用完成");
+                }
+                else
+                {
+                    Debug.LogError("Highlight: 滩对象没有BeachObject脚本组件！请在滩对象上添加BeachObject脚本。");
+                    GameLogger.LogWarning("FunctionA: 滩对象没有BeachObject脚本组件");
+                }
+                
+                // 滩涂互动不再发送广播，避免全屏提示
+                
+                // 滩对象不销毁，保持可重复交互
+                return;
+            }
+            else
+            {
+                GameLogger.LogDev($"FunctionA: 玩家携带字符为空，滩对象无反应");
+                return;
+            }
         }
         
         // collectable优先于carryletter逻辑，但"王"对象有特殊处理
@@ -411,9 +500,10 @@ public class Highlight : MonoBehaviour
                         GameLogger.LogDev($"FunctionA: 已广播收集提示 '王'");
                     }
                     
-                    // 重要：重置玩家状态为"人"字
-                    player.SetCarryCharacter("人");
-                    GameLogger.LogDev($"FunctionA: 已将玩家状态重置为'人'字");
+                    // 重要：重置玩家状态为初始字符
+                    string initialChar = player.GetInitialCarryCharacter();
+                    player.SetCarryCharacter(initialChar);
+                    GameLogger.LogDev($"FunctionA: 已将玩家状态重置为'{initialChar}'字符");
                     
                     Destroy(gameObject);
                     return;
@@ -425,16 +515,24 @@ public class Highlight : MonoBehaviour
                 }
             }
             
-            // 特殊处理："琴"对象发送广播"琴"+carryletter
+            // 特殊处理："琴"对象委托给QinSpecialLogic脚本处理
             if (letter == "琴")
             {
+                GameLogger.LogDev($"FunctionA: 琴对象互动开始，玩家携带字符: '{player?.CarryCharacter}'");
+                
                 if (player != null && !string.IsNullOrEmpty(player.CarryCharacter))
                 {
-                    string broadcastMessage = $"琴{player.CarryCharacter}";
-                    if (BroadcastManager.Instance != null)
+                    // 委托给QinSpecialLogic脚本处理
+                    QinSpecialLogic qinLogic = GetComponent<QinSpecialLogic>();
+                    if (qinLogic != null)
                     {
-                        BroadcastManager.Instance.BroadcastToAll(broadcastMessage);
-                        GameLogger.LogDev($"FunctionA: 琴对象发送广播 '{broadcastMessage}'");
+                        GameLogger.LogDev($"FunctionA: 调用QinSpecialLogic.OnPlayerInteract('{player.CarryCharacter}')");
+                        qinLogic.OnPlayerInteract(player.CarryCharacter);
+                        GameLogger.LogDev($"FunctionA: QinSpecialLogic.OnPlayerInteract调用完成");
+                    }
+                    else
+                    {
+                        GameLogger.LogWarning($"FunctionA: 琴对象 '{gameObject.name}' 没有QinSpecialLogic脚本组件");
                     }
                     
                     // 琴对象不销毁，保持可重复交互
@@ -443,40 +541,6 @@ public class Highlight : MonoBehaviour
                 else
                 {
                     GameLogger.LogDev($"FunctionA: 玩家携带字符为空，琴对象无反应");
-                    return;
-                }
-            }
-            
-            // 特殊处理："滩"对象调用BeachObject脚本
-            if (letter == "滩")
-            {
-                if (player != null && !string.IsNullOrEmpty(player.CarryCharacter))
-                {
-                    // 调用BeachObject脚本的滩涂互动逻辑
-                    BeachObject beachObject = GetComponent<BeachObject>();
-                    if (beachObject != null)
-                    {
-                        beachObject.ExecuteBeachInteraction();
-                    }
-                    else
-                    {
-                        GameLogger.LogWarning("FunctionA: 滩对象没有BeachObject脚本组件");
-                    }
-                    
-                    // 发送广播用于其他系统（如提示系统）
-                    string broadcastMessage = $"滩{player.CarryCharacter}";
-                    if (BroadcastManager.Instance != null)
-                    {
-                        BroadcastManager.Instance.BroadcastToAll(broadcastMessage);
-                        GameLogger.LogDev($"FunctionA: 滩对象发送广播 '{broadcastMessage}'");
-                    }
-                    
-                    // 滩对象不销毁，保持可重复交互
-                    return;
-                }
-                else
-                {
-                    GameLogger.LogDev($"FunctionA: 玩家携带字符为空，滩对象无反应");
                     return;
                 }
             }
@@ -808,7 +872,8 @@ public class Highlight : MonoBehaviour
         if (player != null)
         {
             // 使用新的SetCarryCharacter方法，会自动更新米字格图片
-            player.SetCarryCharacter("人");
+            string initialChar = player.GetInitialCarryCharacter();
+            player.SetCarryCharacter(initialChar);
         }
         
         if (BroadcastManager.Instance != null)
@@ -1302,5 +1367,6 @@ public class Highlight : MonoBehaviour
             }
         }
     }
+    
     
 }

@@ -16,6 +16,9 @@ public static class GameLogger
     // 全局日志开关配置
     private static readonly bool ENABLE_USER_LOGS = true;
     private static readonly bool ENABLE_SYSTEM_LOGS = false;  // Release版本建议关闭
+    
+    // 分类日志：可独立开关
+    public static bool ENABLE_PLAYER_LOGS = false; // 允许在运行时或初始化时关闭/开启Player日志
 
     #region 开发环境专用日志 (Release版本完全移除)
     
@@ -48,6 +51,17 @@ public static class GameLogger
     public static void LogDevFormat(string format, params object[] args)
     {
         UnityEngine.Debug.Log($"[DEV] {string.Format(format, args)}");
+    }
+
+    /// <summary>
+    /// 开发环境专用日志（Player分类）- 可通过 ENABLE_PLAYER_LOGS 开关禁用
+    /// </summary>
+    [Conditional("UNITY_EDITOR")]
+    [Conditional("DEVELOPMENT_BUILD")]
+    public static void LogDevPlayer(string message)
+    {
+        if (!ENABLE_PLAYER_LOGS) return;
+        UnityEngine.Debug.Log($"[DEV][Player] {message}");
     }
 
     #endregion

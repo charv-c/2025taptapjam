@@ -40,6 +40,7 @@ public class PublicData : MonoBehaviour
     [Header("自动提示字典")]
     [SerializeField] private List<StringKeyValueMapping> autoHintDictList = new List<StringKeyValueMapping>();
     
+    
     public static List<string> targetList = new List<string>()
     {
         "金", "相", "便", "间"
@@ -52,6 +53,7 @@ public class PublicData : MonoBehaviour
     
     // 静态场景名称
     public static string sceneName;
+    
     
 
     
@@ -129,11 +131,44 @@ public class PublicData : MonoBehaviour
         {"拼王人", "「王」得「人」心，则江山「全」"},
         {"拼全丷", "「全」字加盖「丷」，点缀成「金」"},
 
+        {"琴默认提示", "一把「解语琴」，似乎可以解读文字背后的另一面"},
+        {"琴季", "拨动「季」节之弦，春夏随心意而变"},
+        {"琴雅", "「雅」音的反面藏有玄机，去问问那把琴"},
+        {"琴孤", "「孤」身落寞，或许弹琴能带来「欣」喜"},
+
+        {"子米籽", "「米」中之「子」，是为草木之「籽」"},
+        {"子瓜孤", "「子」与「瓜」分，孑然一身是为「孤」"},
+        {"子皿孟", "「子」立「皿」上，有先贤之风，是为「孟」"},
+        {"牙草芽", "「牙」遇「草」木，破土而出为「芽」"},
+        {"牙隹雅", "「牙」侧有鸟「隹」，其鸣高「雅」"},
+        {"牙虫蚜", "食叶之「虫」，附于草木为「蚜」"},
+        {"牙穴穿", "以「牙」钻「穴」，破壁而「穿」"},
+
+        {"俗", "「雅」音反转，琴弦拨动，得市井「俗」"},
+        {"欣", "「孤」苦不再，琴音慰藉，得心中「欣」"},
+        {"时", "铜壶滴漏，寸寸光阴，可得「时」"},
+        {"童", "孩童嬉戏，拾得无邪之「童」"},
+
+        {"拼谷欠", "心有所「欠」，如空「谷」传响，是为「欲」"},
+        {"拼人寸", "以「人」之手，度「寸」心，倾囊相「付」"},
+        {"拼日立", "「日」光下「立」影，言语有声是为「音」"},
+        {"拼口斤", "以「口」为耳，字字千「斤」，侧耳「听」"},
+
+        // 芽与滩涂互动提示
+        {"芽夏季", "「芽」逢盛夏，终得绽放成「花」"},
+        {"芽春季", "「芽」喜盛夏，待季节更迭再试吧"},
+        
+        // 滩涂描述提示
+        {"滩涂描述", "一片湿润滩涂，土质肥沃，适合生命成长"},
+        
         // Level3关卡特殊彩蛋提示
         {"拼一土", "人得「一」「土」，可称为「王」"},
 
         // 选择数量限制提示
         {"select_limit", "最多只能选择两个字"},
+
+        // 琴的默认提示
+        
 
     };
     
@@ -148,6 +183,7 @@ public class PublicData : MonoBehaviour
         
         // 初始化场景名称
         sceneName = nextSceneName;
+        
         
         targetPositionDict.Clear();
         foreach (var mapping in targetPositionMappings)
@@ -221,8 +257,7 @@ public class PublicData : MonoBehaviour
             }
         }
         
-        // 初始化自动提示字典
-        autoHintDict.Clear();
+        // 初始化自动提示字典（不清空现有内容，只添加Inspector中配置的内容）
         foreach (var mapping in autoHintDictList)
         {
             if (!string.IsNullOrEmpty(mapping.key) && !string.IsNullOrEmpty(mapping.value))
@@ -544,6 +579,7 @@ public class PublicData : MonoBehaviour
         autoHintDict.Clear();
         listofhua.Clear();
     }
+    
 }
 
 [System.Serializable]

@@ -1,5 +1,6 @@
 using UnityEngine;
 using System.Collections;
+using System.Linq;
 
 /// <summary>
 /// 滩涂物体脚本 - 处理所有滩涂相关的特殊逻辑
@@ -49,20 +50,193 @@ public class BeachObject : MonoBehaviour
     }
     
     /// <summary>
+    /// 处理芽与滩涂的互动逻辑
+    /// </summary>
+    public void HandleYaBeachInteraction()
+    {
+        // 从Level3Manager获取当前季节
+        if (level3Manager == null)
+        {
+            level3Manager = FindObjectOfType<Level3Manager>();
+        }
+        
+        if (level3Manager == null)
+        {
+            GameLogger.LogWarning("HandleYaBeachInteraction: 未找到Level3Manager，使用默认春季逻辑");
+            ShowSeasonHint("芽春季");
+            return;
+        }
+        
+        GameLogger.LogDev($"HandleYaBeachInteraction: 开始处理芽与滩涂互动，当前季节: {level3Manager.GetCurrentSeason()}");
+        
+        if (level3Manager.IsSummer())
+        {
+            // 夏季：显示花和短尾鸟，显示夏季提示
+            GameLogger.LogDev("HandleYaBeachInteraction: 当前为夏季，执行夏季逻辑");
+            
+            // 显示花（在靠近"牙"的区域一侧）
+            ShowFlowerNearYa();
+            
+            // 延迟0.5秒显示短尾鸟（隹）
+            StartCoroutine(ShowBirdWithDelay());
+            
+            // 显示夏季提示
+            ShowSeasonHint("芽夏季");
+        }
+        else if (level3Manager.IsSpring())
+        {
+            // 春季：只显示春季提示
+            GameLogger.LogDev("HandleYaBeachInteraction: 当前为春季，执行春季逻辑");
+            ShowSeasonHint("芽春季");
+        }
+        else
+        {
+            // 其他季节：显示春季提示（默认）
+            GameLogger.LogDev($"HandleYaBeachInteraction: 当前季节为 {level3Manager.GetCurrentSeason()}，使用春季提示");
+            ShowSeasonHint("芽春季");
+        }
+    }
+    
+    /// <summary>
+    /// 显示靠近"牙"区域的花
+    /// </summary>
+    private void ShowFlowerNearYa()
+    {
+        GameLogger.LogDev("ShowFlowerNearYa: 开始显示靠近牙区域的花");
+        
+        // 直接通过引用显示花对象
+        if (flowerObject != null)
+        {
+            // 显示该对象
+            SpriteRenderer spriteRenderer = flowerObject.GetComponent<SpriteRenderer>();
+            if (spriteRenderer != null)
+            {
+                spriteRenderer.enabled = true;
+                GameLogger.LogDev($"ShowFlowerNearYa: 显示花对象: {flowerObject.name}");
+            }
+            
+            // 确保GameObject是激活的
+            if (!flowerObject.activeInHierarchy)
+            {
+                flowerObject.SetActive(true);
+                GameLogger.LogDev($"ShowFlowerNearYa: 激活花对象: {flowerObject.name}");
+            }
+        }
+        else
+        {
+            GameLogger.LogWarning("ShowFlowerNearYa: flowerObject引用为空，无法显示花");
+        }
+    }
+    
+    
+    /// <summary>
+    /// 延迟显示短尾鸟（隹）
+    /// </summary>
+    /// <returns>协程</returns>
+    private System.Collections.IEnumerator ShowBirdWithDelay()
+    {
+        GameLogger.LogDev("ShowBirdWithDelay: 开始延迟显示短尾鸟");
+        
+        // 延迟指定时间
+        yield return new WaitForSeconds(delayBeforeShowZhui);
+        
+        // 直接通过引用显示隹对象
+        if (zhuiObject != null)
+        {
+            // 显示该对象
+            SpriteRenderer spriteRenderer = zhuiObject.GetComponent<SpriteRenderer>();
+            if (spriteRenderer != null)
+            {
+                spriteRenderer.enabled = true;
+                GameLogger.LogDev($"ShowBirdWithDelay: 显示隹对象: {zhuiObject.name}");
+            }
+            
+            // 确保GameObject是激活的
+            if (!zhuiObject.activeInHierarchy)
+            {
+                zhuiObject.SetActive(true);
+                GameLogger.LogDev($"ShowBirdWithDelay: 激活隹对象: {zhuiObject.name}");
+            }
+            
+            // 如果有Highlight组件，也启用它
+            Highlight highlight = zhuiObject.GetComponent<Highlight>();
+            if (highlight != null)
+            {
+                highlight.enabled = true;
+                GameLogger.LogDev($"ShowBirdWithDelay: 启用隹对象的Highlight组件");
+            }
+        }
+        else
+        {
+            GameLogger.LogWarning("ShowBirdWithDelay: zhuiObject引用为空，无法显示隹");
+        }
+        
+        GameLogger.LogDev("ShowBirdWithDelay: 已显示短尾鸟（隹）");
+    }
+    
+    /// <summary>
+    /// 显示季节提示
+    /// </summary>
+    /// <param name="hintKey">提示键</param>
+    private void ShowSeasonHint(string hintKey)
+    {
+        GameLogger.LogDev($"ShowSeasonHint: 显示季节提示，键: {hintKey}");
+        
+        // 通过广播系统显示季节提示
+        if (BroadcastManager.Instance != null)
+        {
+            BroadcastManager.Instance.BroadcastToAll(hintKey);
+            GameLogger.LogDev($"ShowSeasonHint: 已发送广播 '{hintKey}'");
+        }
+        else
+        {
+            GameLogger.LogWarning("ShowSeasonHint: 无法显示季节提示，BroadcastManager不可用");
+        }
+    }
+    
+    /// <summary>
+    /// 启用指定字母的Highlight组件
+    /// </summary>
+    /// <param name="letter">字母</param>
+    private void EnableHighlightByLetter(string letter)
+    {
+        // 查找场景中所有带有Highlight脚本的对象
+        Highlight[] allHighlights = FindObjectsOfType<Highlight>();
+        
+        foreach (Highlight highlight in allHighlights)
+        {
+            if (highlight != null && highlight.letter == letter)
+            {
+                // 启用Highlight组件
+                highlight.enabled = true;
+                
+                // 显示对象
+                highlight.ShowObject();
+                
+                GameLogger.LogDev($"EnableHighlightByLetter: 已启用并显示字母 '{letter}' 的Highlight组件");
+                return;
+            }
+        }
+        
+        GameLogger.LogWarning($"EnableHighlightByLetter: 未找到字母 '{letter}' 的Highlight组件");
+    }
+    
+    /// <summary>
     /// 执行滩涂互动逻辑
     /// 由Highlight脚本调用
     /// </summary>
-    public void ExecuteBeachInteraction()
+    /// <param name="carryCharacter">玩家携带的字符</param>
+    public void ExecuteBeachInteraction(string carryCharacter = "")
     {
         if (enableDebugLog)
         {
-            Debug.Log("BeachObject: 开始执行滩涂互动逻辑");
+            Debug.Log($"BeachObject: 开始执行滩涂互动逻辑，玩家携带字符: '{carryCharacter}'");
         }
         
-        // 获取player1的携带字符
-        string player1Char = GetPlayer1CarryCharacter();
+        // 如果没有传递字符参数，尝试获取player1的携带字符
+        string playerChar = !string.IsNullOrEmpty(carryCharacter) ? carryCharacter : GetPlayer1CarryCharacter();
         
-        if (player1Char == "芽")
+        if (playerChar == "芽")
         {
             // 检查当前季节
             bool isSpring = IsCurrentSeasonSpring();
@@ -70,7 +244,7 @@ public class BeachObject : MonoBehaviour
             if (isSpring)
             {
                 // 春季：显示等待提示
-                ShowAutoHint("「芽」喜盛夏，待季节更迭再试吧");
+                ShowAutoHint("芽春季");
             }
             else
             {
@@ -81,7 +255,7 @@ public class BeachObject : MonoBehaviour
         else
         {
             // 其他字符：显示滩涂描述
-            ShowAutoHint("一片湿润滩涂，土质肥沃，适合生命成长");
+            ShowAutoHint("滩涂描述");
         }
     }
     
@@ -150,7 +324,7 @@ public class BeachObject : MonoBehaviour
         ShowFlowerObject();
         
         // 显示提示
-        ShowAutoHint("「芽」逢盛夏，终得绽放成「花」");
+        ShowAutoHint("芽夏季");
         
         // 延迟显示隹物体
         StartCoroutine(ShowZhuiObjectAfterDelay());
@@ -283,22 +457,46 @@ public class BeachObject : MonoBehaviour
     }
     
     /// <summary>
-    /// 显示自动提示
+    /// 显示自动提示 - 通过广播系统触发autoHint字典中的对应提示
     /// </summary>
-    /// <param name="message">提示消息</param>
-    private void ShowAutoHint(string message)
+    /// <param name="hintKey">提示键（对应autoHint字典中的键）</param>
+    private void ShowAutoHint(string hintKey)
     {
-        if (autoHint != null)
+        if (enableDebugLog)
         {
-            autoHint.ReceiveBroadcast(message);
+            Debug.Log($"BeachObject: 尝试显示提示，键: '{hintKey}'");
+        }
+        
+        // 检查autoHintDict中是否有对应的键
+        
+        if (PublicData.autoHintDict != null && PublicData.autoHintDict.ContainsKey(hintKey))
+        {
+            string hintText = PublicData.autoHintDict[hintKey];
             if (enableDebugLog)
             {
-                Debug.Log($"BeachObject: 已显示提示 - {message}");
+                Debug.Log($"BeachObject: 找到提示文本: '{hintText}'");
+            }
+            
+            // 直接调用AutoHint显示提示
+            if (autoHint != null)
+            {
+                autoHint.ReceiveBroadcast(hintKey);
+                if (enableDebugLog)
+                {
+                    Debug.Log($"BeachObject: 已调用AutoHint显示提示: '{hintText}'");
+                }
+            }
+            else
+            {
+                Debug.LogWarning("BeachObject: AutoHint组件为空，无法显示提示");
             }
         }
         else
         {
-            Debug.LogWarning("BeachObject: AutoHint组件为空，无法显示提示");
+            if (enableDebugLog)
+            {
+                Debug.LogWarning($"BeachObject: autoHintDict中未找到键 '{hintKey}'");
+            }
         }
     }
     

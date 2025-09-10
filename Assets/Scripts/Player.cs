@@ -309,9 +309,9 @@ public class Player : MonoBehaviour
     // R键按下时的处理
     private void OnRKeyPressed()
     {
-        if (CarryCharacter != "人")
+        if (CarryCharacter != initialCarryCharacter)
         {
-            SetCarryCharacter("人");
+            SetCarryCharacter(initialCarryCharacter);
         }
         
         RestoreAllHighlightScripts();
@@ -541,7 +541,7 @@ public class Player : MonoBehaviour
         ResetAllMiSquares();
     }
     
-    // 将所有米字格设置为"人"对应的图片
+    // 将所有米字格设置为初始字符对应的图片
     private void ResetAllMiSquares()
     {
         // 查找场景中所有带有MiSquareController脚本的对象
@@ -551,12 +551,12 @@ public class Player : MonoBehaviour
         {
             if (miSquare != null)
             {
-                // 设置为"人"对应的米字格图片
-                miSquare.SetMiSquareSprite("人");
+                // 设置为初始字符对应的米字格图片
+                miSquare.SetMiSquareSprite(initialCarryCharacter);
             }
         }
         
-        GameLogger.LogDev("Player: 已重置所有米字格为'人'字符");
+        GameLogger.LogDev($"Player: 已重置所有米字格为'{initialCarryCharacter}'字符");
     }
     
     // 获取当前携带的字符
