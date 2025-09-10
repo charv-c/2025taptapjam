@@ -103,6 +103,21 @@ public class QinSpecialLogic : MonoBehaviour
             {
                 Debug.LogWarning("QinSpecialLogic: BroadcastManager.Instance为null，无法发送广播");
             }
+
+            // 直接调用AutoHint作为兜底，避免广播路由缺失导致不显示
+            var autoHint = FindObjectOfType<AutoHint>();
+            if (autoHint != null)
+            {
+                autoHint.ReceiveBroadcast(broadcastMessage);
+                if (enableLogging)
+                {
+                    Debug.Log($"QinSpecialLogic: 已直接调用AutoHint显示 '{broadcastMessage}'");
+                }
+            }
+            else if (enableLogging)
+            {
+                Debug.LogWarning("QinSpecialLogic: 未找到AutoHint组件，无法直接显示提示");
+            }
         }
         else
         {
