@@ -32,6 +32,10 @@ public class Level3Manager : MonoBehaviour
     [SerializeField] private bool enableEasterEgg = true;
     [SerializeField] private bool showEasterEggInfo = true;
     
+    [Header("特殊对象引用")]
+    [SerializeField] private BeachObject beachObject; // 对滩涂对象的引用
+    [SerializeField] private BackgroundManager backgroundManager; // 对背景管理器的引用
+    
     // 事件：季节切换时触发
     public System.Action<SeasonType> OnSeasonChanged;
     
@@ -187,8 +191,22 @@ public class Level3Manager : MonoBehaviour
     /// </summary>
     public void ToggleSeason()
     {
-        SeasonType newSeason = currentSeason == SeasonType.Spring ? SeasonType.Summer : SeasonType.Spring;
-        SwitchToSeason(newSeason);
+        SeasonType originalSeason = currentSeason;
+        currentSeason = (currentSeason == SeasonType.Spring) ? SeasonType.Summer : SeasonType.Spring;
+        GameLogger.LogDev($"Level3Manager: 季节已切换为 {currentSeason}");
+        
+        // 季节切换后，检查是否需要将“芽”变为“瓜”
+        if (originalSeason == SeasonType.Spring && currentSeason == SeasonType.Summer)
+        {
+            if (beachObject != null)
+            {
+                beachObject.TransformYaToGuaOnSeasonChange();
+            }
+            else
+            {
+                GameLogger.LogWarning("Level3Manager: BeachObject引用未设置，无法执行芽变瓜的逻辑。");
+            }
+        }
     }
     
     /// <summary>
@@ -499,6 +517,64 @@ public class Level3Manager : MonoBehaviour
         ResetEasterEgg();
     }
     
+    /// <summary>
+    /// 添加字符串到可用字符串列表
+    /// </summary>
+    /// <param name="value">要添加的字符串</param>
+    private void AddStringToAvailableList(string value)
+    {
+        if (string.IsNullOrEmpty(value)) return;
+        
+        // 查找StringSelector并添加字符串
+        StringSelector stringSelector = FindObjectOfType<StringSelector>();
+        if (stringSelector != null)
+        {
+            stringSelector.AddAvailableString(value);
+            
+            if (showDebugInfo)
+            {
+                GameLogger.LogDev($"Level3Manager: 已添加字符串 '{value}' 到可用列表");
+            }
+            
+            // 播放取字音效
+            if (AudioManager.Instance != null)
+            {
+                AudioManager.Instance.PlaySFX(AudioManager.Instance.sfxAcquire);
+            }
+        }
+        else
+        {
+            GameLogger.LogWarning($"Level3Manager: 未找到StringSelector，无法添加字符串 '{value}'");
+        }
+    }
+    
+    /// <summary>
+    /// 根据letter删除所有对应的Highlight脚本
+    /// </summary>
+    /// <param name="letter">要删除的letter值</param>
+    private void RemoveHighlightsByLetter(string letter)
+    {
+        if (string.IsNullOrEmpty(letter)) return;
+        
+        // 查找所有Highlight组件
+        Highlight[] allHighlights = FindObjectsOfType<Highlight>(true);
+        int removedCount = 0;
+        
+        foreach (var highlight in allHighlights)
+        {
+            if (highlight != null && highlight.letter == letter)
+            {
+                UnityEngine.Object.Destroy(highlight);
+                removedCount++;
+            }
+        }
+        
+        if (showDebugInfo)
+        {
+            GameLogger.LogDev($"Level3Manager: 已从 {removedCount} 个对象上移除 Highlight（letter=='{letter}'）");
+        }
+    }
+    
     // ============= 收集字符串管理 =============
     
     /// <summary>
@@ -657,14 +733,58 @@ public class Level3Manager : MonoBehaviour
             GameLogger.LogDev($"Level3Manager: 收到广播 '{broadcastedValue}'");
         }
 
-        // 收到"琴季"时，切换季节
+        // 收到"琴季"时，切换季节和背景
         if (broadcastedValue == "琴季")
         {
             if (showDebugInfo)
             {
-                GameLogger.LogDev("Level3Manager: 收到'琴季'广播，执行季节切换");
+                GameLogger.LogDev("Level3Manager: 收到'琴季'广播，执行季节和背景切换");
             }
+            
+            // 切换季节
             ToggleSeason();
+            
+            // 切换背景
+            if (backgroundManager != null)
+            {
+                backgroundManager.SwitchBackground();
+                if (showDebugInfo)
+                {
+                    GameLogger.LogDev("Level3Manager: 已切换背景");
+                }
+            }
+            else
+            {
+                GameLogger.LogWarning("Level3Manager: 未找到BackgroundManager，无法切换背景");
+            }
+        }
+        // 收到"琴雅"时，获得"俗"字并删除"隹"对象
+        else if (broadcastedValue == "琴雅")
+        {
+            if (showDebugInfo)
+            {
+                GameLogger.LogDev("Level3Manager: 收到'琴雅'广播，获得'俗'字");
+            }
+            
+            // 1) 添加"俗"字到可用字符串列表
+            AddStringToAvailableList("俗");
+            
+            // 2) 删除所有letter=="隹"的对象上的Highlight脚本
+            RemoveHighlightsByLetter("隹");
+        }
+        // 收到"琴孤"时，获得"欣"字并删除"瓜"对象
+        else if (broadcastedValue == "琴孤")
+        {
+            if (showDebugInfo)
+            {
+                GameLogger.LogDev("Level3Manager: 收到'琴孤'广播，获得'欣'字");
+            }
+            
+            // 1) 添加"欣"字到可用字符串列表
+            AddStringToAvailableList("欣");
+            
+            // 2) 删除所有letter=="瓜"的对象上的Highlight脚本
+            RemoveHighlightsByLetter("瓜");
         }
         
         // 处理彩蛋广播
