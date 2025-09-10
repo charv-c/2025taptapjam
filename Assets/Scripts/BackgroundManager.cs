@@ -11,10 +11,10 @@ public class BackgroundManager : MonoBehaviour
     [SerializeField] private SpriteRenderer rightBackground;
     
     [Header("背景图片")]
-    [SerializeField] private Sprite rainyLeftBackground;
-    [SerializeField] private Sprite rainyRightBackground;
-    [SerializeField] private Sprite sunnyLeftBackground;
-    [SerializeField] private Sprite sunnyRightBackground;
+    [SerializeField] private Sprite initialLeftBackground;
+    [SerializeField] private Sprite initialRightBackground;
+    [SerializeField] private Sprite swappedLeftBackground;
+    [SerializeField] private Sprite swappedRightBackground;
     
     [Header("调试设置")]
     [SerializeField] private bool enableLogging = true;
@@ -34,72 +34,58 @@ public class BackgroundManager : MonoBehaviour
         
         if (enableLogging)
         {
-            Debug.Log($"BackgroundManager: 初始化完成 - 左背景: {leftBackground?.gameObject.name ?? "null"}, 右背景: {rightBackground?.gameObject.name ?? "null"}");
+            GameLogger.LogDev($"BackgroundManager: 初始化完成 - 左背景: {leftBackground?.gameObject.name ?? "null"}, 右背景: {rightBackground?.gameObject.name ?? "null"}");
         }
     }
     
     /// <summary>
-    /// 切换到雨天背景
+    /// 切换到初始背景
     /// </summary>
-    public void SwitchToRainyBackground()
+    public void SwitchToInitialState()
     {
-        if (leftBackground != null && rainyLeftBackground != null)
+        if (leftBackground != null && initialLeftBackground != null)
         {
-            leftBackground.sprite = rainyLeftBackground;
-            if (enableLogging)
-            {
-                Debug.Log($"BackgroundManager: 左背景已切换到雨天背景");
-            }
+            leftBackground.sprite = initialLeftBackground;
         }
         else
         {
-            Debug.LogWarning("BackgroundManager: 左背景或雨天背景图片未设置");
+            GameLogger.LogWarning("BackgroundManager: 左背景或初始背景图未设置");
         }
         
-        if (rightBackground != null && rainyRightBackground != null)
+        if (rightBackground != null && initialRightBackground != null)
         {
-            rightBackground.sprite = rainyRightBackground;
-            if (enableLogging)
-            {
-                Debug.Log($"BackgroundManager: 右背景已切换到雨天背景");
-            }
+            rightBackground.sprite = initialRightBackground;
         }
         else
         {
-            Debug.LogWarning("BackgroundManager: 右背景或雨天背景图片未设置");
+            GameLogger.LogWarning("BackgroundManager: 右背景或初始背景图未设置");
         }
+        GameLogger.LogDev("BackgroundManager: 已切换到初始背景");
     }
     
     /// <summary>
-    /// 切换到晴天背景
+    /// 切换到切换后的背景
     /// </summary>
-    public void SwitchToSunnyBackground()
+    public void SwitchToSwappedState()
     {
-        if (leftBackground != null && sunnyLeftBackground != null)
+        if (leftBackground != null && swappedLeftBackground != null)
         {
-            leftBackground.sprite = sunnyLeftBackground;
-            if (enableLogging)
-            {
-                Debug.Log($"BackgroundManager: 左背景已切换到晴天背景");
-            }
+            leftBackground.sprite = swappedLeftBackground;
         }
         else
         {
-            Debug.LogWarning("BackgroundManager: 左背景或晴天背景图片未设置");
+            GameLogger.LogWarning("BackgroundManager: 左背景或切换后背景图未设置");
         }
         
-        if (rightBackground != null && sunnyRightBackground != null)
+        if (rightBackground != null && swappedRightBackground != null)
         {
-            rightBackground.sprite = sunnyRightBackground;
-            if (enableLogging)
-            {
-                Debug.Log($"BackgroundManager: 右背景已切换到晴天背景");
-            }
+            rightBackground.sprite = swappedRightBackground;
         }
         else
         {
-            Debug.LogWarning("BackgroundManager: 右背景或晴天背景图片未设置");
+            GameLogger.LogWarning("BackgroundManager: 右背景或切换后背景图未设置");
         }
+        GameLogger.LogDev("BackgroundManager: 已切换到切换后背景");
     }
     
     /// <summary>
@@ -108,15 +94,15 @@ public class BackgroundManager : MonoBehaviour
     /// <param name="broadcastedValue">广播的值</param>
     public void ReceiveBroadcast(string broadcastedValue)
     {
-        if (enableLogging)
+        if (GameLogger.IsDevLogEnabled())
         {
-            Debug.Log($"BackgroundManager: 接收到广播: {broadcastedValue}");
+            GameLogger.LogDev($"BackgroundManager: 接收到广播: {broadcastedValue}");
         }
         
-        // 处理"停"广播，切换到晴天背景
+        // 处理"停"广播，切换到切换后的背景
         if (broadcastedValue == "停")
         {
-            SwitchToSunnyBackground();
+            SwitchToSwappedState();
         }
     }
     
@@ -129,7 +115,7 @@ public class BackgroundManager : MonoBehaviour
         leftBackground = spriteRenderer;
         if (enableLogging)
         {
-            Debug.Log($"BackgroundManager: 已设置左背景: {spriteRenderer?.gameObject.name ?? "null"}");
+            GameLogger.LogDev($"BackgroundManager: 已设置左背景: {spriteRenderer?.gameObject.name ?? "null"}");
         }
     }
     
@@ -142,56 +128,56 @@ public class BackgroundManager : MonoBehaviour
         rightBackground = spriteRenderer;
         if (enableLogging)
         {
-            Debug.Log($"BackgroundManager: 已设置右背景: {spriteRenderer?.gameObject.name ?? "null"}");
+            GameLogger.LogDev($"BackgroundManager: 已设置右背景: {spriteRenderer?.gameObject.name ?? "null"}");
         }
     }
     
     /// <summary>
-    /// 设置雨天背景图片
+    /// 设置初始背景图片
     /// </summary>
-    /// <param name="leftSprite">左雨天背景</param>
-    /// <param name="rightSprite">右雨天背景</param>
-    public void SetRainyBackgroundSprites(Sprite leftSprite, Sprite rightSprite)
+    /// <param name="leftSprite">左初始背景</param>
+    /// <param name="rightSprite">右初始背景</param>
+    public void SetInitialBackgroundSprites(Sprite leftSprite, Sprite rightSprite)
     {
-        rainyLeftBackground = leftSprite;
-        rainyRightBackground = rightSprite;
-        if (enableLogging)
+        initialLeftBackground = leftSprite;
+        initialRightBackground = rightSprite;
+        if (GameLogger.IsDevLogEnabled())
         {
-            Debug.Log($"BackgroundManager: 已设置雨天背景图片 - 左: {leftSprite?.name ?? "null"}, 右: {rightSprite?.name ?? "null"}");
+            GameLogger.LogDev($"BackgroundManager: 已设置初始背景图片 - 左: {leftSprite?.name ?? "null"}, 右: {rightSprite?.name ?? "null"}");
         }
     }
     
     /// <summary>
-    /// 设置晴天背景图片
+    /// 设置切换后背景图片
     /// </summary>
-    /// <param name="leftSprite">左晴天背景</param>
-    /// <param name="rightSprite">右晴天背景</param>
-    public void SetSunnyBackgroundSprites(Sprite leftSprite, Sprite rightSprite)
+    /// <param name="leftSprite">左切换后背景</param>
+    /// <param name="rightSprite">右切换后背景</param>
+    public void SetSwappedBackgroundSprites(Sprite leftSprite, Sprite rightSprite)
     {
-        sunnyLeftBackground = leftSprite;
-        sunnyRightBackground = rightSprite;
-        if (enableLogging)
+        swappedLeftBackground = leftSprite;
+        swappedRightBackground = rightSprite;
+        if (GameLogger.IsDevLogEnabled())
         {
-            Debug.Log($"BackgroundManager: 已设置晴天背景图片 - 左: {leftSprite?.name ?? "null"}, 右: {rightSprite?.name ?? "null"}");
+            GameLogger.LogDev($"BackgroundManager: 已设置切换后背景图片 - 左: {leftSprite?.name ?? "null"}, 右: {rightSprite?.name ?? "null"}");
         }
     }
     
     /// <summary>
-    /// 手动切换到雨天背景（用于测试）
+    /// 手动切换到初始背景（用于测试）
     /// </summary>
-    [ContextMenu("切换到雨天背景")]
-    public void TestSwitchToRainy()
+    [ContextMenu("切换到初始背景")]
+    public void TestSwitchToInitial()
     {
-        SwitchToRainyBackground();
+        SwitchToInitialState();
     }
     
     /// <summary>
-    /// 手动切换到晴天背景（用于测试）
+    /// 手动切换到切换后背景（用于测试）
     /// </summary>
-    [ContextMenu("切换到晴天背景")]
-    public void TestSwitchToSunny()
+    [ContextMenu("切换到切换后背景")]
+    public void TestSwitchToSwapped()
     {
-        SwitchToSunnyBackground();
+        SwitchToSwappedState();
     }
     
     /// <summary>
@@ -200,10 +186,32 @@ public class BackgroundManager : MonoBehaviour
     [ContextMenu("模拟停广播")]
     public void TestStopBroadcast()
     {
-        if (enableLogging)
+        if (GameLogger.IsDevLogEnabled())
         {
-            Debug.Log("BackgroundManager: 模拟发送'停'广播");
+            GameLogger.LogDev("BackgroundManager: 模拟发送'停'广播");
         }
         ReceiveBroadcast("停");
+    }
+
+    /// <summary>
+    /// 通用背景切换方法 - 切换当前背景状态
+    /// </summary>
+    public void SwitchBackground()
+    {
+        if (leftBackground == null || swappedLeftBackground == null || initialLeftBackground == null)
+        {
+            GameLogger.LogWarning("BackgroundManager: 左背景或背景图引用未设置，无法切换。");
+            return;
+        }
+
+        // 基于左背景当前的Sprite来判断应切换到哪个状态
+        if (leftBackground.sprite == swappedLeftBackground)
+        {
+            SwitchToInitialState();
+        }
+        else
+        {
+            SwitchToSwappedState();
+        }
     }
 }

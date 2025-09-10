@@ -13,24 +13,31 @@ public class QinSpecialLogic : MonoBehaviour
     [Tooltip("琴的未选中状态sprite")]
     [SerializeField] private Sprite qinUnselectedSprite;
     
+    [Header("高亮外框配置")]
+    [SerializeField] private GameObject highlightOutline; // 新增：高亮外框的游戏对象引用
+    
     [Header("调试设置")]
     [SerializeField] private bool enableLogging = true;
     
     private SpriteRenderer qinSpriteRenderer;
     private bool isPlayerInRange = false;
-    
+    private Level3Manager level3Manager;
+    private bool hasYaInteracted = false; // 新增：用于确保“雅”的互动只执行一次
+    private bool hasGuInteracted = false; // 新增：用于确保“孤”的互动只执行一次
+
     private void Awake()
     {
         // 获取琴对象的SpriteRenderer组件
         qinSpriteRenderer = GetComponent<SpriteRenderer>();
         if (qinSpriteRenderer == null)
         {
-            Debug.LogError($"QinSpecialLogic: 琴对象 '{gameObject.name}' 没有SpriteRenderer组件");
+            GameLogger.LogError($"QinSpecialLogic: 琴对象 '{gameObject.name}' 没有SpriteRenderer组件");
         }
     }
     
     private void Start()
     {
+        level3Manager = FindObjectOfType<Level3Manager>();
         // 初始化时设置为未选中状态
         SetToUnselectedState();
     }
@@ -42,11 +49,15 @@ public class QinSpecialLogic : MonoBehaviour
     {
         if (enableLogging)
         {
-            Debug.Log($"QinSpecialLogic: 玩家进入琴的触发区域 - {gameObject.name}");
+            GameLogger.LogDev($"QinSpecialLogic: 玩家进入琴的触发区域 - {gameObject.name}");
         }
         
         isPlayerInRange = true;
         SetToSelectedState();
+        if (highlightOutline != null)
+        {
+            highlightOutline.SetActive(true);
+        }
     }
     
     /// <summary>
@@ -56,11 +67,15 @@ public class QinSpecialLogic : MonoBehaviour
     {
         if (enableLogging)
         {
-            Debug.Log($"QinSpecialLogic: 玩家离开琴的触发区域 - {gameObject.name}");
+            GameLogger.LogDev($"QinSpecialLogic: 玩家离开琴的触发区域 - {gameObject.name}");
         }
         
         isPlayerInRange = false;
         SetToUnselectedState();
+        if (highlightOutline != null)
+        {
+            highlightOutline.SetActive(false);
+        }
     }
     
     /// <summary>
@@ -71,7 +86,7 @@ public class QinSpecialLogic : MonoBehaviour
     {
         if (enableLogging)
         {
-            Debug.Log($"QinSpecialLogic: 玩家与琴交互，携带字符: '{carryCharacter}' - {gameObject.name}");
+            GameLogger.LogDev($"QinSpecialLogic: 玩家与琴交互，携带字符: '{carryCharacter}' - {gameObject.name}");
         }
         
         // 确保琴处于选中状态
@@ -84,39 +99,41 @@ public class QinSpecialLogic : MonoBehaviour
         bool isValid = IsValidCharacter(carryCharacter);
         if (enableLogging)
         {
-            Debug.Log($"QinSpecialLogic: 字符 '{carryCharacter}' 是否有效: {isValid}");
+            GameLogger.LogDev($"QinSpecialLogic: 字符 '{carryCharacter}' 是否有效: {isValid}");
         }
         
         if (isValid)
         {
-            // 满足条件，发送广播消息
-            string broadcastMessage = $"琴{carryCharacter}";
-            if (BroadcastManager.Instance != null)
+            switch (carryCharacter)
             {
-                BroadcastManager.Instance.BroadcastToAll(broadcastMessage);
-                if (enableLogging)
-                {
-                    Debug.Log($"QinSpecialLogic: 发送广播 '{broadcastMessage}'");
-                }
-            }
-            else
-            {
-                Debug.LogWarning("QinSpecialLogic: BroadcastManager.Instance为null，无法发送广播");
+                case "季":
+                    // 移除直接调用，只通过广播来触发季节切换，避免双重调用
+                    // level3Manager.ToggleSeason(); // 已移除
+                    
+                    // 背景切换逻辑移到Level3Manager中统一处理
+                    BroadcastManager.Instance.BroadcastToAll("琴季");
+                    break;
+                case "雅":
+                    if (!hasYaInteracted) // 新增：检查是否已互动过
+                    {
+                        hasYaInteracted = true; // 新增：标记为已互动
+                        BroadcastManager.Instance.BroadcastToAll("琴雅");
+                    }
+                    break;
+                case "孤":
+                    if (!hasGuInteracted) // 新增：检查是否已互动过
+                    {
+                        hasGuInteracted = true; // 新增：标记为已互动
+                        BroadcastManager.Instance.BroadcastToAll("琴孤");
+                    }
+                    break;
             }
 
-            // 直接调用AutoHint作为兜底，避免广播路由缺失导致不显示
-            var autoHint = FindObjectOfType<AutoHint>();
-            if (autoHint != null)
+            // 移除多余的AutoHint直接调用，避免重复广播和混乱
+            // 正确的提示会通过上面的广播（琴季、琴雅、琴孤）来触发
+            if (enableLogging)
             {
-                autoHint.ReceiveBroadcast(broadcastMessage);
-                if (enableLogging)
-                {
-                    Debug.Log($"QinSpecialLogic: 已直接调用AutoHint显示 '{broadcastMessage}'");
-                }
-            }
-            else if (enableLogging)
-            {
-                Debug.LogWarning("QinSpecialLogic: 未找到AutoHint组件，无法直接显示提示");
+                GameLogger.LogDev($"QinSpecialLogic: 字符 '{carryCharacter}' 交互完成，已发送对应广播");
             }
         }
         else
@@ -124,7 +141,7 @@ public class QinSpecialLogic : MonoBehaviour
             // 不满足条件，显示默认提示
             if (enableLogging)
             {
-                Debug.Log($"QinSpecialLogic: 字符 '{carryCharacter}' 不满足特殊条件，显示默认提示");
+                GameLogger.LogDev($"QinSpecialLogic: 字符 '{carryCharacter}' 不满足特殊条件，显示默认提示");
             }
             ShowDefaultHint();
         }
@@ -142,12 +159,12 @@ public class QinSpecialLogic : MonoBehaviour
             qinSpriteRenderer.sprite = qinSelectedSprite;
             if (enableLogging)
             {
-                Debug.Log($"QinSpecialLogic: 已切换到选中状态 - {gameObject.name}");
+                GameLogger.LogDev($"QinSpecialLogic: 已切换到选中状态 - {gameObject.name}");
             }
         }
         else
         {
-            Debug.LogWarning($"QinSpecialLogic: 选中状态sprite未设置 - {gameObject.name}");
+            GameLogger.LogWarning($"QinSpecialLogic: 选中状态sprite未设置 - {gameObject.name}");
         }
     }
     
@@ -163,12 +180,12 @@ public class QinSpecialLogic : MonoBehaviour
             qinSpriteRenderer.sprite = qinUnselectedSprite;
             if (enableLogging)
             {
-                Debug.Log($"QinSpecialLogic: 已切换到未选中状态 - {gameObject.name}");
+                GameLogger.LogDev($"QinSpecialLogic: 已切换到未选中状态 - {gameObject.name}");
             }
         }
         else
         {
-            Debug.LogWarning($"QinSpecialLogic: 未选中状态sprite未设置 - {gameObject.name}");
+            GameLogger.LogWarning($"QinSpecialLogic: 未选中状态sprite未设置 - {gameObject.name}");
         }
     }
     
@@ -190,7 +207,7 @@ public class QinSpecialLogic : MonoBehaviour
         qinSelectedSprite = sprite;
         if (enableLogging)
         {
-            Debug.Log($"QinSpecialLogic: 已设置选中状态sprite - {gameObject.name}");
+            GameLogger.LogDev($"QinSpecialLogic: 已设置选中状态sprite - {gameObject.name}");
         }
     }
     
@@ -203,7 +220,7 @@ public class QinSpecialLogic : MonoBehaviour
         qinUnselectedSprite = sprite;
         if (enableLogging)
         {
-            Debug.Log($"QinSpecialLogic: 已设置未选中状态sprite - {gameObject.name}");
+            GameLogger.LogDev($"QinSpecialLogic: 已设置未选中状态sprite - {gameObject.name}");
         }
     }
     
@@ -224,7 +241,7 @@ public class QinSpecialLogic : MonoBehaviour
     {
         if (enableLogging)
         {
-            Debug.Log($"QinSpecialLogic: 显示默认提示");
+            GameLogger.LogDev($"QinSpecialLogic: 显示默认提示");
         }
         
         // 通过广播系统显示默认提示
@@ -233,12 +250,12 @@ public class QinSpecialLogic : MonoBehaviour
             BroadcastManager.Instance.BroadcastToAll("琴默认提示");
             if (enableLogging)
             {
-                Debug.Log("QinSpecialLogic: 通过广播系统发送'琴默认提示'广播");
+                GameLogger.LogDev("QinSpecialLogic: 通过广播系统发送'琴默认提示'广播");
             }
         }
         else
         {
-            Debug.LogWarning("QinSpecialLogic: 无法显示默认提示，BroadcastManager不可用");
+            GameLogger.LogWarning("QinSpecialLogic: 无法显示默认提示，BroadcastManager不可用");
         }
     }
     

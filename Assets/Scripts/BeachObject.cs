@@ -11,7 +11,9 @@ public class BeachObject : MonoBehaviour
     [Header("物体引用")]
     [SerializeField] private GameObject flowerObject;  // 花物体
     [SerializeField] private GameObject zhuiObject;    // 隹物体
-    
+    [SerializeField] private GameObject yaObjectForZi; // “子”区域的“芽”物体
+    [SerializeField] private GameObject guaObject;     // “瓜”物体
+
     [Header("延迟设置")]
     [SerializeField] private float delayBeforeShowZhui = 0.5f; // 显示隹物体前的延迟时间（秒）
     
@@ -40,13 +42,13 @@ public class BeachObject : MonoBehaviour
     /// </summary>
     private void LogComponentStatus()
     {
-        Debug.Log("=== 滩涂物体组件状态 ===");
-        Debug.Log($"PlayerController: {(playerController != null ? "找到" : "未找到")}");
-        Debug.Log($"Level3Manager: {(level3Manager != null ? "找到" : "未找到")}");
-        Debug.Log($"AutoHint: {(autoHint != null ? "找到" : "未找到")}");
-        Debug.Log($"花物体引用: {(flowerObject != null ? "已设置" : "未设置")}");
-        Debug.Log($"隹物体引用: {(zhuiObject != null ? "已设置" : "未设置")}");
-        Debug.Log("==========================");
+        GameLogger.LogDev("=== 滩涂物体组件状态 ===");
+        GameLogger.LogDev($"PlayerController: {(playerController != null ? "找到" : "未找到")}");
+        GameLogger.LogDev($"Level3Manager: {(level3Manager != null ? "找到" : "未找到")}");
+        GameLogger.LogDev($"AutoHint: {(autoHint != null ? "找到" : "未找到")}");
+        GameLogger.LogDev($"花物体引用: {(flowerObject != null ? "已设置" : "未设置")}");
+        GameLogger.LogDev($"隹物体引用: {(zhuiObject != null ? "已设置" : "未设置")}");
+        GameLogger.LogDev("==========================");
     }
     
     /// <summary>
@@ -230,11 +232,11 @@ public class BeachObject : MonoBehaviour
     {
         if (enableDebugLog)
         {
-            Debug.Log($"BeachObject: 开始执行滩涂互动逻辑，玩家携带字符: '{carryCharacter}'");
+            GameLogger.LogDev($"BeachObject: 开始执行滩涂互动逻辑，玩家携带字符: '{carryCharacter}'");
         }
         
-        // 如果没有传递字符参数，尝试获取player1的携带字符
-        string playerChar = !string.IsNullOrEmpty(carryCharacter) ? carryCharacter : GetPlayer1CarryCharacter();
+        // 如果没有传递字符参数，尝试获取当前激活玩家的携带字符
+        string playerChar = carryCharacter;
         
         if (playerChar == "芽")
         {
@@ -250,6 +252,22 @@ public class BeachObject : MonoBehaviour
             {
                 // 非春季（夏季）：执行芽的绽放逻辑
                 ExecuteYaBloomingLogic();
+            }
+        }
+        else if (playerChar == "籽")
+        {
+            // 检查当前季节
+            bool isSpring = IsCurrentSeasonSpring();
+
+            if (isSpring)
+            {
+                // 春季：显示“子”区域的“芽”
+                ExecuteZiPlantingLogic();
+            }
+            else
+            {
+                // 夏季：显示等待提示
+                ShowAutoHint("籽夏季");
             }
         }
         else
@@ -274,7 +292,7 @@ public class BeachObject : MonoBehaviour
                 string carryChar = player1.CarryCharacter;
                 if (enableDebugLog)
                 {
-                    Debug.Log($"BeachObject: Player1携带字符 = {carryChar}");
+                    GameLogger.LogDev($"BeachObject: Player1携带字符 = {carryChar}");
                 }
                 return carryChar;
             }
@@ -282,7 +300,7 @@ public class BeachObject : MonoBehaviour
         
         if (enableDebugLog)
         {
-            Debug.LogWarning("BeachObject: 无法获取Player1的携带字符");
+            GameLogger.LogWarning("BeachObject: 无法获取Player1的携带字符");
         }
         return "";
     }
@@ -298,18 +316,59 @@ public class BeachObject : MonoBehaviour
             bool isSpring = level3Manager.IsSpring();
             if (enableDebugLog)
             {
-                Debug.Log($"BeachObject: 当前季节 = {(isSpring ? "春季" : "夏季")}");
+                GameLogger.LogDev($"BeachObject: 当前季节 = {(isSpring ? "春季" : "夏季")}");
             }
             return isSpring;
         }
         
         if (enableDebugLog)
         {
-            Debug.LogWarning("BeachObject: 无法获取季节信息");
+            GameLogger.LogWarning("BeachObject: 无法获取季节信息");
         }
         return false;
     }
     
+    /// <summary>
+    /// 执行"籽"的种植逻辑
+    /// </summary>
+    private void ExecuteZiPlantingLogic()
+    {
+        if (enableDebugLog)
+        {
+            GameLogger.LogDev("BeachObject: 执行“籽”的种植逻辑");
+        }
+
+        // 显示"子"区域的"芽"物体（"芽"不可交互）
+        ShowObject(yaObjectForZi, "芽");
+        
+        // 显示提示
+        ShowAutoHint("籽春季");
+    }
+
+    /// <summary>
+    /// 当季节从春季切换到夏季时，由Level3Manager调用
+    /// </summary>
+    public void TransformYaToGuaOnSeasonChange()
+    {
+        // 检查“子”区域的“芽”物体是否处于激活状态
+        if (yaObjectForZi != null && yaObjectForZi.activeInHierarchy)
+        {
+            if (enableDebugLog)
+            {
+                GameLogger.LogDev("BeachObject: 检测到季节切换（春->夏）且“子”区域的“芽”已种下，执行变换逻辑。");
+            }
+
+            // 隐藏"芽"
+            HideObject(yaObjectForZi, "芽");
+            
+            // 显示"瓜"（可交互）
+            ShowObject(guaObject, "瓜");
+
+            // 显示提示
+            ShowAutoHint("芽变瓜");
+        }
+    }
+
     /// <summary>
     /// 执行芽的绽放逻辑
     /// </summary>
@@ -317,11 +376,11 @@ public class BeachObject : MonoBehaviour
     {
         if (enableDebugLog)
         {
-            Debug.Log("BeachObject: 执行芽的绽放逻辑");
+            GameLogger.LogDev("BeachObject: 执行芽的绽放逻辑");
         }
         
         // 显示花物体
-        ShowFlowerObject();
+        ShowObject(flowerObject, "花");
         
         // 显示提示
         ShowAutoHint("芽夏季");
@@ -335,32 +394,78 @@ public class BeachObject : MonoBehaviour
     /// </summary>
     private void ShowFlowerObject()
     {
-        if (flowerObject != null)
+        ShowObject(flowerObject, "花");
+    }
+
+    private void ShowObject(GameObject obj, string objectName)
+    {
+        if (obj != null)
         {
             // 使用Highlight脚本显示物体
-            Highlight flowerHighlight = flowerObject.GetComponent<Highlight>();
-            if (flowerHighlight != null)
+            Highlight highlight = obj.GetComponent<Highlight>();
+            if (highlight != null)
             {
-                flowerHighlight.ShowObject();
-                if (enableDebugLog)
+                // 根据物体类型决定是否启用交互
+                // "隹"和"瓜"应该可交互，使用ShowObject()
+                // "花"和"芽"不可交互，使用Show()
+                if (objectName == "隹" || objectName == "瓜")
                 {
-                    Debug.Log($"BeachObject: 已显示花物体 - {flowerObject.name}");
+                    highlight.ShowObject(); // 显示并启用交互
+                    if (enableDebugLog)
+                    {
+                        GameLogger.LogDev($"BeachObject: 已显示可交互{objectName}物体 - {obj.name}");
+                    }
+                }
+                else
+                {
+                    highlight.Show(); // 仅显示，不启用交互
+                    if (enableDebugLog)
+                    {
+                        GameLogger.LogDev($"BeachObject: 已显示不可交互{objectName}物体 - {obj.name}");
+                    }
                 }
             }
             else
             {
                 // 如果没有Highlight脚本，直接激活GameObject
-                flowerObject.SetActive(true);
+                obj.SetActive(true);
                 if (enableDebugLog)
                 {
-                    Debug.Log($"BeachObject: 已激活花物体 - {flowerObject.name}");
+                    GameLogger.LogDev($"BeachObject: 已激活{objectName}物体 - {obj.name}");
                 }
             }
         }
         else
         {
-            // 如果没有设置引用，尝试查找场景中的花物体
-            FindAndShowFlowerObject();
+            GameLogger.LogWarning($"BeachObject: {objectName}物体的引用未设置，无法显示。");
+        }
+    }
+
+    private void HideObject(GameObject obj, string objectName)
+    {
+        if (obj != null)
+        {
+            Highlight highlight = obj.GetComponent<Highlight>();
+            if (highlight != null)
+            {
+                highlight.Hide();
+                if (enableDebugLog)
+                {
+                    GameLogger.LogDev($"BeachObject: 已通过Highlight隐藏{objectName}物体 - {obj.name}");
+                }
+            }
+            else
+            {
+                obj.SetActive(false);
+                if (enableDebugLog)
+                {
+                    GameLogger.LogDev($"BeachObject: 已禁用{objectName}物体 - {obj.name}");
+                }
+            }
+        }
+        else
+        {
+            GameLogger.LogWarning($"BeachObject: {objectName}物体的引用未设置，无法隐藏。");
         }
     }
     
@@ -378,7 +483,7 @@ public class BeachObject : MonoBehaviour
                 highlight.ShowObject();
                 if (enableDebugLog)
                 {
-                    Debug.Log($"BeachObject: 已显示花物体 - {highlight.gameObject.name}");
+                    GameLogger.LogDev($"BeachObject: 已显示花物体 - {highlight.gameObject.name}");
                 }
             }
         }
@@ -392,7 +497,7 @@ public class BeachObject : MonoBehaviour
     {
         if (enableDebugLog)
         {
-            Debug.Log($"BeachObject: 等待 {delayBeforeShowZhui} 秒后显示隹物体");
+            GameLogger.LogDev($"BeachObject: 等待 {delayBeforeShowZhui} 秒后显示隹物体");
         }
         
         // 等待指定时间
@@ -407,33 +512,7 @@ public class BeachObject : MonoBehaviour
     /// </summary>
     private void ShowZhuiObject()
     {
-        if (zhuiObject != null)
-        {
-            // 使用Highlight脚本显示物体
-            Highlight zhuiHighlight = zhuiObject.GetComponent<Highlight>();
-            if (zhuiHighlight != null)
-            {
-                zhuiHighlight.ShowObject();
-                if (enableDebugLog)
-                {
-                    Debug.Log($"BeachObject: 已显示隹物体 - {zhuiObject.name}");
-                }
-            }
-            else
-            {
-                // 如果没有Highlight脚本，直接激活GameObject
-                zhuiObject.SetActive(true);
-                if (enableDebugLog)
-                {
-                    Debug.Log($"BeachObject: 已激活隹物体 - {zhuiObject.name}");
-                }
-            }
-        }
-        else
-        {
-            // 如果没有设置引用，尝试查找场景中的隹物体
-            FindAndShowZhuiObject();
-        }
+        ShowObject(zhuiObject, "隹");
     }
     
     /// <summary>
@@ -450,7 +529,7 @@ public class BeachObject : MonoBehaviour
                 highlight.ShowObject();
                 if (enableDebugLog)
                 {
-                    Debug.Log($"BeachObject: 已显示隹物体 - {highlight.gameObject.name}");
+                    GameLogger.LogDev($"BeachObject: 已显示隹物体 - {highlight.gameObject.name}");
                 }
             }
         }
@@ -464,7 +543,7 @@ public class BeachObject : MonoBehaviour
     {
         if (enableDebugLog)
         {
-            Debug.Log($"BeachObject: 尝试显示提示，键: '{hintKey}'");
+            GameLogger.LogDev($"BeachObject: 尝试显示提示，键: '{hintKey}'");
         }
         
         // 检查autoHintDict中是否有对应的键
@@ -474,7 +553,7 @@ public class BeachObject : MonoBehaviour
             string hintText = PublicData.autoHintDict[hintKey];
             if (enableDebugLog)
             {
-                Debug.Log($"BeachObject: 找到提示文本: '{hintText}'");
+                GameLogger.LogDev($"BeachObject: 找到提示文本: '{hintText}'");
             }
             
             // 直接调用AutoHint显示提示
@@ -483,19 +562,19 @@ public class BeachObject : MonoBehaviour
                 autoHint.ReceiveBroadcast(hintKey);
                 if (enableDebugLog)
                 {
-                    Debug.Log($"BeachObject: 已调用AutoHint显示提示: '{hintText}'");
+                    GameLogger.LogDev($"BeachObject: 已调用AutoHint显示提示: '{hintText}'");
                 }
             }
             else
             {
-                Debug.LogWarning("BeachObject: AutoHint组件为空，无法显示提示");
+                GameLogger.LogWarning("BeachObject: AutoHint组件为空，无法显示提示");
             }
         }
         else
         {
             if (enableDebugLog)
             {
-                Debug.LogWarning($"BeachObject: autoHintDict中未找到键 '{hintKey}'");
+                GameLogger.LogWarning($"BeachObject: autoHintDict中未找到键 '{hintKey}'");
             }
         }
     }
@@ -506,7 +585,7 @@ public class BeachObject : MonoBehaviour
     [ContextMenu("测试滩涂互动")]
     public void TestBeachInteraction()
     {
-        Debug.Log("BeachObject: 开始测试滩涂互动");
+        GameLogger.LogDev("BeachObject: 开始测试滩涂互动");
         ExecuteBeachInteraction();
     }
     
@@ -518,7 +597,7 @@ public class BeachObject : MonoBehaviour
     {
         if (enableDebugLog)
         {
-            Debug.Log("BeachObject: 重置滩涂状态");
+            GameLogger.LogDev("BeachObject: 重置滩涂状态");
         }
         
         // 隐藏花和隹物体
@@ -531,32 +610,10 @@ public class BeachObject : MonoBehaviour
     private void HideFlowerAndZhuiObjects()
     {
         // 隐藏花物体
-        if (flowerObject != null)
-        {
-            Highlight flowerHighlight = flowerObject.GetComponent<Highlight>();
-            if (flowerHighlight != null)
-            {
-                flowerHighlight.HideObject();
-            }
-            else
-            {
-                flowerObject.SetActive(false);
-            }
-        }
+        HideObject(flowerObject, "花");
         
         // 隐藏隹物体
-        if (zhuiObject != null)
-        {
-            Highlight zhuiHighlight = zhuiObject.GetComponent<Highlight>();
-            if (zhuiHighlight != null)
-            {
-                zhuiHighlight.HideObject();
-            }
-            else
-            {
-                zhuiObject.SetActive(false);
-            }
-        }
+        HideObject(zhuiObject, "隹");
         
         // 也查找场景中的花和隹物体并隐藏
         Highlight[] allHighlights = FindObjectsOfType<Highlight>(true);
@@ -570,7 +627,7 @@ public class BeachObject : MonoBehaviour
         
         if (enableDebugLog)
         {
-            Debug.Log("BeachObject: 已隐藏花和隹物体");
+            GameLogger.LogDev("BeachObject: 已隐藏花和隹物体");
         }
     }
 }

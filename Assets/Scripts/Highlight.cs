@@ -1016,44 +1016,8 @@ public class Highlight : MonoBehaviour
                 ShowObject();
             }
         }
-        else if (broadcastedValue == "琴雅")
-        {
-            GameLogger.LogDev($"收到'琴雅'广播，当前对象letter={letter}");
-            // 1) 获得可用字符串："俗"
-            AddValueToAvailableList("俗");
-
-            // 2) 删除所有 letter == "隹" 的对象上的 Highlight 脚本
-            Highlight[] all = FindObjectsOfType<Highlight>(true);
-            int removed = 0;
-            foreach (var h in all)
-            {
-                if (h != null && h.letter == "隹")
-                {
-                    Object.Destroy(h);
-                    removed++;
-                }
-            }
-            GameLogger.LogDev($"已从 {removed} 个对象上移除 Highlight（letter=='隹'）");
-        }
-        else if (broadcastedValue == "琴孤")
-        {
-            GameLogger.LogDev($"收到'琴孤'广播，当前对象letter={letter}");
-            // 1) 获得可用字符串："欣"
-            AddValueToAvailableList("欣");
-
-            // 2) 删除所有 letter == "瓜" 的对象上的 Highlight 脚本
-            Highlight[] all = FindObjectsOfType<Highlight>(true);
-            int removed = 0;
-            foreach (var h in all)
-            {
-                if (h != null && h.letter == "瓜")
-                {
-                    Object.Destroy(h);
-                    removed++;
-                }
-            }
-            GameLogger.LogDev($"已从 {removed} 个对象上移除 Highlight（letter=='瓜'）");
-        }
+        // 移除"琴雅"和"琴孤"的处理逻辑，改由Level3Manager统一处理
+        // 这样避免了每个Highlight对象都重复执行，导致重复添加字符串
         else if (broadcastedValue == "季夏")
         {
             GameLogger.LogDev($"收到'季夏'广播，当前对象letter={letter}");
@@ -1115,7 +1079,7 @@ public class Highlight : MonoBehaviour
         BackgroundManager backgroundManager = FindObjectOfType<BackgroundManager>();
         if (backgroundManager != null)
         {
-            backgroundManager.SwitchToSunnyBackground();
+            backgroundManager.SwitchToSwappedState();
             GameLogger.LogDev("Highlight: 雨停后切换到晴天背景");
         }
         else
