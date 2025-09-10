@@ -541,10 +541,53 @@ public class Level3Manager : MonoBehaviour
             {
                 AudioManager.Instance.PlaySFX(AudioManager.Instance.sfxAcquire);
             }
+            
+            // 播放飞行动画
+            ButtonController buttonController = FindObjectOfType<ButtonController>();
+            if (buttonController != null)
+            {
+                // 延迟一帧后播放飞行动画，确保按钮已创建
+                StartCoroutine(DelayedFlyAnimation(value, buttonController));
+            }
+            else
+            {
+                GameLogger.LogWarning("Level3Manager: 未找到ButtonController，无法播放飞行动画");
+            }
         }
         else
         {
             GameLogger.LogWarning($"Level3Manager: 未找到StringSelector，无法添加字符串 '{value}'");
+        }
+    }
+    
+    /// <summary>
+    /// 延迟播放飞行动画
+    /// </summary>
+    private System.Collections.IEnumerator DelayedFlyAnimation(string character, ButtonController buttonController)
+    {
+        // 等待一帧，确保按钮已创建
+        yield return null;
+        
+        // 查找新创建的按钮
+        StringSelector stringSelector = FindObjectOfType<StringSelector>();
+        if (stringSelector != null)
+        {
+            // 获取最后一个按钮（刚添加的）
+            var buttons = stringSelector.GetStringButtons();
+            if (buttons != null && buttons.Count > 0)
+            {
+                var lastButton = buttons[buttons.Count - 1];
+                if (lastButton != null)
+                {
+                    // 播放飞行动画
+                    buttonController.Fly(character, lastButton.transform);
+                    
+                    if (showDebugInfo)
+                    {
+                        GameLogger.LogDev($"Level3Manager: 已播放字符 '{character}' 的飞行动画");
+                    }
+                }
+            }
         }
     }
     
