@@ -48,6 +48,9 @@ public class HintManager : MonoBehaviour
     [Header("按钮状态切换")]
     [SerializeField] private Sprite expandedButtonSprite;  // 展开时的按钮底图
     
+    [Header("提示池可视化（只读）")]
+    [SerializeField, TextArea(10, 20)] private string hintPoolDisplay = "";
+    
     [SerializeField]
     private TextMeshProUGUI hintText;
 
@@ -673,6 +676,10 @@ public class HintManager : MonoBehaviour
         hintPool.AddRange(sceneTargetHints);
         
         GameLogger.LogDev($"总提示数量: {hintPool.Count}");
+        
+        // 更新提示池可视化显示
+        UpdateHintPoolDisplay(hintPool);
+        
         return hintPool;
     }
     
@@ -865,19 +872,19 @@ public class HintManager : MonoBehaviour
         switch (targetLetter)
         {
             case "生":
-                // 检查是否有"孟"与书生的互动广播
-                bool shengInteracted = HasBroadcastHistory("孟生");
-                GameLogger.LogDev($"书生互动检查: 孟生={shengInteracted}");
+                // 检查是否有"孟"广播（孟子会广播"孟"来点拨书生）
+                bool shengInteracted = HasBroadcastHistory("孟");
+                GameLogger.LogDev($"书生互动检查: 孟={shengInteracted}");
                 return !shengInteracted;
             case "叶":
-                // 检查是否有"蚜"与藤蔓的互动广播
-                bool yeInteracted = HasBroadcastHistory("蚜叶");
-                GameLogger.LogDev($"藤蔓互动检查: 蚜叶={yeInteracted}");
+                // 检查是否有"蚜"广播（蚜虫会广播"蚜"来清理叶子）
+                bool yeInteracted = HasBroadcastHistory("蚜");
+                GameLogger.LogDev($"藤蔓互动检查: 蚜={yeInteracted}");
                 return !yeInteracted;
             case "老":
-                // 检查是否有"穿"与老人的互动广播
-                bool laoInteracted = HasBroadcastHistory("穿老");
-                GameLogger.LogDev($"老人互动检查: 穿老={laoInteracted}");
+                // 检查是否有"穿"广播（穿字符会广播"穿"来穿越时光）
+                bool laoInteracted = HasBroadcastHistory("穿");
+                GameLogger.LogDev($"老人互动检查: 穿={laoInteracted}");
                 return !laoInteracted;
             default:
                 // 其他目标暂时返回true
@@ -1050,6 +1057,33 @@ public class HintManager : MonoBehaviour
         }
         GameLogger.LogDev($"没有玩家携带字符 '{character}'");
         return false;
+    }
+
+    /// <summary>
+    /// 更新提示池可视化显示
+    /// </summary>
+    /// <param name="hintPool">提示池列表</param>
+    private void UpdateHintPoolDisplay(List<string> hintPool)
+    {
+        if (hintPool == null || hintPool.Count == 0)
+        {
+            hintPoolDisplay = "当前提示池为空";
+            return;
+        }
+        
+        System.Text.StringBuilder sb = new System.Text.StringBuilder();
+        sb.AppendLine($"提示池内容 (共 {hintPool.Count} 条):");
+        sb.AppendLine("========================");
+        
+        for (int i = 0; i < hintPool.Count; i++)
+        {
+            sb.AppendLine($"{i + 1}. {hintPool[i]}");
+        }
+        
+        sb.AppendLine("========================");
+        sb.AppendLine($"最后更新: {System.DateTime.Now:HH:mm:ss}");
+        
+        hintPoolDisplay = sb.ToString();
     }
 
     /// <summary>
