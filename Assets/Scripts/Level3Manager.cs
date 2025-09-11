@@ -542,16 +542,10 @@ public class Level3Manager : MonoBehaviour
                 AudioManager.Instance.PlaySFX(AudioManager.Instance.sfxAcquire);
             }
             
-            // 播放飞行动画
-            ButtonController buttonController = FindObjectOfType<ButtonController>();
-            if (buttonController != null)
+            // 飞行动画由ButtonController自动处理，这里不需要重复实现
+            if (showDebugInfo)
             {
-                // 延迟一帧后播放飞行动画，确保按钮已创建
-                StartCoroutine(DelayedFlyAnimation(value, buttonController));
-            }
-            else
-            {
-                GameLogger.LogWarning("Level3Manager: 未找到ButtonController，无法播放飞行动画");
+                GameLogger.LogDev($"Level3Manager: 已添加字符 '{value}' 到可用列表，飞行动画由ButtonController处理");
             }
         }
         else
@@ -560,36 +554,6 @@ public class Level3Manager : MonoBehaviour
         }
     }
     
-    /// <summary>
-    /// 延迟播放飞行动画
-    /// </summary>
-    private System.Collections.IEnumerator DelayedFlyAnimation(string character, ButtonController buttonController)
-    {
-        // 等待一帧，确保按钮已创建
-        yield return null;
-        
-        // 查找新创建的按钮
-        StringSelector stringSelector = FindObjectOfType<StringSelector>();
-        if (stringSelector != null)
-        {
-            // 通过按钮容器获取最后一个按钮
-            Transform buttonContainer = stringSelector.GetButtonContainer();
-            if (buttonContainer != null && buttonContainer.childCount > 0)
-            {
-                Transform lastButton = buttonContainer.GetChild(buttonContainer.childCount - 1);
-                if (lastButton != null)
-                {
-                    // 播放飞行动画
-                    buttonController.Fly(character, lastButton);
-                    
-                    if (showDebugInfo)
-                    {
-                        GameLogger.LogDev($"Level3Manager: 已播放字符 '{character}' 的飞行动画");
-                    }
-                }
-            }
-        }
-    }
     
     /// <summary>
     /// 根据letter删除所有对应的Highlight脚本

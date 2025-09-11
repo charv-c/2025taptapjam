@@ -675,6 +675,103 @@ public class HintManager : MonoBehaviour
         GameLogger.LogDev($"场景目标提示数量: {sceneTargetHints.Count}");
         hintPool.AddRange(sceneTargetHints);
         
+        // 额外规则："琴雅"相关提示的添加/移除
+        const string qinYaHint = "「雅」音的反面藏有玄机，去问问那把琴";
+        if (HasBroadcastHistory("琴雅"))
+        {
+            // 已有"琴雅"广播 → 移除提示
+            if (hintPool.Remove(qinYaHint))
+            {
+                GameLogger.LogDev("检测到'琴雅'广播，已从提示池移除对应提示");
+            }
+        }
+        else
+        {
+            // 尚无"琴雅"广播 → 添加提示
+            if (!hintPool.Contains(qinYaHint))
+            {
+                hintPool.Add(qinYaHint);
+                GameLogger.LogDev("已因缺少'琴雅'广播添加定向提示: 雅与琴的线索");
+            }
+        }
+
+        // 额外规则："琴季"相关提示的添加/移除
+        const string qinJiHint = "以「季」拨动琴弦，或可扭转四季";
+        if (HasBroadcastHistory("琴季"))
+        {
+            // 已有"琴季"广播 → 移除提示
+            if (hintPool.Remove(qinJiHint))
+            {
+                GameLogger.LogDev("检测到'琴季'广播，已从提示池移除对应提示");
+            }
+        }
+        else
+        {
+            // 尚无"琴季"广播 → 添加提示
+            if (!hintPool.Contains(qinJiHint))
+            {
+                hintPool.Add(qinJiHint);
+                GameLogger.LogDev("已因缺少'琴季'广播添加定向提示: 季与琴的线索");
+            }
+        }
+
+        // 额外规则："琴孤"相关提示的添加/移除
+        const string qinGuHint = "「孤」身落寞，或许弹琴能带来「欣」喜";
+        if (HasBroadcastHistory("琴孤"))
+        {
+            // 已有"琴孤"广播 → 移除提示
+            if (hintPool.Remove(qinGuHint))
+            {
+                GameLogger.LogDev("检测到'琴孤'广播，已从提示池移除对应提示");
+            }
+        }
+        else
+        {
+            // 尚无"琴孤"广播 → 添加提示
+            if (!hintPool.Contains(qinGuHint))
+            {
+                hintPool.Add(qinGuHint);
+                GameLogger.LogDev("已因缺少'琴孤'广播添加定向提示: 孤与琴的线索");
+            }
+        }
+
+        // 额外规则：滩涂相关提示的添加/移除
+        const string yaBeachHint = "夏日已至，正是「芽」在滩涂上生长之时";
+        const string ziBeachHint = "春意盎然，让「籽」在滩涂上悄悄发芽吧";
+        const string yaWaitSummerHint = "滩涂上的「芽」似乎还在等待盛夏的到来";
+
+        // 1) 芽未与滩涂互动过 且 当前季节为夏 → 提示；否则移除
+        bool yaInteractedWithBeach = HasBroadcastHistory("滩芽");
+        if (!yaInteractedWithBeach && IsCurrentSeasonSummer())
+        {
+            if (!hintPool.Contains(yaBeachHint)) hintPool.Add(yaBeachHint);
+        }
+        else
+        {
+            hintPool.Remove(yaBeachHint);
+        }
+
+        // 2) 籽未与滩涂互动过 且 当前季节为春 → 提示；否则移除
+        bool ziInteractedWithBeach = HasBroadcastHistory("滩籽");
+        if (!ziInteractedWithBeach && IsCurrentSeasonSpring())
+        {
+            if (!hintPool.Contains(ziBeachHint)) hintPool.Add(ziBeachHint);
+        }
+        else
+        {
+            hintPool.Remove(ziBeachHint);
+        }
+
+        // 3) 当前季节是春，且场景中“无Highlight脚本的芽物体”显示 → 加入等待盛夏提示；否则移除
+        if (IsCurrentSeasonSpring() && IsNonHighlightYaObjectVisible())
+        {
+            if (!hintPool.Contains(yaWaitSummerHint)) hintPool.Add(yaWaitSummerHint);
+        }
+        else
+        {
+            hintPool.Remove(yaWaitSummerHint);
+        }
+
         GameLogger.LogDev($"总提示数量: {hintPool.Count}");
         
         // 更新提示池可视化显示
@@ -829,12 +926,41 @@ public class HintManager : MonoBehaviour
         }
         return false;
     }
+
+    // 检查场景中是否存在“无Highlight脚本的芽物体”，且其处于显示（activeInHierarchy 且 SpriteRenderer.enabled）
+    private bool IsNonHighlightYaObjectVisible()
+    {
+        // 查找所有GameObject，过滤无Highlight组件者
+        GameObject[] allObjects = FindObjectsOfType<GameObject>(true);
+        foreach (GameObject obj in allObjects)
+        {
+            if (obj == null) continue;
+            if (obj.GetComponent<Highlight>() != null) continue; // 跳过有Highlight的
+
+            // 名称或自定义标识包含“芽”
+            if (obj.name.Contains("芽"))
+            {
+                if (!obj.activeInHierarchy) continue;
+                var sr = obj.GetComponent<SpriteRenderer>();
+                if (sr == null || !sr.enabled) continue;
+                return true;
+            }
+        }
+        return false;
+    }
     
     // 检查当前季节是否为春季
     private bool IsCurrentSeasonSpring()
     {
         Level3Manager level3Manager = FindObjectOfType<Level3Manager>();
         return level3Manager != null && level3Manager.IsSpring();
+    }
+
+    // 检查当前季节是否为夏季
+    private bool IsCurrentSeasonSummer()
+    {
+        Level3Manager level3Manager = FindObjectOfType<Level3Manager>();
+        return level3Manager != null && level3Manager.IsSummer();
     }
     
     // 检查是否存在未互动的目标

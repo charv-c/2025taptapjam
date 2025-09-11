@@ -637,8 +637,12 @@ public class ButtonController : MonoBehaviour
         textMesh.alignment = TMPro.TextAlignmentOptions.Center;
         textMesh.color = Color.black; // 设置文字为黑色
         
-        // 设置字体（如果有中文字体）
-        if (stringSelector != null && stringSelector.GetChineseFont() != null)
+        // 设置字体：优先使用本组件序列化字体，其次回退到 StringSelector 的字体
+        if (chineseFont != null)
+        {
+            textMesh.font = chineseFont;
+        }
+        else if (stringSelector != null && stringSelector.GetChineseFont() != null)
         {
             textMesh.font = stringSelector.GetChineseFont();
         }
@@ -928,7 +932,11 @@ public class ButtonController : MonoBehaviour
         text.fontSize = Mathf.RoundToInt(flyingFontSize);
         text.alignment = TMPro.TextAlignmentOptions.Center;
         text.color = Color.black;
-        if (stringSelector != null && stringSelector.GetChineseFont() != null)
+        if (chineseFont != null)
+        {
+            text.font = chineseFont;
+        }
+        else if (stringSelector != null && stringSelector.GetChineseFont() != null)
         {
             text.font = stringSelector.GetChineseFont();
         }
