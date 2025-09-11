@@ -348,7 +348,7 @@ public class TutorialManager : MonoBehaviour
         }
         
         SetGuideExpression(exprNormal);
-        hintText.text = "缘分如江河，文字作舟楫。欢迎来到《字里人间》。";
+        hintText.text = "缘分如江河，文字作舟楫。\n 欢迎来到《字里人间》。";
         continueButton.gameObject.SetActive(true);
     }
 
@@ -365,7 +365,7 @@ public class TutorialManager : MonoBehaviour
         }
         
         SetGuideExpression(exprNormal);
-        hintText.text = "故事始于江河之畔的万松书院，梁祝初遇之地。你将在此从一撇一捺开始，织补破碎的篇章。";
+        hintText.text = "故事始于江河之畔的万松书院，\n梁祝初遇之地。\n你将在此从一撇一捺开始，\n织补破碎的篇章。";
         continueButton.gameObject.SetActive(true);
     }
 
@@ -1107,7 +1107,7 @@ public class TutorialManager : MonoBehaviour
         }
         
         SetGuideExpression(exprNormal);
-        hintText.text = "但缘分之河长流不息，顺流而下，你将看到迢迢银汉化作天河，分隔着【牛郎】与【织女】。";
+        hintText.text = "但缘分之河长流不息。\n顺流而下，你将看到迢迢银汉化作天河，分隔着【牛郎】与【织女】。";
         continueButton.gameObject.SetActive(true);
     }
 

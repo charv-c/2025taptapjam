@@ -422,8 +422,24 @@ public class ButtonController : MonoBehaviour
                 if (BroadcastManager.Instance != null)
                 {
                     BroadcastManager.Instance.BroadcastToAll("combine_success");
-                    BroadcastManager.Instance.BroadcastToAll($"拼{firstString}{secondString}");
-                    GameLogger.LogUser($"ButtonController: 发送组合成功广播 (combine_success, 拼{firstString}{secondString})");
+                    
+                    // 按字典序排序确保广播消息一致性，避免选择顺序影响提示触发
+                    // 使用 System.StringComparison.Ordinal 确保排序规则在所有环境下都一致
+                    string sortedFirstString, sortedSecondString;
+                    if (string.Compare(firstString, secondString, System.StringComparison.Ordinal) <= 0)
+                    {
+                        sortedFirstString = firstString;
+                        sortedSecondString = secondString;
+                    }
+                    else
+                    {
+                        sortedFirstString = secondString;
+                        sortedSecondString = firstString;
+                    }
+                    
+                    string combineMessage = $"拼{sortedFirstString}{sortedSecondString}";
+                    BroadcastManager.Instance.BroadcastToAll(combineMessage);
+                    GameLogger.LogUser($"ButtonController: 发送组合成功广播 (combine_success, {combineMessage}) [原顺序: {firstString}+{secondString}]");
                 }
                 GameLogger.LogUser($"合成结果: {originalString}");
                 GameLogger.LogUser("ButtonController: 组合操作完成");

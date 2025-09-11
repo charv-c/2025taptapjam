@@ -539,50 +539,54 @@ public class HintManager : MonoBehaviour
         if (currentScene == SceneType.Level2)
         {
             candidates = GetLevel2HintCandidates(carry);
-        }
-        else if (currentScene == SceneType.Level3)
-        {
-            candidates = GetLevel3HintCandidates(carry);
-        }
-
-        // 第一优先级：检查是否需要状态重置（玩家处于化字状态，且该形态对应互动均已完成）
-        string initialCarryCharacter = GetCurrentPlayerInitialCarryCharacter();
-        if (!string.IsNullOrEmpty(carry) && carry != initialCarryCharacter)
-        {
-            if (IsCarryFormInteractionsCompleted(carry))
+            
+            // Level2：检查是否需要状态重置（玩家处于化字状态，且该形态对应互动均已完成）
+            string initialCarryCharacter = GetCurrentPlayerInitialCarryCharacter();
+            if (!string.IsNullOrEmpty(carry) && carry != initialCarryCharacter)
             {
-                // 唯一的"状态重置提示"
-                return $"此形态之事已毕，先回归「{initialCarryCharacter}」再继续吧";
-            }
-        }
-
-        if (candidates.Count == 0)
-        {
-            // 新增兜底提示：根据场景中是否仍有可收集且启用显示的对象给出不同文案
-            Highlight[] allHighlights = FindObjectsOfType<Highlight>();
-            bool anyCollectableActive = false;
-            for (int i = 0; i < allHighlights.Length; i++)
-            {
-                Highlight h = allHighlights[i];
-                if (h != null && h.IsCollectableActive())
+                if (IsCarryFormInteractionsCompleted(carry))
                 {
-                    anyCollectableActive = true;
-                    break;
+                    // 唯一的"状态重置提示"
+                    return $"此形态之事已毕，先回归「{initialCarryCharacter}」再继续吧";
                 }
             }
 
-            if (anyCollectableActive)
+            if (candidates.Count == 0)
             {
-                return "天地间似乎还有文字，仔细观察一番吧";
+                // Level2兜底提示：根据场景中是否仍有可收集且启用显示的对象给出不同文案
+                Highlight[] allHighlights = FindObjectsOfType<Highlight>();
+                bool anyCollectableActive = false;
+                for (int i = 0; i < allHighlights.Length; i++)
+                {
+                    Highlight h = allHighlights[i];
+                    if (h != null && h.IsCollectableActive())
+                    {
+                        anyCollectableActive = true;
+                        break;
+                    }
+                }
+
+                if (anyCollectableActive)
+                {
+                    return "天地间似乎还有文字，仔细观察一番吧";
+                }
+                else
+                {
+                    return "万物齐备，看看目标字如何拆分组合吧";
+                }
             }
-            else
-            {
-                return "万物齐备，看看目标字如何拆分组合吧";
-            }
+
+            int idx = Random.Range(0, candidates.Count);
+            return candidates[idx];
+        }
+        else if (currentScene == SceneType.Level3)
+        {
+            // Level3：使用新的二级优先级逻辑
+            return GetLevel3HintText();
         }
 
-        int idx = Random.Range(0, candidates.Count);
-        return candidates[idx];
+        // 其他场景的默认兜底逻辑
+        return "请仔细观察周围，或许有所发现";
     }
 
     // 获取Level2场景的提示候选列表
@@ -635,279 +639,267 @@ public class HintManager : MonoBehaviour
         return candidates;
     }
 
-    // 获取Level3场景的提示候选列表
-    private List<string> GetLevel3HintCandidates(string carry)
+    /// <summary>
+    /// Level3 二级优先级提示逻辑
+    /// </summary>
+    /// <returns>提示文案</returns>
+    private string GetLevel3HintText()
     {
         // 第一优先级：核心谜题检查
-        List<string> corePuzzleHints = GetLevel3CorePuzzleHints(carry);
-        if (corePuzzleHints.Count > 0)
+        List<string> hintPool = GetLevel3CorePuzzlePool();
+        if (hintPool.Count > 0)
         {
-            // 从提示池中随机选择一条
-            int randomIndex = Random.Range(0, corePuzzleHints.Count);
-            return new List<string> { corePuzzleHints[randomIndex] };
+            // 从提示池中随机选择一条提示
+            int randomIndex = Random.Range(0, hintPool.Count);
+            string selectedHint = hintPool[randomIndex];
+            GameLogger.LogDev($"Level3提示: 从{hintPool.Count}条核心谜题提示中选择: {selectedHint}");
+            return selectedHint;
         }
         
-        // 如果没有核心谜题提示，返回空列表
-        return new List<string>();
-        
-
+        // 第二优先级：收集与收尾检查
+        return GetLevel3CollectionAndFinishingHint();
     }
 
-    // Level3 核心谜题检查 - 返回所有满足条件的提示
-    private List<string> GetLevel3CorePuzzleHints(string carry)
+    /// <summary>
+    /// Level3 收集与收尾检查
+    /// </summary>
+    /// <returns>收集或合成提示</returns>
+    private string GetLevel3CollectionAndFinishingHint()
+    {
+        // 检查场景中是否还有未拾取的文字
+        if (HasLevel3UnpickedItems())
+        {
+            GameLogger.LogDev("Level3提示: 检测到未拾取的文字，给出收集提示");
+            return "龟山汉水间，尚有文字未拾取，再观察一番吧";
+        }
+        else
+        {
+            GameLogger.LogDev("Level3提示: 所有文字已收集，给出最终合成提示");
+            return "材料齐备，在解字台看看如何拆分组合";
+        }
+    }
+
+    /// <summary>
+    /// 检查Level3场景中是否还有未拾取的文字
+    /// </summary>
+    /// <returns>是否存在未拾取的文字</returns>
+    private bool HasLevel3UnpickedItems()
+    {
+        // 检查场景中是否还有可收集但未拾取的文字（通过Highlight组件判断）
+        Highlight[] allHighlights = FindObjectsOfType<Highlight>();
+        foreach (Highlight highlight in allHighlights)
+        {
+            if (highlight != null && highlight.IsCollectableActive())
+            {
+                GameLogger.LogDev($"发现未拾取的文字: {highlight.letter}");
+                return true;
+            }
+        }
+        
+        GameLogger.LogDev("所有文字已被拾取");
+        return false;
+    }
+
+
+    /// <summary>
+    /// Level3 核心谜题提示池 - 按照新的详细逻辑构建
+    /// </summary>
+    /// <returns>所有满足条件的核心谜题提示</returns>
+    private List<string> GetLevel3CorePuzzlePool()
     {
         List<string> hintPool = new List<string>();
+        string carry = GetCurrentCarryCharacter();
         
-        // 调试信息
-        GameLogger.LogDev($"GetLevel3CorePuzzleHints: carry='{carry}'");
+        GameLogger.LogDev($"构建Level3核心谜题提示池, carry='{carry}'");
         
-        // 1. 琴互动检查
-        bool qinEligible = IsQinInteractionEligible(carry);
-        GameLogger.LogDev($"琴互动检查: {qinEligible}");
-        if (qinEligible)
-        {
-            string qinHint = GetQinInteractionHint(carry);
-            hintPool.Add(qinHint);
-            GameLogger.LogDev($"添加琴互动提示: {qinHint}");
-        }
+        // 1. 默认场景目标检查（书生、藤蔓）
+        AddDefaultSceneTargets(hintPool);
         
-        // 2. 滩互动检查
-        List<string> beachHints = GetBeachInteractionHints(carry);
-        GameLogger.LogDev($"滩互动提示数量: {beachHints.Count}");
-        hintPool.AddRange(beachHints);
+        // 2. 琴互动检查（季、雅、孤）
+        AddQinInteractionHintsNew(hintPool, carry);
         
-        // 3. 其他场景目标检查
-        List<string> sceneTargetHints = GetSceneTargetHints();
-        GameLogger.LogDev($"场景目标提示数量: {sceneTargetHints.Count}");
-        hintPool.AddRange(sceneTargetHints);
+        // 3. 老人相关检查
+        AddOldManHints(hintPool);
         
-        // 额外规则："琴雅"相关提示的添加/移除
-        const string qinYaHint = "「雅」音的反面藏有玄机，去问问那把琴";
-        if (HasBroadcastHistory("琴雅"))
-        {
-            // 已有"琴雅"广播 → 移除提示
-            if (hintPool.Remove(qinYaHint))
-            {
-                GameLogger.LogDev("检测到'琴雅'广播，已从提示池移除对应提示");
-            }
-        }
-        else
-        {
-            // 尚无"琴雅"广播 → 添加提示
-            if (!hintPool.Contains(qinYaHint))
-            {
-                hintPool.Add(qinYaHint);
-                GameLogger.LogDev("已因缺少'琴雅'广播添加定向提示: 雅与琴的线索");
-            }
-        }
-
-        // 额外规则："琴季"相关提示的添加/移除
-        const string qinJiHint = "以「季」拨动琴弦，或可扭转四季";
-        if (HasBroadcastHistory("琴季"))
-        {
-            // 已有"琴季"广播 → 移除提示
-            if (hintPool.Remove(qinJiHint))
-            {
-                GameLogger.LogDev("检测到'琴季'广播，已从提示池移除对应提示");
-            }
-        }
-        else
-        {
-            // 尚无"琴季"广播 → 添加提示
-            if (!hintPool.Contains(qinJiHint))
-            {
-                hintPool.Add(qinJiHint);
-                GameLogger.LogDev("已因缺少'琴季'广播添加定向提示: 季与琴的线索");
-            }
-        }
-
-        // 额外规则："琴孤"相关提示的添加/移除
-        const string qinGuHint = "「孤」身落寞，或许弹琴能带来「欣」喜";
-        if (HasBroadcastHistory("琴孤"))
-        {
-            // 已有"琴孤"广播 → 移除提示
-            if (hintPool.Remove(qinGuHint))
-            {
-                GameLogger.LogDev("检测到'琴孤'广播，已从提示池移除对应提示");
-            }
-        }
-        else
-        {
-            // 尚无"琴孤"广播 → 添加提示
-            if (!hintPool.Contains(qinGuHint))
-            {
-                hintPool.Add(qinGuHint);
-                GameLogger.LogDev("已因缺少'琴孤'广播添加定向提示: 孤与琴的线索");
-            }
-        }
-
-        // 额外规则：滩涂相关提示的添加/移除
-        const string yaBeachHint = "夏日已至，正是「芽」在滩涂上生长之时";
-        const string ziBeachHint = "春意盎然，让「籽」在滩涂上悄悄发芽吧";
-        const string yaWaitSummerHint = "滩涂上的「芽」似乎还在等待盛夏的到来";
-
-        // 1) 芽未与滩涂互动过 且 当前季节为夏 → 提示；否则移除
-        bool yaInteractedWithBeach = HasBroadcastHistory("滩芽");
-        if (!yaInteractedWithBeach && IsCurrentSeasonSummer())
-        {
-            if (!hintPool.Contains(yaBeachHint)) hintPool.Add(yaBeachHint);
-        }
-        else
-        {
-            hintPool.Remove(yaBeachHint);
-        }
-
-        // 2) 籽未与滩涂互动过 且 当前季节为春 → 提示；否则移除
-        bool ziInteractedWithBeach = HasBroadcastHistory("滩籽");
-        if (!ziInteractedWithBeach && IsCurrentSeasonSpring())
-        {
-            if (!hintPool.Contains(ziBeachHint)) hintPool.Add(ziBeachHint);
-        }
-        else
-        {
-            hintPool.Remove(ziBeachHint);
-        }
-
-        // 3) 当前季节是春，且场景中“无Highlight脚本的芽物体”显示 → 加入等待盛夏提示；否则移除
-        if (IsCurrentSeasonSpring() && IsNonHighlightYaObjectVisible())
-        {
-            if (!hintPool.Contains(yaWaitSummerHint)) hintPool.Add(yaWaitSummerHint);
-        }
-        else
-        {
-            hintPool.Remove(yaWaitSummerHint);
-        }
-
-        GameLogger.LogDev($"总提示数量: {hintPool.Count}");
+        // 4. 滩涂互动检查（籽、芽）
+        AddBeachInteractionHintsNew(hintPool, carry);
         
-        // 更新提示池可视化显示
+        GameLogger.LogDev($"Level3核心谜题提示池构建完成，共{hintPool.Count}条提示");
         UpdateHintPoolDisplay(hintPool);
         
         return hintPool;
     }
     
-    // 检查琴互动是否满足条件
-    private bool IsQinInteractionEligible(string carry)
+    /// <summary>
+    /// 添加默认场景目标提示（书生、藤蔓）
+    /// </summary>
+    private void AddDefaultSceneTargets(List<string> hintPool)
     {
-        GameLogger.LogDev($"IsQinInteractionEligible: carry='{carry}'");
-        
-        // 玩家为"季"、"雅"、"孤"之一
-        if (carry != "季" && carry != "雅" && carry != "孤")
+        // 书生：未互动过，则默认加入提示
+        if (HasUninteractedTarget("生"))
         {
-            GameLogger.LogDev($"琴互动检查失败: carry='{carry}' 不是季/雅/孤之一");
-            return false;
+            hintPool.Add("书生苦思不解，或可请「孟」子点拨一二");
+            GameLogger.LogDev("添加默认场景目标提示: 书生");
         }
         
-        // 检查是否与琴互动过（根据广播历史判断）
-        // 提示系统应该在玩家还没有互动时给出提示
-        string broadcastKey = $"琴{carry}";
-        bool hasHistory = HasBroadcastHistory(broadcastKey);
-        GameLogger.LogDev($"琴互动检查: broadcastKey='{broadcastKey}', hasHistory={hasHistory}");
-        return !hasHistory;
+        // 藤蔓（叶）：未互动过，则默认加入提示
+        if (HasUninteractedTarget("叶"))
+        {
+            hintPool.Add("藤蔓遮蔽了山体，让「蚜」虫来帮忙吧");
+            GameLogger.LogDev("添加默认场景目标提示: 藤蔓");
+        }
     }
     
-    // 获取琴互动的具体提示
-    private string GetQinInteractionHint(string carry)
+    /// <summary>
+    /// 添加新的琴互动提示（季、雅、孤）
+    /// </summary>
+    private void AddQinInteractionHintsNew(List<string> hintPool, string carry)
     {
-        switch (carry)
+        // 季：当前仍有需要改变季节才能完成的事项
+        if (HasSeasonDependentTasks())
         {
-            case "季":
-                return "以「季」拨动琴弦，或可扭转四季";
-            case "雅":
-                return "「雅」音的反面藏有玄机，去问问那把琴";
-            case "孤":
-                return "「孤」身落寞，或许弹琴能带来「欣」喜";
+            hintPool.Add("古琴台上，或可以琴扭转「季」节");
+            GameLogger.LogDev("添加琴互动提示: 季节切换");
+        }
+        
+        // 雅：隹出现，且"雅"与琴未互动过
+        if (IsTargetObjectVisible("隹") && !HasBroadcastHistory("琴雅"))
+        {
+            hintPool.Add("江城旧事，「雅」音或有反转玄机");
+            GameLogger.LogDev("添加琴互动提示: 雅");
+        }
+        
+        // 孤：瓜出现，且"孤"与琴未互动过
+        if (IsTargetObjectVisible("瓜") && !HasBroadcastHistory("琴孤"))
+        {
+            hintPool.Add("「孤」身落寞，或许弹琴能带来「欣」喜");
+            GameLogger.LogDev("添加琴互动提示: 孤");
+        }
+    }
+    
+    /// <summary>
+    /// 添加老人相关提示
+    /// </summary>
+    private void AddOldManHints(List<string> hintPool)
+    {
+        // 老：穴已出现（即蚜完成了与叶的互动），且穿未与老人互动过
+        if (IsTargetObjectVisible("穴") && !HasBroadcastHistory("穿"))
+        {
+            hintPool.Add("这位老人，似乎可以「穿」越时光的阻隔");
+            GameLogger.LogDev("添加老人提示");
+        }
+    }
+    
+    /// <summary>
+    /// 添加新的滩涂互动提示（籽、芽）
+    /// </summary>
+    private void AddBeachInteractionHintsNew(List<string> hintPool, string carry)
+    {
+        // 籽：玩家变身籽，且芽物品未出现过
+        if (!HasObjectEverAppeared("芽"))
+        {
+            hintPool.Add("春雨可助「籽」在滩涂上悄悄发芽");
+            GameLogger.LogDev("添加滩涂互动提示: 籽变芽");
+        }
+        
+        // 芽：玩家变身芽，且花物品未出现过
+        if (!HasObjectEverAppeared("花"))
+        {
+            hintPool.Add("夏日是「芽」在滩涂上生长之时");
+            GameLogger.LogDev("添加滩涂互动提示: 芽变花");
+        }
+    }
+    
+    /// <summary>
+    /// 检查是否存在需要改变季节的任务
+    /// </summary>
+    private bool HasSeasonDependentTasks()
+    {
+        // 检查是否有籽字变芽物品的需求（春季需求）
+        bool needsSpring = HasPlayerWithCarryCharacter("籽") && !HasObjectEverAppeared("芽");
+        
+        // 检查是否有芽字变花物品的需求（夏季需求）
+        bool needsSummer = HasPlayerWithCarryCharacter("芽") && !HasObjectEverAppeared("花");
+        
+        // 检查是否有芽物品变瓜物品的需求（夏季需求）
+        bool needsSummerForGuaTransform = IsTargetObjectVisible("芽") && !IsTargetObjectVisible("瓜");
+        
+        bool hasTasks = needsSpring || needsSummer || needsSummerForGuaTransform;
+        GameLogger.LogDev($"季节相关任务检查: needsSpring={needsSpring}, needsSummer={needsSummer}, needsSummerForGuaTransform={needsSummerForGuaTransform}, result={hasTasks}");
+        
+        return hasTasks;
+    }
+    
+    /// <summary>
+    /// 检查目标对象是否可见
+    /// </summary>
+    private bool IsTargetObjectVisible(string targetName)
+    {
+        // 通过Highlight组件检查
+        Highlight[] allHighlights = FindObjectsOfType<Highlight>();
+        foreach (Highlight highlight in allHighlights)
+        {
+            if (highlight != null && highlight.letter == targetName && highlight.IsCollectableActive())
+            {
+                GameLogger.LogDev($"目标对象可见: {targetName}");
+                return true;
+            }
+        }
+        
+        // 也检查非Highlight的GameObject（如场景物体）
+        GameObject[] allObjects = FindObjectsOfType<GameObject>(true);
+        foreach (GameObject obj in allObjects)
+        {
+            if (obj == null) continue;
+            if (obj.name.Contains(targetName) && obj.activeInHierarchy)
+            {
+                var sr = obj.GetComponent<SpriteRenderer>();
+                if (sr != null && sr.enabled)
+                {
+                    GameLogger.LogDev($"目标对象可见（非Highlight）: {targetName}");
+                    return true;
+                }
+            }
+        }
+        
+        GameLogger.LogDev($"目标对象不可见: {targetName}");
+        return false;
+    }
+    
+    /// <summary>
+    /// 检查对象是否曾经出现过（通过相关互动的广播历史判断）
+    /// </summary>
+    private bool HasObjectEverAppeared(string objectName)
+    {
+        bool everAppeared = false;
+        
+        switch (objectName)
+        {
+            case "芽":
+                // 芽是通过"滩籽"互动产生的，它的出现是后续“花”或“瓜”的前提。
+                // 因此，只要“芽”或它的后续产物（“瓜”、“花”）中任意一个可见，都代表“芽”曾经出现过。
+                everAppeared = HasBroadcastHistory("滩籽") || IsTargetObjectVisible("芽") || IsTargetObjectVisible("瓜") || IsTargetObjectVisible("花");
+                break;
+            case "花":
+                // 花是通过"滩芽"互动产生的
+                everAppeared = HasBroadcastHistory("滩芽") || IsTargetObjectVisible("花");
+                break;
+            case "瓜":
+                // 瓜是由芽自动变化产生的，所以如果芽曾经出现过（通过滩籽互动），瓜就算出现过
+                everAppeared = HasBroadcastHistory("滩籽") || IsTargetObjectVisible("瓜");
+                break;
             default:
-                return "琴声悠扬，或许需要特定的心境才能共鸣";
+                // 其他对象使用当前可见性判断
+                everAppeared = IsTargetObjectVisible(objectName);
+                break;
         }
+        
+        GameLogger.LogDev($"对象是否曾出现过检查: {objectName} = {everAppeared}");
+        return everAppeared;
     }
+
+
     
-    // 获取滩互动的提示
-    private List<string> GetBeachInteractionHints(string carry)
-    {
-        List<string> hints = new List<string>();
-        GameLogger.LogDev($"GetBeachInteractionHints: carry='{carry}'");
-        
-        // 检查两个玩家中是否有任何一个的carryCharacter等于"芽"
-        bool hasYaPlayer = HasPlayerWithCarryCharacter("芽");
-        GameLogger.LogDev($"芽玩家检查: hasYaPlayer={hasYaPlayer}");
-        if (hasYaPlayer)
-        {
-            // 检查是否已经与滩互动过（使用当前玩家的carry作为互动标识）
-            bool yaNotInteracted = !HasBroadcastHistory($"滩{carry}");
-            GameLogger.LogDev($"芽互动检查: yaNotInteracted={yaNotInteracted}");
-            if (yaNotInteracted)
-            {
-                hints.Add("夏日已至，正是「芽」在滩涂上生长之时");
-                GameLogger.LogDev("添加芽互动提示");
-            }
-        }
-        
-        // 检查两个玩家中是否有任何一个的carryCharacter等于"籽"
-        bool hasZiPlayer = HasPlayerWithCarryCharacter("籽");
-        GameLogger.LogDev($"籽玩家检查: hasZiPlayer={hasZiPlayer}");
-        if (hasZiPlayer)
-        {
-            // 检查是否已经与滩互动过（使用当前玩家的carry作为互动标识）
-            bool ziNotInteracted = !HasBroadcastHistory($"滩{carry}");
-            GameLogger.LogDev($"籽互动检查: ziNotInteracted={ziNotInteracted}");
-            if (ziNotInteracted)
-            {
-                hints.Add("春意盎然，让「籽」在滩涂上悄悄发芽吧");
-                GameLogger.LogDev("添加籽互动提示");
-            }
-        }
-        
-        // "芽"物体显示，但季节是春季（等待盛夏）
-        bool yaVisible = IsYaObjectVisible();
-        bool isSpring = IsCurrentSeasonSpring();
-        GameLogger.LogDev($"芽物体和季节检查: yaVisible={yaVisible}, isSpring={isSpring}");
-        if (yaVisible && isSpring)
-        {
-            hints.Add("滩涂上的「芽」似乎还在等待盛夏的到来");
-            GameLogger.LogDev("添加芽等待盛夏提示");
-        }
-        
-        GameLogger.LogDev($"滩互动提示总数: {hints.Count}");
-        return hints;
-    }
-    
-    // 获取其他场景目标的提示
-    private List<string> GetSceneTargetHints()
-    {
-        List<string> hints = new List<string>();
-        GameLogger.LogDev("GetSceneTargetHints: 开始检查场景目标");
-        
-        // 检查"孟"与书生互动（未互动过才提示）
-        bool shengTarget = HasUninteractedTarget("生");
-        GameLogger.LogDev($"书生目标检查: {shengTarget}");
-        if (shengTarget)
-        {
-            hints.Add("书生苦思不解，或可请「孟」子点拨一二");
-            GameLogger.LogDev("添加书生互动提示");
-        }
-        
-        // 检查"蚜"与藤蔓互动（未互动过才提示）
-        bool yeTarget = HasUninteractedTarget("叶");
-        GameLogger.LogDev($"藤蔓目标检查: {yeTarget}");
-        if (yeTarget)
-        {
-            hints.Add("藤蔓遮蔽了山体，让「蚜」虫来帮忙吧");
-            GameLogger.LogDev("添加藤蔓互动提示");
-        }
-        
-        // 检查"穿"与老人互动（未互动过才提示）
-        bool laoTarget = HasUninteractedTarget("老");
-        GameLogger.LogDev($"老人目标检查: {laoTarget}");
-        if (laoTarget)
-        {
-            hints.Add("这位老人，似乎可以「穿」越时光的阻隔");
-            GameLogger.LogDev("添加老人互动提示");
-        }
-        
-        GameLogger.LogDev($"场景目标提示总数: {hints.Count}");
-        return hints;
-    }
     
     // 检查广播历史中是否存在指定广播
     private bool HasBroadcastHistory(string broadcastMessage)
