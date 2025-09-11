@@ -572,15 +572,15 @@ public class Level3Manager : MonoBehaviour
         StringSelector stringSelector = FindObjectOfType<StringSelector>();
         if (stringSelector != null)
         {
-            // 获取最后一个按钮（刚添加的）
-            var buttons = stringSelector.GetStringButtons();
-            if (buttons != null && buttons.Count > 0)
+            // 通过按钮容器获取最后一个按钮
+            Transform buttonContainer = stringSelector.GetButtonContainer();
+            if (buttonContainer != null && buttonContainer.childCount > 0)
             {
-                var lastButton = buttons[buttons.Count - 1];
+                Transform lastButton = buttonContainer.GetChild(buttonContainer.childCount - 1);
                 if (lastButton != null)
                 {
                     // 播放飞行动画
-                    buttonController.Fly(character, lastButton.transform);
+                    buttonController.Fly(character, lastButton);
                     
                     if (showDebugInfo)
                     {
