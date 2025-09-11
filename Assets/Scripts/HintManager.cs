@@ -618,9 +618,15 @@ public class HintManager : MonoBehaviour
         }
 
         // 需要"仙"人（雨未启用但日启用）
-        if (!rainVisible && sunVisible)
+        if (!rainVisible && sunVisible && carry != "仙")
         {
             candidates.Add("日轮高悬，凡人难及，或可化「仙」探寻");
+        }
+
+        // "仙"的全场景提示（玩家已化身为"仙"，但仍有"日"未获取）
+        if (carry == "仙" && sunVisible)
+        {
+            candidates.Add("既已成「仙」，何不遍寻天地间的「日」轮");
         }
 
         return candidates;
