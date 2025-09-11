@@ -16,14 +16,25 @@ public class BroadcastManager : MonoBehaviour
     
     private void Awake()
     {
-        // 设置单例
+        // 核心单例逻辑：确保全局唯一性
         if (Instance == null)
         {
+            // 如果这是第一个实例，则将其设为单例并标记为跨场景保留
             Instance = this;
-            DontDestroyOnLoad(gameObject); // 保持跨场景存在
+            DontDestroyOnLoad(gameObject);
+            if (enableDebugMode)
+            {
+                GameLogger.LogDev("BroadcastManager: 单例已初始化并标记为DontDestroyOnLoad。");
+            }
         }
-        else
+        else if (Instance != this)
         {
+            // 如果单例已存在，并且不是当前这个实例，则说明当前实例是重复的
+            if (enableDebugMode)
+            {
+                GameLogger.LogWarning($"BroadcastManager: 检测到重复的BroadcastManager实例（在对象'{gameObject.name}'上），此实例将被销毁。");
+            }
+            // 立即销毁当前重复的实例，以防其他脚本在Awake中错误地引用它
             Destroy(gameObject);
         }
     }

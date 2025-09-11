@@ -55,6 +55,9 @@ public class Player : MonoBehaviour
         // 设置初始位置
         SetInitialPosition();
         
+        // 根据当前关卡设置初始携带字符
+        SetInitialCharacterByLevel();
+        
         // 设置初始携带字符
         SetCarryCharacter(initialCarryCharacter);
         
@@ -194,6 +197,39 @@ public class Player : MonoBehaviour
         }
         
         transform.position = defaultPosition;
+    }
+    
+    /// <summary>
+    /// 根据当前关卡设置初始携带字符
+    /// </summary>
+    void SetInitialCharacterByLevel()
+    {
+        // 获取当前场景名称
+        string currentSceneName = UnityEngine.SceneManagement.SceneManager.GetActiveScene().name.ToLower();
+        
+        if (currentSceneName.Contains("level3") || currentSceneName.Contains("3"))
+        {
+            // Level3: Player1为"牙"，Player2为"子"
+            if (isPlayer1)
+            {
+                initialCarryCharacter = "牙";
+                GameLogger.LogDev($"Player: Level3场景，Player1初始字符设为'牙'");
+            }
+            else
+            {
+                initialCarryCharacter = "子";
+                GameLogger.LogDev($"Player: Level3场景，Player2初始字符设为'子'");
+            }
+        }
+        else
+        {
+            // Level1、Level2以及其他场景：默认为"人"
+            initialCarryCharacter = "人";
+            GameLogger.LogDev($"Player: 场景'{currentSceneName}'，初始字符设为'人'");
+        }
+        
+        // 同时更新当前携带字符
+        CarryCharacter = initialCarryCharacter;
     }
 
 
