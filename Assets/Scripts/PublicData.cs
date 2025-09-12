@@ -446,6 +446,17 @@ public class PublicData : MonoBehaviour
             if (!string.IsNullOrEmpty(sceneName))
             {
                 GameLogger.LogDev($"所有目标完成，切换到场景: {sceneName}");
+                
+                // 如果即将切换到EndLevel胜利场景，播放鼓掌音效
+                if (sceneName.ToLower().Contains("endlevel") || sceneName.ToLower().Contains("victory") || sceneName.ToLower().Contains("win"))
+                {
+                    if (AudioManager.Instance != null)
+                    {
+                        AudioManager.Instance.PlayApplause();
+                        GameLogger.LogDev("PublicData: 播放胜利鼓掌音效");
+                    }
+                }
+                
                 SceneManager.LoadScene(sceneName);
             }
             else
