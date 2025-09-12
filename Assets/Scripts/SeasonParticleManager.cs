@@ -48,8 +48,7 @@ public class SeasonParticleManager : MonoBehaviour
         // 订阅季节切换事件
         level3Manager.OnSeasonChanged += OnSeasonChanged;
         
-        // 初始化粒子系统
-        InitializeParticleSystems();
+        // 不重设已存在的粒子系统参数
         
         if (showDebugInfo)
         {
@@ -66,31 +65,7 @@ public class SeasonParticleManager : MonoBehaviour
         }
     }
     
-    /// <summary>
-    /// 初始化粒子系统
-    /// </summary>
-    private void InitializeParticleSystems()
-    {
-        // 初始化春季粒子系统
-        if (springParticleSystem != null)
-        {
-            ConfigureSpringParticleSystem();
-        }
-        else
-        {
-            GameLogger.LogWarning("SeasonParticleManager: 春季粒子系统未设置");
-        }
-        
-        // 初始化夏季粒子系统
-        if (summerParticleSystem != null)
-        {
-            ConfigureSummerParticleSystem();
-        }
-        else
-        {
-            GameLogger.LogWarning("SeasonParticleManager: 夏季粒子系统未设置");
-        }
-    }
+    // 移除参数初始化，避免改动已有粒子系统设定
     
     /// <summary>
     /// 配置春季粒子系统
@@ -328,17 +303,8 @@ public class SeasonParticleManager : MonoBehaviour
         {
             summerParticleSystem.Stop();
         }
-        
-        // 确保粒子系统配置正确
-        ConfigureSpringParticleSystem();
-        
-        // 清除现有粒子
-        springParticleSystem.Clear();
-        
-        // 停止粒子系统
-        springParticleSystem.Stop();
-        
-        // 重新播放春季粒子效果
+
+        // 直接播放，不修改任何已有设定
         springParticleSystem.Play();
         isPlayingParticles = true;
         
@@ -370,17 +336,8 @@ public class SeasonParticleManager : MonoBehaviour
         {
             springParticleSystem.Stop();
         }
-        
-        // 确保粒子系统配置正确
-        ConfigureSummerParticleSystem();
-        
-        // 清除现有粒子
-        summerParticleSystem.Clear();
-        
-        // 停止粒子系统
-        summerParticleSystem.Stop();
-        
-        // 重新播放夏季粒子效果
+
+        // 直接播放，不修改任何已有设定
         summerParticleSystem.Play();
         isPlayingParticles = true;
         
@@ -430,18 +387,7 @@ public class SeasonParticleManager : MonoBehaviour
             
             if (particleCount == 0)
             {
-                GameLogger.LogWarning($"SeasonParticleManager: {seasonName}粒子系统没有发射粒子！可能配置有问题。");
-                
-                // 尝试使用不同的发射方式
-                var emission = particleSystem.emission;
-                emission.rateOverTime = 10f; // 使用持续发射作为备选
-                yield return new WaitForSeconds(0.1f);
-                emission.rateOverTime = 0f; // 停止持续发射
-                
-                if (showDebugInfo)
-                {
-                    GameLogger.LogDev($"SeasonParticleManager: 已尝试修复{seasonName}粒子发射问题");
-                }
+                GameLogger.LogWarning($"SeasonParticleManager: {seasonName}粒子系统未产生粒子（保留原设定，未做自动修复）");
             }
         }
     }
@@ -650,15 +596,8 @@ public class SeasonParticleManager : MonoBehaviour
             return;
         }
         
-        // 强制启用粒子效果
+        // 强制启用播放，但不重设任何参数
         enableParticleEffects = true;
-        isPlayingParticles = false;
-        
-        // 重新配置粒子系统
-        ConfigureSpringParticleSystem();
-        
-        // 清除并播放
-        springParticleSystem.Clear();
         springParticleSystem.Play();
         
         GameLogger.LogDev("强制播放春季粒子效果");
@@ -856,15 +795,8 @@ public class SeasonParticleManager : MonoBehaviour
             return;
         }
         
-        // 强制启用粒子效果
+        // 强制启用播放，但不重设任何参数
         enableParticleEffects = true;
-        isPlayingParticles = false;
-        
-        // 重新配置粒子系统
-        ConfigureSummerParticleSystem();
-        
-        // 清除并播放
-        summerParticleSystem.Clear();
         summerParticleSystem.Play();
         
         GameLogger.LogDev("强制播放夏季粒子效果");
