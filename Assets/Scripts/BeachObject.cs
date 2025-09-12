@@ -167,6 +167,13 @@ public class BeachObject : MonoBehaviour
                 highlight.enabled = true;
                 GameLogger.LogDev($"ShowBirdWithDelay: 启用隹对象的Highlight组件");
             }
+            
+            // 播放鸟叫音效 (Level3)
+            if (AudioManager.Instance != null)
+            {
+                AudioManager.Instance.PlayBirdCall();
+                GameLogger.LogDev("ShowBirdWithDelay: 播放鸟叫音效");
+            }
         }
         else
         {

@@ -42,6 +42,11 @@ public class AudioManager : MonoBehaviour
     public AudioClip sfxWin;                 // 关卡胜利音效
     public AudioClip sfxGuqinPlay;           // 与解语琴交互时的琴弦音效（Level3)
     public AudioClip sfxEasterEgg;           // 触发彩蛋音效
+    public AudioClip sfxHunterLeave;         // 猎人离去音效 (Level2)
+    public AudioClip sfxChildLaugh;          // 孩童笑声音效 (Level2/Level3)
+    public AudioClip sfxScholarEnlighten;    // 书生恍然大悟音效 (Level3)
+    public AudioClip sfxBirdCall;            // 鸟叫音效 (Level3)
+    public AudioClip sfxApplause;            // 胜利鼓掌音效 (EndLevel)
 
     [Header("环境音 (Ambient)")]
     public AudioClip ambientRain;            // 循环播放的背景雨声 [cite: 12]
@@ -147,6 +152,46 @@ public class AudioManager : MonoBehaviour
     public void PlayGuqinInteraction()
     {
         PlaySFX(sfxGuqinPlay);
+    }
+
+    /// <summary>
+    /// 播放猎人离去音效 (Level2)
+    /// </summary>
+    public void PlayHunterLeave()
+    {
+        PlaySFX(sfxHunterLeave);
+    }
+
+    /// <summary>
+    /// 播放孩童笑声音效 (Level2/Level3)
+    /// </summary>
+    public void PlayChildLaugh()
+    {
+        PlaySFX(sfxChildLaugh);
+    }
+
+    /// <summary>
+    /// 播放书生恍然大悟音效 (Level3)
+    /// </summary>
+    public void PlayScholarEnlighten()
+    {
+        PlaySFX(sfxScholarEnlighten);
+    }
+
+    /// <summary>
+    /// 播放鸟叫音效 (Level3)
+    /// </summary>
+    public void PlayBirdCall()
+    {
+        PlaySFX(sfxBirdCall);
+    }
+
+    /// <summary>
+    /// 播放胜利鼓掌音效 (EndLevel)
+    /// </summary>
+    public void PlayApplause()
+    {
+        PlaySFX(sfxApplause);
     }
 
     // --- BGM停止控制 ---
