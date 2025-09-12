@@ -409,7 +409,11 @@ public class Player : MonoBehaviour
         Highlight[] allHighlights = FindObjectsOfType<Highlight>();
         Highlight targetHighlight = null;
         
-        // 优先级排序：小孩 > 其他对象 > 门对象（当小孩未隐藏时）
+        // 检查是否有可交互的瓜对象，如果有则处理滩涂的交互状态
+        bool hasInteractableGua = HasInteractableGuaObject(allHighlights);
+        HandleBeachInteractionState(hasInteractableGua);
+        
+        // 优先级排序：小孩 > 瓜 > 其他对象 > 门对象（当小孩未隐藏时） > 滩（当瓜不可用时）
         foreach (Highlight highlight in allHighlights)
         {
             if (highlight != null && highlight.enabled)
@@ -424,6 +428,13 @@ public class Player : MonoBehaviour
                         GameLogger.LogDev($"Player: 优先选择小孩对象进行交互: '{highlight.gameObject.name}'");
                         break; // 小孩优先级最高，直接跳出
                     }
+                    // 特殊处理：如果检测到瓜对象，优先选择瓜
+                    else if (highlight.letter == "瓜")
+                    {
+                        targetHighlight = highlight;
+                        GameLogger.LogDev($"Player: 优先选择瓜对象进行交互: '{highlight.gameObject.name}'");
+                        break; // 瓜优先级仅次于小孩，直接跳出
+                    }
                     // 如果检测到门对象，需要检查孩子是否隐藏
                     else if (highlight.letter == "门")
                     {
@@ -436,6 +447,19 @@ public class Player : MonoBehaviour
                         else
                         {
                             GameLogger.LogDev($"Player: 门对象被跳过，小孩可能未隐藏或已有其他交互对象");
+                        }
+                    }
+                    // 滩对象的特殊处理：只有在没有可交互瓜对象时才可被选择
+                    else if (highlight.letter == "滩")
+                    {
+                        if (targetHighlight == null && !hasInteractableGua)
+                        {
+                            targetHighlight = highlight;
+                            GameLogger.LogDev($"Player: 没有可交互瓜对象，可选择滩对象: '{highlight.gameObject.name}'");
+                        }
+                        else
+                        {
+                            GameLogger.LogDev($"Player: 滩对象被跳过，存在更高优先级的对象");
                         }
                     }
                     // 其他对象正常处理
@@ -481,6 +505,78 @@ public class Player : MonoBehaviour
         
         // 如果没有找到孩子对象，默认认为已隐藏
         return true;
+    }
+    
+    // 检查是否有可交互的瓜对象与当前玩家发生碰撞
+    private bool HasInteractableGuaObject(Highlight[] allHighlights)
+    {
+        foreach (Highlight highlight in allHighlights)
+        {
+            if (highlight != null && highlight.enabled && highlight.letter == "瓜")
+            {
+                // 检查瓜对象是否可见且可交互
+                if (IsGuaObjectInteractable(highlight) && IsPlayerCollidingWithHighlight(highlight))
+                {
+                    GameLogger.LogDev($"Player: 检测到可交互的瓜对象: '{highlight.gameObject.name}'");
+                    return true;
+                }
+            }
+        }
+        return false;
+    }
+    
+    // 检查瓜对象是否可交互（可见且启用）
+    private bool IsGuaObjectInteractable(Highlight guaHighlight)
+    {
+        if (guaHighlight == null) return false;
+        
+        // 检查Highlight组件是否启用
+        if (!guaHighlight.enabled) return false;
+        
+        // 检查GameObject是否激活
+        if (!guaHighlight.gameObject.activeInHierarchy) return false;
+        
+        // 检查SpriteRenderer是否启用
+        SpriteRenderer spriteRenderer = guaHighlight.GetComponent<SpriteRenderer>();
+        if (spriteRenderer != null && !spriteRenderer.enabled) return false;
+        
+        // 检查Collider是否启用
+        Collider2D collider = guaHighlight.GetComponent<Collider2D>();
+        if (collider != null && !collider.enabled) return false;
+        
+        return true;
+    }
+    
+    // 处理滩涂的交互状态：当有可交互瓜对象时禁用滩涂高亮，否则恢复
+    private void HandleBeachInteractionState(bool hasInteractableGua)
+    {
+        // 查找场景中的滩涂对象
+        Highlight[] allHighlights = FindObjectsOfType<Highlight>();
+        foreach (Highlight highlight in allHighlights)
+        {
+            if (highlight != null && highlight.letter == "滩")
+            {
+                if (hasInteractableGua)
+                {
+                    // 有可交互瓜对象时，暂时禁用滩涂的高亮但保持其他功能
+                    if (highlight.IsHighlighted())
+                    {
+                        highlight.SetHighlight(false);
+                        GameLogger.LogDev($"Player: 因瓜对象可交互，暂时禁用滩涂高亮: '{highlight.gameObject.name}'");
+                    }
+                }
+                else
+                {
+                    // 没有可交互瓜对象时，检查玩家是否在滩涂范围内并恢复高亮
+                    if (IsPlayerCollidingWithHighlight(highlight) && !highlight.IsHighlighted())
+                    {
+                        highlight.SetHighlight(true);
+                        GameLogger.LogDev($"Player: 瓜对象不可交互，恢复滩涂高亮: '{highlight.gameObject.name}'");
+                    }
+                }
+                break; // 只需要处理第一个找到的滩涂对象
+            }
+        }
     }
     
     // 检查玩家是否与Highlight对象碰撞

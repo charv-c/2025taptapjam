@@ -24,6 +24,9 @@ public class BeachObject : MonoBehaviour
     private Level3Manager level3Manager;
     private AutoHint autoHint;
     
+    // 状态标记：跟踪芽是否真正被种下过
+    private bool hasYaBeenPlanted = false;
+    
     private void Start()
     {
         // 获取必要的组件引用
@@ -217,6 +220,14 @@ public class BeachObject : MonoBehaviour
         // 显示"子"区域的"芽"物体（"芽"不可交互）
         ShowObject(yaObjectForZi, "芽");
         
+        // 设置芽已种下的标记
+        hasYaBeenPlanted = true;
+        
+        if (enableDebugLog)
+        {
+            GameLogger.LogDev("BeachObject: 芽已被种下，设置hasYaBeenPlanted = true");
+        }
+        
         // 显示提示
         ShowAutoHint("籽春季");
     }
@@ -226,8 +237,8 @@ public class BeachObject : MonoBehaviour
     /// </summary>
     public void TransformYaToGuaOnSeasonChange()
     {
-        // 检查“子”区域的“芽”物体是否处于激活状态
-        if (yaObjectForZi != null && yaObjectForZi.activeInHierarchy)
+        // 检查芽是否真正被种下过，而不仅仅是检查GameObject是否激活
+        if (hasYaBeenPlanted && yaObjectForZi != null && yaObjectForZi.activeInHierarchy)
         {
             if (enableDebugLog)
             {
@@ -476,6 +487,120 @@ public class BeachObject : MonoBehaviour
     }
     
     /// <summary>
+    /// 检查瓜对象是否已完成互动（玩家已化字为"孤"）
+    /// </summary>
+    /// <returns>如果瓜对象已完成互动则返回true</returns>
+    public bool IsGuaInteractionCompleted()
+    {
+        // 检查瓜对象是否存在且可见
+        if (guaObject == null)
+        {
+            return true; // 瓜对象不存在，认为互动已完成
+        }
+        
+        Highlight guaHighlight = guaObject.GetComponent<Highlight>();
+        if (guaHighlight == null)
+        {
+            return true; // 瓜对象没有Highlight组件，认为互动已完成
+        }
+        
+        // 检查瓜对象是否已被隐藏或禁用（通常意味着互动已完成）
+        SpriteRenderer guaSpriteRenderer = guaObject.GetComponent<SpriteRenderer>();
+        if (guaSpriteRenderer != null && !guaSpriteRenderer.enabled)
+        {
+            if (enableDebugLog)
+            {
+                GameLogger.LogDev("BeachObject: 瓜对象已被隐藏，互动已完成");
+            }
+            return true;
+        }
+        
+        if (!guaHighlight.enabled || !guaObject.activeInHierarchy)
+        {
+            if (enableDebugLog)
+            {
+                GameLogger.LogDev("BeachObject: 瓜对象组件已禁用或GameObject未激活，互动已完成");
+            }
+            return true;
+        }
+        
+        // 检查是否有玩家已化字为"孤"（表示已与瓜互动）
+        if (playerController != null)
+        {
+            for (int i = 0; i < 2; i++) // 检查两个玩家
+            {
+                Player player = playerController.GetPlayerByIndex(i);
+                if (player != null && player.CarryCharacter == "孤")
+                {
+                    if (enableDebugLog)
+                    {
+                        GameLogger.LogDev($"BeachObject: 检测到玩家{i + 1}已化字为'孤'，瓜互动已完成");
+                    }
+                    return true;
+                }
+            }
+        }
+        
+        if (enableDebugLog)
+        {
+            GameLogger.LogDev("BeachObject: 瓜对象互动尚未完成");
+        }
+        return false;
+    }
+    
+    /// <summary>
+    /// 检查瓜对象是否可见且可交互
+    /// </summary>
+    /// <returns>如果瓜对象可见且可交互则返回true</returns>
+    public bool IsGuaObjectVisible()
+    {
+        if (guaObject == null) return false;
+        
+        // 检查GameObject是否激活
+        if (!guaObject.activeInHierarchy) return false;
+        
+        // 检查SpriteRenderer是否启用
+        SpriteRenderer spriteRenderer = guaObject.GetComponent<SpriteRenderer>();
+        if (spriteRenderer != null && !spriteRenderer.enabled) return false;
+        
+        // 检查Highlight组件是否启用
+        Highlight highlight = guaObject.GetComponent<Highlight>();
+        if (highlight != null && !highlight.enabled) return false;
+        
+        return true;
+    }
+    
+    /// <summary>
+    /// 当瓜对象互动完成后调用，用于恢复滩涂的正常交互状态
+    /// </summary>
+    public void OnGuaInteractionCompleted()
+    {
+        if (enableDebugLog)
+        {
+            GameLogger.LogDev("BeachObject: 瓜互动完成，恢复滩涂交互状态");
+        }
+        
+        // 查找滩涂对象并恢复其交互状态
+        Highlight[] allHighlights = FindObjectsOfType<Highlight>();
+        foreach (Highlight highlight in allHighlights)
+        {
+            if (highlight != null && highlight.letter == "滩")
+            {
+                // 确保滩涂对象保持可交互状态
+                if (!highlight.enabled)
+                {
+                    highlight.enabled = true;
+                    if (enableDebugLog)
+                    {
+                        GameLogger.LogDev($"BeachObject: 恢复滩涂对象交互功能: '{highlight.gameObject.name}'");
+                    }
+                }
+                break;
+            }
+        }
+    }
+    
+    /// <summary>
     /// 重置滩涂状态
     /// </summary>
     [ContextMenu("重置滩涂状态")]
@@ -486,8 +611,24 @@ public class BeachObject : MonoBehaviour
             GameLogger.LogDev("BeachObject: 重置滩涂状态");
         }
         
+        // 重置芽种植状态标记
+        hasYaBeenPlanted = false;
+        
+        // 隐藏芽和瓜物体
+        if (yaObjectForZi != null)
+        {
+            HideObject(yaObjectForZi, "芽");
+        }
+        if (guaObject != null)
+        {
+            HideObject(guaObject, "瓜");
+        }
+        
         // 隐藏花和隹物体
         HideFlowerAndZhuiObjects();
+        
+        // 恢复滩涂交互状态
+        OnGuaInteractionCompleted();
     }
     
     /// <summary>

@@ -101,6 +101,29 @@ public class Highlight : MonoBehaviour
 
         return true;
     }
+    
+    /// <summary>
+    /// 获取当前是否处于高亮状态
+    /// </summary>
+    /// <returns>是否高亮</returns>
+    public bool IsHighlighted()
+    {
+        return isHighlighted;
+    }
+    
+    /// <summary>
+    /// 设置高亮状态
+    /// </summary>
+    /// <param name="highlighted">是否高亮</param>
+    public void SetHighlight(bool highlighted)
+    {
+        isHighlighted = highlighted;
+        if (light2d != null)
+        {
+            light2d.enabled = highlighted;
+        }
+        GameLogger.LogDev($"Highlight: 设置 '{gameObject.name}' 高亮状态为 {highlighted}");
+    }
 
     private void ApplyHiddenState(bool hidden)
     {
@@ -343,6 +366,12 @@ public class Highlight : MonoBehaviour
             {
                 GameLogger.LogWarning($"ChangeMi: player对象为空");
             }
+            
+            // 特殊处理：如果是瓜对象完成化字，通知BeachObject恢复滩涂交互状态
+            if (letter == "瓜")
+            {
+                NotifyBeachObjectOnGuaInteraction();
+            }
         }
         else
         {
@@ -362,6 +391,41 @@ public class Highlight : MonoBehaviour
         }
         
         GameLogger.LogDev($"ChangeMi: 字符合成处理完成");
+    }
+    
+    /// <summary>
+    /// 当瓜对象完成化字互动后，通知BeachObject恢复滩涂交互状态
+    /// </summary>
+    private void NotifyBeachObjectOnGuaInteraction()
+    {
+        GameLogger.LogDev("Highlight: 瓜对象完成化字，通知BeachObject恢复滩涂交互状态");
+        
+        // 查找场景中的BeachObject组件
+        BeachObject beachObject = FindObjectOfType<BeachObject>();
+        if (beachObject != null)
+        {
+            // 延迟调用，确保化字逻辑完全完成后再恢复滩涂状态
+            StartCoroutine(DelayedNotifyBeachObject(beachObject));
+        }
+        else
+        {
+            GameLogger.LogWarning("Highlight: 未找到BeachObject组件，无法恢复滩涂交互状态");
+        }
+    }
+    
+    /// <summary>
+    /// 延迟通知BeachObject，确保瓜对象的化字逻辑完全完成
+    /// </summary>
+    /// <param name="beachObject">BeachObject组件引用</param>
+    /// <returns>协程</returns>
+    private System.Collections.IEnumerator DelayedNotifyBeachObject(BeachObject beachObject)
+    {
+        // 等待一帧，确保所有化字逻辑完成
+        yield return null;
+        
+        // 调用BeachObject的方法来恢复滩涂交互状态
+        beachObject.OnGuaInteractionCompleted();
+        GameLogger.LogDev("Highlight: 已通知BeachObject恢复滩涂交互状态");
     }
     
     void AddLetterToAvailableList(){
@@ -1039,18 +1103,6 @@ public class Highlight : MonoBehaviour
         }
         // 移除"琴雅"和"琴孤"的处理逻辑，改由Level3Manager统一处理
         // 这样避免了每个Highlight对象都重复执行，导致重复添加字符串
-        else if (broadcastedValue == "季夏")
-        {
-            GameLogger.LogDev($"收到'季夏'广播，当前对象letter={letter}");
-            if (letter == "芽")
-            {
-                HideObject();
-            }
-            else if (letter == "瓜")
-            {
-                ShowObject();
-            }
-        }
         else if (broadcastedValue == "芽")
         {
             GameLogger.LogDev($"收到'芽'广播，当前对象letter={letter}");
