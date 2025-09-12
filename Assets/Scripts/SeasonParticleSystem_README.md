@@ -2,8 +2,8 @@
 
 ## 概述
 这个粒子系统为Level3场景的季节变换（春季↔夏季）提供视觉特效。当季节切换时，会播放相应的粒子效果：
-- **春季**：粉色粒子效果
-- **夏季**：绿色粒子效果
+- **春季**：粉色粒子效果（支持自定义Sprite纹理）
+- **夏季**：绿色粒子效果（支持自定义Sprite纹理）
 
 ## 文件说明
 - `SeasonParticleManager.cs` - 主要的粒子系统管理器
@@ -37,6 +37,7 @@
 - **生命周期**：2秒
 - **速度**：2
 - **形状**：圆形，半径1
+- **纹理**：支持自定义Sprite（可选）
 
 #### 夏季粒子系统配置
 - **颜色**：绿色 (0.4, 0.8, 0.4, 1)
@@ -45,8 +46,28 @@
 - **生命周期**：2.5秒
 - **速度**：2.5
 - **形状**：圆形，半径1.2
+- **纹理**：支持自定义Sprite（可选）
 
-### 3. 集成到Level3Manager
+### 3. 设置粒子纹理（可选）
+
+#### 使用自定义Sprite纹理
+1. 在Inspector中找到"粒子纹理设置"部分
+2. 将您想要的Sprite拖拽到对应的字段：
+   - `Spring Particle Sprite` - 春季粒子纹理
+   - `Summer Particle Sprite` - 夏季粒子纹理
+3. 如果不设置纹理，粒子将使用默认的圆形纹理
+
+#### 推荐的Sprite类型
+- **春季**：花瓣、花朵、蝴蝶、叶子等
+- **夏季**：绿叶、果实、阳光、水滴等
+- **通用**：星星、光点、魔法粒子等
+
+#### Sprite要求
+- 建议使用透明背景的PNG格式
+- 尺寸不要过大（推荐64x64到128x128像素）
+- 确保Sprite的Pivot设置正确（通常为Center）
+
+### 4. 集成到Level3Manager
 
 粒子系统会自动监听`Level3Manager`的季节切换事件，无需额外配置。确保：
 1. 场景中存在`Level3Manager`组件
@@ -98,6 +119,14 @@ particleManager.SetParticleDuration(5f);
 // 更新粒子颜色
 particleManager.UpdateSpringParticleColor(Color.red);
 particleManager.UpdateSummerParticleColor(Color.blue);
+
+// 设置粒子纹理
+particleManager.SetSpringParticleSprite(springSprite);
+particleManager.SetSummerParticleSprite(summerSprite);
+
+// 获取当前粒子纹理
+Sprite currentSpringSprite = particleManager.GetSpringParticleSprite();
+Sprite currentSummerSprite = particleManager.GetSummerParticleSprite();
 ```
 
 ## 注意事项
@@ -136,6 +165,7 @@ particleManager.UpdateSummerParticleColor(Color.blue);
 1. 修改粒子系统的配置参数
 2. 添加新的粒子系统模块（如力场、碰撞等）
 3. 使用自定义材质和纹理
+4. 设置自定义Sprite纹理来改变粒子的外观
 
 ### 音效集成
 可以在粒子效果播放时添加音效：
