@@ -924,6 +924,11 @@ public class Highlight : MonoBehaviour
             if (letter == "猎")
             {
                 GameLogger.LogDev($"隐藏猎对象: {gameObject.name}");
+                // 播放猎人离去音效
+                if (AudioManager.Instance != null)
+                {
+                    AudioManager.Instance.PlayHunterLeave();
+                }
                 HideObject();
             }
             else if (letter == "王")
@@ -941,6 +946,11 @@ public class Highlight : MonoBehaviour
         {
             if (letter == "孩")
             {
+                // 播放孩童笑声音效 (Level2)
+                if (AudioManager.Instance != null)
+                {
+                    AudioManager.Instance.PlayChildLaugh();
+                }
                 HideObject();
             }
             else if (letter == "门")
@@ -998,6 +1008,11 @@ public class Highlight : MonoBehaviour
             GameLogger.LogDev($"收到'穿'广播，当前对象letter={letter}");
             if (letter == "老")
             {
+                // 播放孩童笑声音效 (Level3 - 老人变为孩童)
+                if (AudioManager.Instance != null)
+                {
+                    AudioManager.Instance.PlayChildLaugh();
+                }
                 HideObject();
             }
             else if (letter == "童")
@@ -1010,6 +1025,11 @@ public class Highlight : MonoBehaviour
             GameLogger.LogDev($"收到'孟'广播，当前对象letter={letter}");
             if (letter == "生")
             {
+                // 播放书生恍然大悟音效 (Level3)
+                if (AudioManager.Instance != null)
+                {
+                    AudioManager.Instance.PlayScholarEnlighten();
+                }
                 HideObject();
             }
             else if (letter == "时")

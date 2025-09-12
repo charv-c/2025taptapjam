@@ -51,130 +51,6 @@ public class BeachObject : MonoBehaviour
         GameLogger.LogDev("==========================");
     }
     
-    /// <summary>
-    /// 处理芽与滩涂的互动逻辑
-    /// </summary>
-    public void HandleYaBeachInteraction()
-    {
-        // 从Level3Manager获取当前季节
-        if (level3Manager == null)
-        {
-            level3Manager = FindObjectOfType<Level3Manager>();
-        }
-        
-        if (level3Manager == null)
-        {
-            GameLogger.LogWarning("HandleYaBeachInteraction: 未找到Level3Manager，使用默认春季逻辑");
-            ShowSeasonHint("芽春季");
-            return;
-        }
-        
-        GameLogger.LogDev($"HandleYaBeachInteraction: 开始处理芽与滩涂互动，当前季节: {level3Manager.GetCurrentSeason()}");
-        
-        if (level3Manager.IsSummer())
-        {
-            // 夏季：显示花和短尾鸟，显示夏季提示
-            GameLogger.LogDev("HandleYaBeachInteraction: 当前为夏季，执行夏季逻辑");
-            
-            // 显示花（在靠近"牙"的区域一侧）
-            ShowFlowerNearYa();
-            
-            // 延迟0.5秒显示短尾鸟（隹）
-            StartCoroutine(ShowBirdWithDelay());
-            
-            // 显示夏季提示
-            ShowSeasonHint("芽夏季");
-        }
-        else if (level3Manager.IsSpring())
-        {
-            // 春季：只显示春季提示
-            GameLogger.LogDev("HandleYaBeachInteraction: 当前为春季，执行春季逻辑");
-            ShowSeasonHint("芽春季");
-        }
-        else
-        {
-            // 其他季节：显示春季提示（默认）
-            GameLogger.LogDev($"HandleYaBeachInteraction: 当前季节为 {level3Manager.GetCurrentSeason()}，使用春季提示");
-            ShowSeasonHint("芽春季");
-        }
-    }
-    
-    /// <summary>
-    /// 显示靠近"牙"区域的花
-    /// </summary>
-    private void ShowFlowerNearYa()
-    {
-        GameLogger.LogDev("ShowFlowerNearYa: 开始显示靠近牙区域的花");
-        
-        // 直接通过引用显示花对象
-        if (flowerObject != null)
-        {
-            // 显示该对象
-            SpriteRenderer spriteRenderer = flowerObject.GetComponent<SpriteRenderer>();
-            if (spriteRenderer != null)
-            {
-                spriteRenderer.enabled = true;
-                GameLogger.LogDev($"ShowFlowerNearYa: 显示花对象: {flowerObject.name}");
-            }
-            
-            // 确保GameObject是激活的
-            if (!flowerObject.activeInHierarchy)
-            {
-                flowerObject.SetActive(true);
-                GameLogger.LogDev($"ShowFlowerNearYa: 激活花对象: {flowerObject.name}");
-            }
-        }
-        else
-        {
-            GameLogger.LogWarning("ShowFlowerNearYa: flowerObject引用为空，无法显示花");
-        }
-    }
-    
-    
-    /// <summary>
-    /// 延迟显示短尾鸟（隹）
-    /// </summary>
-    /// <returns>协程</returns>
-    private System.Collections.IEnumerator ShowBirdWithDelay()
-    {
-        GameLogger.LogDev("ShowBirdWithDelay: 开始延迟显示短尾鸟");
-        
-        // 延迟指定时间
-        yield return new WaitForSeconds(delayBeforeShowZhui);
-        
-        // 直接通过引用显示隹对象
-        if (zhuiObject != null)
-        {
-            // 显示该对象
-            SpriteRenderer spriteRenderer = zhuiObject.GetComponent<SpriteRenderer>();
-            if (spriteRenderer != null)
-            {
-                spriteRenderer.enabled = true;
-                GameLogger.LogDev($"ShowBirdWithDelay: 显示隹对象: {zhuiObject.name}");
-            }
-            
-            // 确保GameObject是激活的
-            if (!zhuiObject.activeInHierarchy)
-            {
-                zhuiObject.SetActive(true);
-                GameLogger.LogDev($"ShowBirdWithDelay: 激活隹对象: {zhuiObject.name}");
-            }
-            
-            // 如果有Highlight组件，也启用它
-            Highlight highlight = zhuiObject.GetComponent<Highlight>();
-            if (highlight != null)
-            {
-                highlight.enabled = true;
-                GameLogger.LogDev($"ShowBirdWithDelay: 启用隹对象的Highlight组件");
-            }
-        }
-        else
-        {
-            GameLogger.LogWarning("ShowBirdWithDelay: zhuiObject引用为空，无法显示隹");
-        }
-        
-        GameLogger.LogDev("ShowBirdWithDelay: 已显示短尾鸟（隹）");
-    }
     
     /// <summary>
     /// 显示季节提示
@@ -513,6 +389,16 @@ public class BeachObject : MonoBehaviour
     private void ShowZhuiObject()
     {
         ShowObject(zhuiObject, "隹");
+        
+        // 播放鸟叫音效 (Level3)
+        if (AudioManager.Instance != null)
+        {
+            AudioManager.Instance.PlayBirdCall();
+            if (enableDebugLog)
+            {
+                GameLogger.LogDev("ShowZhuiObject: 播放鸟叫音效");
+            }
+        }
     }
     
     /// <summary>

@@ -104,6 +104,12 @@ public class QinSpecialLogic : MonoBehaviour
         
         if (isValid)
         {
+            // 播放古琴互动音效 (Level3)
+            if (AudioManager.Instance != null)
+            {
+                AudioManager.Instance.PlayGuqinInteraction();
+            }
+            
             switch (carryCharacter)
             {
                 case "季":
