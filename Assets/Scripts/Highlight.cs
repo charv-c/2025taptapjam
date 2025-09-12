@@ -330,12 +330,13 @@ public class Highlight : MonoBehaviour
                 player.SetCarryCharacter(combinedCharacter);
                 GameLogger.LogDev($"ChangeMi: 已设置玩家携带字符为 '{combinedCharacter}'");
 
-                // 合字成功后发送广播，例如 人 + 亭 -> 停 ，广播 "人亭停"
+                // 合字成功后发送广播，使用玩家的初始字符，例如 牙 + 虫 -> 蚜 ，广播 "牙虫蚜"
                 if (BroadcastManager.Instance != null)
                 {
-                    string combineBroadcast = $"人{letter}{combinedCharacter}";
+                    string initialChar = player.GetInitialCarryCharacter();
+                    string combineBroadcast = $"{initialChar}{letter}{combinedCharacter}";
                     BroadcastManager.Instance.BroadcastToAll(combineBroadcast);
-                    GameLogger.LogDev($"ChangeMi: 已广播合字提示 '{combineBroadcast}'");
+                    GameLogger.LogDev($"ChangeMi: 已广播合字提示 '{combineBroadcast}' (初始字符='{initialChar}')");
                 }
             }
             else

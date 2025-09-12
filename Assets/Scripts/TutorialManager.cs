@@ -348,7 +348,7 @@ public class TutorialManager : MonoBehaviour
         }
         
         SetGuideExpression(exprNormal);
-        hintText.text = "缘分的故事，始于同窗之谊...";
+        hintText.text = "缘分如江河，文字作舟楫。\n 欢迎来到《字里人间》。";
         continueButton.gameObject.SetActive(true);
     }
 
@@ -365,7 +365,7 @@ public class TutorialManager : MonoBehaviour
         }
         
         SetGuideExpression(exprNormal);
-        hintText.text = "这里是万松书院，梁山伯与祝英台初遇之地。而你，将化身为【梁山伯】...";
+        hintText.text = "故事始于江河之畔的万松书院，\n梁祝初遇之地。\n你将在此从一撇一捺开始，\n织补破碎的篇章。";
         continueButton.gameObject.SetActive(true);
     }
 
@@ -1107,7 +1107,7 @@ public class TutorialManager : MonoBehaviour
         }
         
         SetGuideExpression(exprNormal);
-        hintText.text = "但他们的故事尚未结束，正如言界中还有许多破碎的篇章等待织补...";
+        hintText.text = "但缘分之河长流不息。\n顺流而下，你将看到迢迢银汉化作天河，分隔着【牛郎】与【织女】。";
         continueButton.gameObject.SetActive(true);
     }
 
@@ -1122,7 +1122,7 @@ public class TutorialManager : MonoBehaviour
         }
         
         SetGuideExpression(exprHappy);
-        hintText.text = "下一章，我们将进入【牛郎】与【织女】的星河，感受那份跨越天际的守望。";
+        hintText.text = "去吧，结缘者，让他们的思念，汇聚成重逢的诗篇。";
         continueButton.GetComponentInChildren<TextMeshProUGUI>().text = "完成教学";
         continueButton.gameObject.SetActive(true);
     }
