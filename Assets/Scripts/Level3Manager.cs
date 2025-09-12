@@ -1,5 +1,6 @@
 using UnityEngine;
 using System.Collections.Generic;
+using UnityEngine.UI;
 
 /// <summary>
 /// Level3场景的季节类型枚举
@@ -22,6 +23,15 @@ public class Level3Manager : MonoBehaviour
     [SerializeField] private float seasonTransitionDuration = 1f;
     [SerializeField] private bool enableSeasonTransition = true;
     
+    [Header("背景图片设置")]
+    [Tooltip("左半边背景 - 春季")] [SerializeField] private Sprite leftSpringSprite;
+    [Tooltip("右半边背景 - 春季")] [SerializeField] private Sprite rightSpringSprite;
+    [Tooltip("左半边背景 - 夏季")] [SerializeField] private Sprite leftSummerSprite;
+    [Tooltip("右半边背景 - 夏季")] [SerializeField] private Sprite rightSummerSprite;
+    [Space(4)]
+    [Tooltip("左半边背景对象（可为SpriteRenderer或Image）")] [SerializeField] private GameObject leftBackgroundObject;
+    [Tooltip("右半边背景对象（可为SpriteRenderer或Image）")] [SerializeField] private GameObject rightBackgroundObject;
+    
     [Header("调试设置")]
     [SerializeField] private bool showDebugInfo = true;
     
@@ -35,6 +45,7 @@ public class Level3Manager : MonoBehaviour
     [Header("特殊对象引用")]
     [SerializeField] private BeachObject beachObject; // 对滩涂对象的引用
     [SerializeField] private BackgroundManager backgroundManager; // 对背景管理器的引用
+    [SerializeField] private SeasonParticleManager seasonParticleManager; // 对季节粒子管理器的引用
     
     // 事件：季节切换时触发
     public System.Action<SeasonType> OnSeasonChanged;
@@ -145,6 +156,9 @@ public class Level3Manager : MonoBehaviour
         {
             GameLogger.LogDev($"Level3Manager: 季节切换 {previousSeason} -> {currentSeason}");
         }
+
+        // 立即更新左右背景，避免过渡期间或其他管理器覆盖导致不同步
+        SetBackgroundSpritesForSeason(currentSeason);
         
         // 应用季节效果
         if (enableSeasonTransition)
@@ -192,11 +206,13 @@ public class Level3Manager : MonoBehaviour
     public void ToggleSeason()
     {
         SeasonType originalSeason = currentSeason;
-        currentSeason = (currentSeason == SeasonType.Spring) ? SeasonType.Summer : SeasonType.Spring;
-        GameLogger.LogDev($"Level3Manager: 季节已切换为 {currentSeason}");
+        SeasonType targetSeason = (currentSeason == SeasonType.Spring) ? SeasonType.Summer : SeasonType.Spring;
         
+        // 使用统一入口，确保应用季节效果与事件/过渡
+        SwitchToSeason(targetSeason);
+
         // 季节切换后，检查是否需要将“芽”变为“瓜”
-        if (originalSeason == SeasonType.Spring && currentSeason == SeasonType.Summer)
+        if (originalSeason == SeasonType.Spring && targetSeason == SeasonType.Summer)
         {
             if (beachObject != null)
             {
@@ -273,6 +289,7 @@ public class Level3Manager : MonoBehaviour
         // 春季效果实现
         // 例如：改变背景、调整光照、显示春季元素等
         // 不再显隐物体；仅保留季节状态
+        SetBackgroundSpritesForSeason(SeasonType.Spring);
     }
     
     /// <summary>
@@ -288,6 +305,7 @@ public class Level3Manager : MonoBehaviour
         // 夏季效果实现
         // 例如：改变背景、调整光照、显示夏季元素等
         // 不再显隐物体；仅保留季节状态
+        SetBackgroundSpritesForSeason(SeasonType.Summer);
     }
     
     /// <summary>
@@ -759,11 +777,17 @@ public class Level3Manager : MonoBehaviour
                 {
                     GameLogger.LogDev("Level3Manager: 已切换背景");
                 }
+
+                // 防止BackgroundManager内部替换导致左右图片不同步，强制同步一次
+                SetBackgroundSpritesForSeason(currentSeason);
             }
             else
             {
                 GameLogger.LogWarning("Level3Manager: 未找到BackgroundManager，无法切换背景");
             }
+
+            // 触发当前季节对应的粒子效果
+            TriggerSeasonParticles();
         }
         // 收到"琴雅"时，获得"俗"字并删除"隹"对象
         else if (broadcastedValue == "琴雅")
@@ -798,6 +822,106 @@ public class Level3Manager : MonoBehaviour
         if (enableEasterEgg && broadcastedValue == "拼一土" && !easterEggTriggered)
         {
             HandleEasterEggTriggered();
+        }
+    }
+
+    /// <summary>
+    /// 根据季节设置左右两侧背景图片
+    /// </summary>
+    /// <param name="season">季节</param>
+    private void SetBackgroundSpritesForSeason(SeasonType season)
+    {
+        Sprite targetLeft = null;
+        Sprite targetRight = null;
+        switch (season)
+        {
+            case SeasonType.Spring:
+                targetLeft = leftSpringSprite;
+                targetRight = rightSpringSprite;
+                break;
+            case SeasonType.Summer:
+                targetLeft = leftSummerSprite;
+                targetRight = rightSummerSprite;
+                break;
+        }
+
+        // 左侧
+        if (leftBackgroundObject != null)
+        {
+            if (!TryApplySpriteToObject(leftBackgroundObject, targetLeft) && showDebugInfo)
+            {
+                GameLogger.LogWarning("Level3Manager: 左侧背景对象未找到SpriteRenderer或Image组件");
+            }
+        }
+        else if (showDebugInfo)
+        {
+            GameLogger.LogWarning("Level3Manager: 左侧背景对象未设置");
+        }
+
+        // 右侧
+        if (rightBackgroundObject != null)
+        {
+            if (!TryApplySpriteToObject(rightBackgroundObject, targetRight) && showDebugInfo)
+            {
+                GameLogger.LogWarning("Level3Manager: 右侧背景对象未找到SpriteRenderer或Image组件");
+            }
+        }
+        else if (showDebugInfo)
+        {
+            GameLogger.LogWarning("Level3Manager: 右侧背景对象未设置");
+        }
+    }
+
+    /// <summary>
+    /// 尝试将Sprite应用到指定对象（支持SpriteRenderer或UI Image）
+    /// </summary>
+    /// <param name="targetObject">目标对象</param>
+    /// <param name="sprite">要设置的图片</param>
+    /// <returns>是否成功设置</returns>
+    private bool TryApplySpriteToObject(GameObject targetObject, Sprite sprite)
+    {
+        if (targetObject == null) return false;
+
+        var sr = targetObject.GetComponent<SpriteRenderer>();
+        if (sr != null)
+        {
+            sr.sprite = sprite;
+            return true;
+        }
+
+        var img = targetObject.GetComponent<Image>();
+        if (img != null)
+        {
+            img.sprite = sprite;
+            img.SetNativeSize();
+            return true;
+        }
+
+        return false;
+    }
+
+    /// <summary>
+    /// 触发与当前季节匹配的粒子效果
+    /// </summary>
+    private void TriggerSeasonParticles()
+    {
+        if (seasonParticleManager == null)
+        {
+            if (showDebugInfo)
+            {
+                GameLogger.LogWarning("Level3Manager: 未设置SeasonParticleManager，无法触发粒子效果");
+            }
+            return;
+        }
+
+        // 直接触发对应季节播放（SeasonParticleManager内部也会在季节切换事件中自动播放，这里做显式触发确保收到广播时一定播）
+        if (currentSeason == SeasonType.Spring)
+        {
+            seasonParticleManager.ForcePlaySpringParticles();
+        }
+        else if (currentSeason == SeasonType.Summer)
+        {
+            seasonParticleManager.ForcePlaySummerParticles();
         }
     }
 }
