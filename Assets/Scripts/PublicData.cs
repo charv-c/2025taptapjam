@@ -59,6 +59,15 @@ public class PublicData : MonoBehaviour
     
     // 新增：用于存储不同关卡通关后的背景图
     public static Dictionary<string, Sprite> LevelEndBackgrounds = new Dictionary<string, Sprite>();
+    
+    // 新增：用于存储不同关卡通关后的按钮素材
+    public static Dictionary<string, Sprite> LevelEndButtonSprites = new Dictionary<string, Sprite>();
+    
+    // 新增：用于存储不同关卡通关后的按钮文案
+    public static Dictionary<string, string> LevelEndButtonTexts = new Dictionary<string, string>();
+    
+    // 新增：用于存储谢幕界面的背景图
+    public static Dictionary<string, Sprite> CreditsBackgrounds = new Dictionary<string, Sprite>();
 
     // 汉字拆分规则
     public static Dictionary<string, (string, string)> stringSplitMappings = new Dictionary<string, (string, string)>()
