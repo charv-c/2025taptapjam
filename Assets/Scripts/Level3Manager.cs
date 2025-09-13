@@ -46,7 +46,6 @@ public class Level3Manager : MonoBehaviour
     [SerializeField] private BeachObject beachObject; // 对滩涂对象的引用
     [SerializeField] private BackgroundManager backgroundManager; // 对背景管理器的引用
     [SerializeField] private SeasonParticleManager seasonParticleManager; // 对季节粒子管理器的引用
-    [SerializeField] private GameObject yaObject; // 对芽对象的引用
     
     // 事件：季节切换时触发
     public System.Action<SeasonType> OnSeasonChanged;
@@ -215,28 +214,18 @@ public class Level3Manager : MonoBehaviour
         // 季节切换后，检查是否需要将"芽"变为"瓜"
         if (originalSeason == SeasonType.Spring && targetSeason == SeasonType.Summer)
         {
-            // 只有芽物体显示时才执行芽变瓜的逻辑
-            if (yaObject != null && yaObject.activeInHierarchy)
+            if (beachObject != null)
             {
-                if (beachObject != null)
+                // BeachObject内部会检查芽是否真正被种下且显示，这里直接调用
+                beachObject.TransformYaToGuaOnSeasonChange();
+                if (showDebugInfo)
                 {
-                    beachObject.TransformYaToGuaOnSeasonChange();
-                    if (showDebugInfo)
-                    {
-                        GameLogger.LogDev("Level3Manager: 芽物体显示，执行芽变瓜逻辑");
-                    }
-                }
-                else
-                {
-                    GameLogger.LogWarning("Level3Manager: BeachObject引用未设置，无法执行芽变瓜的逻辑。");
+                    GameLogger.LogDev("Level3Manager: 已调用BeachObject的芽变瓜逻辑");
                 }
             }
             else
             {
-                if (showDebugInfo)
-                {
-                    GameLogger.LogDev("Level3Manager: 芽物体未显示，跳过芽变瓜逻辑");
-                }
+                GameLogger.LogWarning("Level3Manager: BeachObject引用未设置，无法执行芽变瓜的逻辑。");
             }
         }
     }

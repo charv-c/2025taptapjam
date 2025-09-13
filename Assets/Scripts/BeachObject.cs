@@ -237,12 +237,20 @@ public class BeachObject : MonoBehaviour
     /// </summary>
     public void TransformYaToGuaOnSeasonChange()
     {
+        if (enableDebugLog)
+        {
+            GameLogger.LogDev($"BeachObject: TransformYaToGuaOnSeasonChange 被调用");
+            GameLogger.LogDev($"BeachObject: hasYaBeenPlanted = {hasYaBeenPlanted}");
+            GameLogger.LogDev($"BeachObject: yaObjectForZi = {(yaObjectForZi != null ? yaObjectForZi.name : "null")}");
+            GameLogger.LogDev($"BeachObject: yaObjectForZi.activeInHierarchy = {(yaObjectForZi != null ? yaObjectForZi.activeInHierarchy.ToString() : "null")}");
+        }
+        
         // 检查芽是否真正被种下过，而不仅仅是检查GameObject是否激活
         if (hasYaBeenPlanted && yaObjectForZi != null && yaObjectForZi.activeInHierarchy)
         {
             if (enableDebugLog)
             {
-                GameLogger.LogDev("BeachObject: 检测到季节切换（春->夏）且“子”区域的“芽”已种下，执行变换逻辑。");
+                GameLogger.LogDev("BeachObject: 检测到季节切换（春->夏）且\"子\"区域的\"芽\"已种下，执行变换逻辑。");
             }
 
             // 隐藏"芽"
@@ -253,6 +261,13 @@ public class BeachObject : MonoBehaviour
 
             // 显示提示
             ShowAutoHint("芽变瓜");
+        }
+        else
+        {
+            if (enableDebugLog)
+            {
+                GameLogger.LogWarning("BeachObject: 芽变瓜条件不满足，跳过变换逻辑");
+            }
         }
     }
 
