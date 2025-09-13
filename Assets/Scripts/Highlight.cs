@@ -1060,6 +1060,11 @@ public class Highlight : MonoBehaviour
             GameLogger.LogDev($"收到'蚜'广播，当前对象letter={letter}");
             if (letter == "叶")
             {
+                // 播放虫子吃叶子音效 (Level3)
+                if (AudioManager.Instance != null)
+                {
+                    AudioManager.Instance.PlayBugEatLeaf();
+                }
                 HideObject();
             }
             else if (letter == "穴")

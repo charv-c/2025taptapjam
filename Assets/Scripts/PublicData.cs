@@ -54,9 +54,13 @@ public class PublicData : MonoBehaviour
     // 静态场景名称
     public static string sceneName;
     
+    // 新增：数据驱动的关卡序列
+    public static readonly string[] LevelSequence = { "level1", "level2", "level3" };
     
+    // 新增：用于存储不同关卡通关后的背景图
+    public static Dictionary<string, Sprite> LevelEndBackgrounds = new Dictionary<string, Sprite>();
 
-    
+    // 汉字拆分规则
     public static Dictionary<string, (string, string)> stringSplitMappings = new Dictionary<string, (string, string)>()
     {
         {"闪", ("门", "人")},
@@ -442,27 +446,12 @@ public class PublicData : MonoBehaviour
                 GameLogger.LogDev("PublicData: 已停止当前场景的BGM");
             }*/
             
-            // 所有目标完成，切换到下一个场景
-            if (!string.IsNullOrEmpty(sceneName))
-            {
-                GameLogger.LogDev($"所有目标完成，切换到场景: {sceneName}");
-                
-                // 如果即将切换到EndLevel胜利场景，播放鼓掌音效
-                if (sceneName.ToLower().Contains("endlevel") || sceneName.ToLower().Contains("victory") || sceneName.ToLower().Contains("win"))
-                {
-                    if (AudioManager.Instance != null)
-                    {
-                        AudioManager.Instance.PlayApplause();
-                        GameLogger.LogDev("PublicData: 播放胜利鼓掌音效");
-                    }
-                }
-                
-                SceneManager.LoadScene(sceneName);
-            }
-            else
-            {
-                GameLogger.LogWarning("场景名称未设置，无法切换场景");
-            }
+            GameLogger.LogDev($"PublicData: 所有目标完成，当前场景: {SceneManager.GetActiveScene().name}");
+            
+            // 保持原有逻辑：不直接切换场景，而是让LevelManager的Update()检测到完成状态
+            // LevelManager会触发OnLevelCompleted事件，Level2Manager/Level3Manager会响应并显示closingMessages
+            // 这样确保了完整的流程：目标完成 → closingMessages → GameFlowManager.CompleteLevel → EndLevel
+            GameLogger.LogDev("PublicData: 关卡完成检测已触发，等待LevelManager处理后续流程");
         }
     }
     

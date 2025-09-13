@@ -220,6 +220,16 @@ public class BeachObject : MonoBehaviour
         // 显示"子"区域的"芽"物体（"芽"不可交互）
         ShowObject(yaObjectForZi, "芽");
         
+        // 播放籽发芽音效 (Level3)
+        if (AudioManager.Instance != null)
+        {
+            AudioManager.Instance.PlaySeedSprout();
+            if (enableDebugLog)
+            {
+                GameLogger.LogDev("BeachObject: 播放籽发芽音效");
+            }
+        }
+        
         // 设置芽已种下的标记
         hasYaBeenPlanted = true;
         

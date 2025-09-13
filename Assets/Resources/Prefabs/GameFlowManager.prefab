@@ -1,0 +1,79 @@
+%YAML 1.1
+%TAG !u! tag:yousandi.cn,2023:
+--- !u!1 &1119477535614312942
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 7
+  m_Component:
+  - component: {fileID: 5891411994433847731}
+  - component: {fileID: 8614364987851037982}
+  - component: {fileID: 582079405396805514}
+  - component: {fileID: 638664188678423834}
+  m_Layer: 0
+  m_HasEditorInfo: 1
+  m_Name: GameFlowManager
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &5891411994433847731
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1119477535614312942}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 1.0901572, y: -0.16675594, z: -5.057497}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 0}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &8614364987851037982
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1119477535614312942}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: c742422eafb3e1840a5f7638f4f93f94, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+--- !u!114 &582079405396805514
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1119477535614312942}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 295dd0be196852848a0ddfc408de075e, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  popupPanelPrefab: {fileID: 9154684779828529399, guid: 84cc11d882ca7574992ac38305fe612b, type: 3}
+--- !u!114 &638664188678423834
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1119477535614312942}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 5ef59cf31d0beba4197d5377232a22d5, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  backgroundMappings:
+  - levelSceneName: level2
+    backgroundSprite: {fileID: 21300000, guid: 30c04b763039b464bb008b130cf7344a, type: 3}
+  - levelSceneName: level3
+    backgroundSprite: {fileID: 21300000, guid: 9b928b826567c5a45b10ea3a72a90c74, type: 3}
