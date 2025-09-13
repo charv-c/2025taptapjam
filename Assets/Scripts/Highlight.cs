@@ -1046,10 +1046,8 @@ public class Highlight : MonoBehaviour
             {
                 HideObject();
             }
-            else if (letter == "瓜")
-            {
-                ShowObject();
-            }
+            // 移除直接显示瓜物体的逻辑，让BeachObject.TransformYaToGuaOnSeasonChange()统一控制
+            // 只有芽物体显示时才会显示瓜，确保逻辑一致性
         }
         else if (broadcastedValue == "芽")
         {
