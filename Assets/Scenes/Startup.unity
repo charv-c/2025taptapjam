@@ -866,6 +866,26 @@ PrefabInstance:
     serializedVersion: 3
     m_TransformParent: {fileID: 0}
     m_Modifications:
+    - target: {fileID: 638664188678423834, guid: 4bb01bab3fd4024499cc407760d700fb, type: 3}
+      propertyPath: backgroundMappings.Array.size
+      value: 3
+      objectReference: {fileID: 0}
+    - target: {fileID: 638664188678423834, guid: 4bb01bab3fd4024499cc407760d700fb, type: 3}
+      propertyPath: backgroundMappings.Array.data[2].levelSceneName
+      value: level1
+      objectReference: {fileID: 0}
+    - target: {fileID: 638664188678423834, guid: 4bb01bab3fd4024499cc407760d700fb, type: 3}
+      propertyPath: backgroundMappings.Array.data[0].backgroundSprite
+      value: 
+      objectReference: {fileID: 21300000, guid: 1f9722b850f660d4f87928b0c84dc0ff, type: 3}
+    - target: {fileID: 638664188678423834, guid: 4bb01bab3fd4024499cc407760d700fb, type: 3}
+      propertyPath: backgroundMappings.Array.data[1].backgroundSprite
+      value: 
+      objectReference: {fileID: 21300000, guid: 471c5e4ce2da159478c34525cc3b87c8, type: 3}
+    - target: {fileID: 638664188678423834, guid: 4bb01bab3fd4024499cc407760d700fb, type: 3}
+      propertyPath: backgroundMappings.Array.data[2].backgroundSprite
+      value: 
+      objectReference: {fileID: 21300000, guid: 335af0c8ef091624a8f56349d239a73e, type: 3}
     - target: {fileID: 1119477535614312942, guid: 4bb01bab3fd4024499cc407760d700fb, type: 3}
       propertyPath: m_Name
       value: GameFlowManager
