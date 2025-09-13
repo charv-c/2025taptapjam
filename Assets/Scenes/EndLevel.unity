@@ -156,7 +156,6 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   nextLevelButton: {fileID: 646776691}
   backgroundImage: {fileID: 734416693}
-  finalMessage: "\u77E5\u97F3\u5DF2\u9047\uFF0C\u9AD8\u5C71\u6D41\u6C34\u4E4B\u66F2\u54CD\u5F7B\u5FC3\u57DF\u3002\n\u7136\u7F18\u5206\u957F\u6CB3\u4E0D\u6B62\uFF0C\u524D\u8DEF\u5C1A\u6709\u672A\u8C31\u4E4B\u7AE0\uFF0C\u5F85\u6267\u7B14\u4EBA\u4ED6\u65E5\u518D\u7EED\u3002"
 --- !u!4 &288047789
 Transform:
   m_ObjectHideFlags: 0
@@ -296,7 +295,7 @@ MonoBehaviour:
       m_Calls:
       - m_Target: {fileID: 288047788}
         m_TargetAssemblyTypeName: EndScreenManager, Assembly-CSharp
-        m_MethodName: GoToNextLevel
+        m_MethodName: OnNextLevelButtonClicked
         m_Mode: 1
         m_Arguments:
           m_ObjectArgument: {fileID: 0}

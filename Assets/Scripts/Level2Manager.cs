@@ -19,16 +19,10 @@ public class Level2Manager : MonoBehaviour, IBootstrapAware
     // 关卡开场白文案
     private readonly string[] openingMessages = 
     {
-        "牛郎与织女被分隔于天地两端，无法相逢",
+        "牛郎与织女被分隔于星河两端，无法相逢",
         "执笔人，请在此处补完诗句，让他们的故事重归圆满"
     };
     
-    // 关卡通关结语
-    private readonly string[] closingMessages =
-    {
-        "天河重渡，星汉再明。牛郎与织女的守望，终得圆满",
-        "缘分之舟，将顺着汉水东流，前往两江交汇之地——江城武汉，体验高山流水的知音故事"
-    };
 
     void Start()
     {
@@ -138,18 +132,11 @@ public class Level2Manager : MonoBehaviour, IBootstrapAware
     /// </summary>
     private void HandleLevelCompletion()
     {
-        GameLogger.LogSystem("Level2Manager: 关卡完成，显示通关结语。");
+        GameLogger.LogSystem("Level2Manager: 关卡完成，直接进入通关界面。");
         DisableAllOperations();
         
-        if (InfoPopupManager.Instance != null)
-        {
-            InfoPopupManager.Instance.ShowPopup(closingMessages, FinishLevel);
-        }
-        else
-        {
-            GameLogger.LogWarning("Level2Manager: 未找到InfoPopupManager实例，将直接完成关卡。");
-            FinishLevel();
-        }
+        // 直接完成关卡，跳过通关结语
+        FinishLevel();
     }
     
     /// <summary>

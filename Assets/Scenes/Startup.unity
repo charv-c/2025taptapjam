@@ -868,8 +868,16 @@ PrefabInstance:
     m_Modifications:
     - target: {fileID: 638664188678423834, guid: 4bb01bab3fd4024499cc407760d700fb, type: 3}
       propertyPath: backgroundMappings.Array.size
-      value: 3
+      value: 2
       objectReference: {fileID: 0}
+    - target: {fileID: 638664188678423834, guid: 4bb01bab3fd4024499cc407760d700fb, type: 3}
+      propertyPath: backgroundMappings.Array.data[0].buttonSprite
+      value: 
+      objectReference: {fileID: 21300000, guid: 630e1066c9d439247ae8a4639872f8be, type: 3}
+    - target: {fileID: 638664188678423834, guid: 4bb01bab3fd4024499cc407760d700fb, type: 3}
+      propertyPath: backgroundMappings.Array.data[1].buttonSprite
+      value: 
+      objectReference: {fileID: 21300000, guid: 4aaf35f477d941c41a9c7766e4799371, type: 3}
     - target: {fileID: 638664188678423834, guid: 4bb01bab3fd4024499cc407760d700fb, type: 3}
       propertyPath: backgroundMappings.Array.data[2].levelSceneName
       value: level1
@@ -886,6 +894,10 @@ PrefabInstance:
       propertyPath: backgroundMappings.Array.data[2].backgroundSprite
       value: 
       objectReference: {fileID: 21300000, guid: 335af0c8ef091624a8f56349d239a73e, type: 3}
+    - target: {fileID: 638664188678423834, guid: 4bb01bab3fd4024499cc407760d700fb, type: 3}
+      propertyPath: backgroundMappings.Array.data[1].creditsBackground
+      value: 
+      objectReference: {fileID: 21300000, guid: 1d991669590553f45bdb12490b164ab1, type: 3}
     - target: {fileID: 1119477535614312942, guid: 4bb01bab3fd4024499cc407760d700fb, type: 3}
       propertyPath: m_Name
       value: GameFlowManager

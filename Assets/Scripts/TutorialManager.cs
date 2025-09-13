@@ -56,7 +56,7 @@ public class TutorialManager : MonoBehaviour
     #endregion
 
     #region Private State
-    private enum TutorialStep { Welcome_Part1, Welcome_Part2, Welcome_Part3, MoveToDog, AfterTransform, MoveToGrass, AfterGetChong, SwitchPlayer_Part1, SwitchPlayer_Part2, MoveToDie, AfterGetDie, SelectAndSplit, AfterSplit, SelectAndCombine, AfterCombine, CharacterFly, End_Part1, End_Part2, End_Part3 }
+    private enum TutorialStep { Welcome_Part1, Welcome_Part2, Welcome_Part3, MoveToDog, AfterTransform, MoveToGrass, AfterGetChong, SwitchPlayer_Part1, SwitchPlayer_Part2, MoveToDie, AfterGetDie, SelectAndSplit, AfterSplit, SelectAndCombine, AfterCombine, CharacterFly, End_Part1, End_Part2 }
     private TutorialStep currentStep;
     private PlayerController playerController; // 引用PlayerController来控制玩家移动
 
@@ -237,7 +237,6 @@ public class TutorialManager : MonoBehaviour
         stepHandlers[TutorialStep.CharacterFly] = HandleCharacterFly;
         stepHandlers[TutorialStep.End_Part1] = HandleEndPart1;
         stepHandlers[TutorialStep.End_Part2] = HandleEndPart2;
-        stepHandlers[TutorialStep.End_Part3] = HandleEndPart3;
         
         GameLogger.LogDev($"TutorialManager: 已注册 {stepHandlers.Count} 个步骤处理函数");
         GameLogger.LogDev($"TutorialManager: SelectAndCombine步骤注册状态: {stepHandlers.ContainsKey(TutorialStep.SelectAndCombine)}");
@@ -264,7 +263,6 @@ public class TutorialManager : MonoBehaviour
         stepTransitions[TutorialStep.AfterCombine] = TutorialStep.CharacterFly;
         stepTransitions[TutorialStep.CharacterFly] = TutorialStep.End_Part1;
         stepTransitions[TutorialStep.End_Part1] = TutorialStep.End_Part2;
-        stepTransitions[TutorialStep.End_Part2] = TutorialStep.End_Part3;
     }
 
     private void ExecuteCurrentStep()
@@ -325,7 +323,7 @@ public class TutorialManager : MonoBehaviour
             GameLogger.LogDev($"TutorialManager: 步骤 {currentStep} 没有下一个步骤，教程结束");
             
             // 如果是最后一个步骤，加载下一个场景
-            if (currentStep == TutorialStep.End_Part3)
+            if (currentStep == TutorialStep.End_Part2)
             {
                 GameLogger.LogUser("TutorialManager: 教学完成，加载下一个场景 Level2");
                 LoadNextScene();
@@ -1106,23 +1104,8 @@ public class TutorialManager : MonoBehaviour
             ButtonController.Instance.DisableCharacterSelection();
         }
         
-        SetGuideExpression(exprNormal);
-        hintText.text = "但缘分之河长流不息。\n顺流而下，你将看到迢迢银汉化作天河，分隔着【牛郎】与【织女】。";
-        continueButton.gameObject.SetActive(true);
-    }
-
-    private void HandleEndPart3()
-    {
-        DisablePlayerMovement();
-        
-        // 禁用字符选择
-        if (ButtonController.Instance != null)
-        {
-            ButtonController.Instance.DisableCharacterSelection();
-        }
-        
         SetGuideExpression(exprHappy);
-        hintText.text = "去吧，执笔人，让他们的思念，汇聚成重逢的诗篇。";
+        hintText.text = "但缘分之河长流不息，顺流而下，让我们继续见证【牛郎】与【织女】的故事";
         continueButton.GetComponentInChildren<TextMeshProUGUI>().text = "完成教学";
         continueButton.gameObject.SetActive(true);
     }
@@ -1367,16 +1350,9 @@ public class TutorialManager : MonoBehaviour
         // 旧逻辑: 直接加载level2
         // SceneManager.LoadScene("level2");
         
-        // 新逻辑: 调用GameFlowManager来处理关卡完成流程
-        if (GameFlowManager.Instance != null)
-        {
-            GameFlowManager.Instance.CompleteLevel("level1");
-        }
-        else
-        {
-            GameLogger.LogError("TutorialManager: GameFlowManager实例不存在！无法完成关卡。将回退到加载level2。");
-            SceneManager.LoadScene("level2"); // 回退方案
-        }
+        // 新逻辑: 直接加载level2场景，跳过通关界面
+        GameLogger.LogSystem("TutorialManager: 教程完成，直接加载level2场景");
+        SceneManager.LoadScene("level2");
     }
     
     // 启用所有操作（移动、切换、回车、空格）

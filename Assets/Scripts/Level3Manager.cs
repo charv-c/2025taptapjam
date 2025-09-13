@@ -69,16 +69,11 @@ public class Level3Manager : MonoBehaviour, IBootstrapAware
     // 关卡开场白文案
     private readonly string[] openingMessages =
     {
-        "俞伯牙与钟子期的知音之情，在此凝聚成一片高山流水的心域",
-        "然而此刻两位知音心声阻隔，唯留“弦断无人听”的遗憾",
-        "古琴台上的【解语琴】，似乎能读懂一些文字的“弦外之音”"
+        "欢迎来到江城武汉，这里曾诞生过高山流水的佳话",
+        "我们将在龟山汉水之间，感受伯牙与子期的知音故事",
+        "古琴台上有把【解语琴】，似乎能读懂一些文字的“弦外之音”"
     };
 
-    // 关卡通关结语
-    private readonly string[] closingMessages =
-    {
-        "高山流水之音再度响起，知音的共鸣终于跨越了山水之隔"
-    };
     
     // 事件：季节切换时触发
     public System.Action<SeasonType> OnSeasonChanged;
@@ -230,18 +225,11 @@ public class Level3Manager : MonoBehaviour, IBootstrapAware
     /// </summary>
     private void HandleLevelCompletion()
     {
-        GameLogger.LogSystem("Level3Manager: 关卡完成，显示通关结语。");
+        GameLogger.LogSystem("Level3Manager: 关卡完成，直接进入通关界面。");
         DisableAllOperations();
 
-        if (InfoPopupManager.Instance != null)
-        {
-            InfoPopupManager.Instance.ShowPopup(closingMessages, FinishLevel);
-        }
-        else
-        {
-            GameLogger.LogWarning("Level3Manager: 未找到InfoPopupManager实例，将直接完成关卡。");
-            FinishLevel();
-        }
+        // 直接完成关卡，跳过通关结语
+        FinishLevel();
     }
 
     /// <summary>
