@@ -15,7 +15,7 @@ public static class GameLogger
 {
     // 全局日志开关配置
     private static readonly bool ENABLE_USER_LOGS = true;
-    private static readonly bool ENABLE_SYSTEM_LOGS = false;  // Release版本建议关闭
+    private static readonly bool ENABLE_SYSTEM_LOGS = true;  // 开发版本启用系统日志
     
     // 分类日志：可独立开关
     public static bool ENABLE_PLAYER_LOGS = false; // 允许在运行时或初始化时关闭/开启Player日志

@@ -1,6 +1,7 @@
 using UnityEngine;
 using System.Collections.Generic;
 using UnityEngine.UI;
+using System.Collections;
 
 /// <summary>
 /// Level3场景的季节类型枚举
@@ -12,9 +13,10 @@ public enum SeasonType
 }
 
 /// <summary>
-/// Level3场景管理器 - 管理季节切换和相关逻辑
+/// Level3场景管理器 V2.0 (Bootstrap兼容版) - 管理季节切换和相关逻辑
+/// 支持从任意场景启动，自动处理依赖初始化。
 /// </summary>
-public class Level3Manager : MonoBehaviour
+public class Level3Manager : MonoBehaviour, IBootstrapAware
 {
     [Header("季节设置")]
     [SerializeField] private SeasonType currentSeason = SeasonType.Spring;
@@ -47,6 +49,37 @@ public class Level3Manager : MonoBehaviour
     [SerializeField] private BackgroundManager backgroundManager; // 对背景管理器的引用
     [SerializeField] private SeasonParticleManager seasonParticleManager; // 对季节粒子管理器的引用
     
+    [Header("开场白箭头设置")]
+    [Tooltip("古琴对象的Transform引用，用于第三句开场白时箭头指向")]
+    [SerializeField] private Transform guqinTransform; // 古琴对象
+    [Tooltip("箭头Image组件")]
+    [SerializeField] private Image arrowImage; // 箭头图像
+    [Tooltip("箭头指向左方的Sprite")]
+    [SerializeField] private Sprite arrowLeft; // 向左箭头
+    [Tooltip("箭头指向左下方的Sprite")]
+    [SerializeField] private Sprite arrowDownLeft; // 向左下箭头
+    
+    // 关卡流程控制
+    private LevelManager levelManager;
+    
+    // Bootstrap状态
+    private bool bootstrapCompleted = false;
+    private bool sceneInitialized = false;
+
+    // 关卡开场白文案
+    private readonly string[] openingMessages =
+    {
+        "俞伯牙与钟子期的知音之情，在此凝聚成一片高山流水的心域",
+        "然而此刻两位知音心声阻隔，唯留“弦断无人听”的遗憾",
+        "古琴台上的【解语琴】，似乎能读懂一些文字的“弦外之音”"
+    };
+
+    // 关卡通关结语
+    private readonly string[] closingMessages =
+    {
+        "高山流水之音再度响起，知音的共鸣终于跨越了山水之隔"
+    };
+    
     // 事件：季节切换时触发
     public System.Action<SeasonType> OnSeasonChanged;
     
@@ -57,20 +90,10 @@ public class Level3Manager : MonoBehaviour
     
     private void Start()
     {
-        // 播放关卡BGM
-        if (AudioManager.Instance != null)
-        {
-            AudioManager.Instance.PlayBGM(AudioManager.Instance.bgmLevel3);
-            
-            if (showDebugInfo)
-            {
-                GameLogger.LogDev("Level3Manager: 开始播放知音篇主题BGM");
-            }
-        }
-        else
-        {
-            GameLogger.LogWarning("Level3Manager: AudioManager实例未找到，无法播放BGM");
-        }
+        GameLogger.LogSystem("Level3Manager: 开始初始化level3场景");
+        
+        // 确保Bootstrap系统初始化
+        GameBootstrap.EnsureInitialized();
         
         // 初始化季节状态
         InitializeSeason();
@@ -78,13 +101,344 @@ public class Level3Manager : MonoBehaviour
         // 初始化彩蛋功能
         InitializeEasterEgg();
         
-        // 延迟一帧强制启用玩家移动，避免被其他管理器在Start中覆盖
-        StartCoroutine(EnsureEnableMovementNextFrame());
-        
-        if (showDebugInfo)
+        // --- 关卡流程控制 ---
+        levelManager = GetComponent<LevelManager>();
+        if (levelManager != null)
         {
-            GameLogger.LogDev($"Level3Manager: 初始化完成，当前季节: {currentSeason}");
+            levelManager.OnLevelCompleted += HandleLevelCompletion;
         }
+
+        // 关卡开始时禁用操作，等待Bootstrap和开场白
+        DisableAllOperations();
+        
+        // 开始初始化协程
+        StartCoroutine(InitializeLevel3Coroutine());
+    }
+
+    private void OnDestroy()
+    {
+        if (levelManager != null)
+        {
+            levelManager.OnLevelCompleted -= HandleLevelCompletion;
+        }
+    }
+    
+    /// <summary>
+    /// 初始化Level3的协程 - 等待Bootstrap完成后开始
+    /// </summary>
+    private IEnumerator InitializeLevel3Coroutine()
+    {
+        // 等待Bootstrap完成
+        while (!GameBootstrap.IsInitialized)
+        {
+            yield return new WaitForSeconds(0.1f);
+        }
+        
+        GameLogger.LogSystem("Level3Manager: Bootstrap完成，开始场景初始化");
+        
+        // 设置BGM
+        SetupLevel3BGM();
+        
+        // 等待一帧确保所有系统就绪
+        yield return null;
+        
+        // 标记Bootstrap完成
+        bootstrapCompleted = true;
+        
+        // 开始场景内容
+        InitializeSceneContent();
+    }
+    
+    /// <summary>
+    /// IBootstrapAware接口实现 - Bootstrap完成时调用
+    /// </summary>
+    public void OnBootstrapComplete()
+    {
+        bootstrapCompleted = true;
+        GameLogger.LogSystem("Level3Manager: 收到Bootstrap完成通知");
+        
+        if (!sceneInitialized)
+        {
+            InitializeSceneContent();
+        }
+    }
+    
+    /// <summary>
+    /// 设置Level3的BGM
+    /// </summary>
+    private void SetupLevel3BGM()
+    {
+        if (AudioManager.Instance != null)
+        {
+            if (AudioManager.Instance.bgmLevel3 != null)
+            {
+                AudioManager.Instance.PlayBGM(AudioManager.Instance.bgmLevel3);
+                
+                if (showDebugInfo)
+                {
+                    GameLogger.LogDev("Level3Manager: 开始播放知音篇主题BGM");
+                }
+            }
+            else
+            {
+                GameLogger.LogWarning("Level3Manager: bgmLevel3音频片段未设置");
+            }
+        }
+        else
+        {
+            GameLogger.LogWarning("Level3Manager: AudioManager实例未找到，无法播放BGM");
+        }
+    }
+    
+    /// <summary>
+    /// 初始化场景内容 - 显示开场白并开始游戏
+    /// </summary>
+    private void InitializeSceneContent()
+    {
+        if (sceneInitialized) return;
+        
+        sceneInitialized = true;
+        GameLogger.LogSystem("Level3Manager: 开始显示开场白");
+        
+        // 显示开场白，结束后正式开始关卡
+        if (InfoPopupManager.Instance != null)
+        {
+            InfoPopupManager.Instance.ShowPopup(openingMessages, () => {
+                OnOpeningCompleted(); // 先处理开场白结束逻辑
+                StartLevel(); // 再开始关卡
+            }, OnOpeningMessageShown);
+        }
+        else
+        {
+            GameLogger.LogWarning("Level3Manager: InfoPopupManager仍然为null，直接开始关卡");
+            StartLevel();
+        }
+    }
+
+    /// <summary>
+    /// 关卡正式开始（开场白结束后调用）
+    /// </summary>
+    private void StartLevel()
+    {
+        GameLogger.LogSystem("Level3Manager: 开场白结束，正式开始关卡。");
+        // 强制启用玩家移动，避免被其他管理器在Start中覆盖
+        StartCoroutine(EnsureEnableMovementNextFrame());
+    }
+
+    /// <summary>
+    /// 处理关卡完成事件
+    /// </summary>
+    private void HandleLevelCompletion()
+    {
+        GameLogger.LogSystem("Level3Manager: 关卡完成，显示通关结语。");
+        DisableAllOperations();
+
+        if (InfoPopupManager.Instance != null)
+        {
+            InfoPopupManager.Instance.ShowPopup(closingMessages, FinishLevel);
+        }
+        else
+        {
+            GameLogger.LogWarning("Level3Manager: 未找到InfoPopupManager实例，将直接完成关卡。");
+            FinishLevel();
+        }
+    }
+
+    /// <summary>
+    /// 关卡收尾，通知GameFlowManager
+    /// </summary>
+    private void FinishLevel()
+    {
+        GameLogger.LogSystem("Level3Manager: 开始关卡收尾流程");
+        
+        // 验证Bootstrap状态
+        if (!GameBootstrap.IsInitialized)
+        {
+            GameLogger.LogWarning("Level3Manager: Bootstrap未完成初始化，尝试重新初始化");
+            GameBootstrap.EnsureInitialized();
+        }
+        
+        // 获取正确的场景名
+        string currentSceneName = UnityEngine.SceneManagement.SceneManager.GetActiveScene().name;
+        GameLogger.LogSystem($"Level3Manager: 当前场景名: {currentSceneName}");
+        
+        if (GameFlowManager.Instance != null)
+        {
+            GameLogger.LogSystem("Level3Manager: GameFlowManager实例存在，调用CompleteLevel");
+            GameFlowManager.Instance.CompleteLevel(currentSceneName);
+        }
+        else
+        {
+            GameLogger.LogError("Level3Manager: 未找到GameFlowManager实例，无法完成关卡。");
+            GameLogger.LogError($"Level3Manager: Bootstrap状态: {GameBootstrap.IsInitialized}");
+            GameLogger.LogError($"Level3Manager: AudioManager实例: {(AudioManager.Instance != null ? "存在" : "null")}");
+            GameLogger.LogError($"Level3Manager: InfoPopupManager实例: {(InfoPopupManager.Instance != null ? "存在" : "null")}");
+            
+            // 尝试最后一次创建GameFlowManager
+            GameLogger.LogSystem("Level3Manager: 尝试紧急创建GameFlowManager");
+            GameObject emergencyGameFlow = new GameObject("GameFlowManager_Emergency");
+            emergencyGameFlow.AddComponent<GameFlowManager>();
+            DontDestroyOnLoad(emergencyGameFlow);
+            
+            if (GameFlowManager.Instance != null)
+            {
+                GameLogger.LogSystem("Level3Manager: 紧急创建成功，继续完成关卡");
+                GameFlowManager.Instance.CompleteLevel(currentSceneName);
+            }
+            else
+            {
+                GameLogger.LogError("Level3Manager: 紧急创建也失败了！跳过场景切换。");
+            }
+        }
+    }
+    
+    /// <summary>
+    /// 开场白消息显示时的回调处理
+    /// </summary>
+    /// <param name="messageIndex">消息索引</param>
+    /// <param name="message">消息内容</param>
+    private void OnOpeningMessageShown(int messageIndex, string message)
+    {
+        GameLogger.LogSystem($"Level3Manager: 显示开场白第 {messageIndex + 1} 句: {message}");
+        
+        // 第三句话时显示箭头指向古琴
+        if (messageIndex == 2) // 索引从0开始，第三句是索引2
+        {
+            ShowArrowPointingToGuqin();
+        }
+        else
+        {
+            // 其他消息时隐藏箭头
+            HideArrow();
+        }
+    }
+    
+    /// <summary>
+    /// 开场白结束时的处理（在StartLevel之前调用）
+    /// </summary>
+    private void OnOpeningCompleted()
+    {
+        // 确保在开场白结束后隐藏箭头
+        HideArrow();
+        GameLogger.LogSystem("Level3Manager: 开场白结束，已隐藏箭头");
+    }
+    
+    /// <summary>
+    /// 显示箭头指向古琴
+    /// </summary>
+    private void ShowArrowPointingToGuqin()
+    {
+        if (arrowImage == null || guqinTransform == null)
+        {
+            GameLogger.LogWarning("Level3Manager: arrowImage 或 guqinTransform 未设置，无法显示箭头");
+            return;
+        }
+        
+        GameLogger.LogSystem("Level3Manager: 显示箭头指向古琴");
+        arrowImage.gameObject.SetActive(true);
+        
+        // 获取古琴的屏幕坐标
+        Vector3 guqinScreenPos = Camera.main.WorldToScreenPoint(guqinTransform.position);
+        
+        // 计算箭头位置和角度（参考TutorialManager的逻辑）
+        SetupArrowForWorldObject(guqinScreenPos);
+    }
+    
+    /// <summary>
+    /// 隐藏箭头
+    /// </summary>
+    private void HideArrow()
+    {
+        if (arrowImage != null)
+        {
+            arrowImage.gameObject.SetActive(false);
+            GameLogger.LogSystem("Level3Manager: 已隐藏箭头");
+        }
+    }
+    
+    /// <summary>
+    /// 为世界物体设置箭头位置和角度（参考TutorialManager实现）
+    /// </summary>
+    /// <param name="targetScreenPos">目标的屏幕坐标</param>
+    private void SetupArrowForWorldObject(Vector3 targetScreenPos)
+    {
+        if (arrowImage == null)
+        {
+            GameLogger.LogWarning("Level3Manager: arrowImage 为空，无法设置箭头");
+            return;
+        }
+        
+        // 使用屏幕中心作为起点（简化处理）
+        Vector3 screenCenter = new Vector3(Screen.width / 2f, Screen.height / 2f, 0);
+        
+        // 计算方向向量
+        Vector3 direction = (targetScreenPos - screenCenter).normalized;
+        
+        // 箭头偏移距离（调整为更近）
+        float arrowOffset = 80f;
+        Vector3 arrowScreenPos = targetScreenPos - direction * arrowOffset;
+        
+        // 计算角度
+        Vector3 arrowToTarget = (targetScreenPos - arrowScreenPos).normalized;
+        float angle = Mathf.Atan2(arrowToTarget.y, arrowToTarget.x) * Mathf.Rad2Deg;
+        
+        // 箭头素材是向左的，调整角度
+        angle += 180f;
+        
+        // 根据角度选择合适的Sprite
+        if (Mathf.Abs(angle % 360f) > 135f || Mathf.Abs(angle % 360f) < 45f)
+        {
+            if (arrowLeft != null) arrowImage.sprite = arrowLeft;
+        }
+        else
+        {
+            if (arrowDownLeft != null) arrowImage.sprite = arrowDownLeft;
+        }
+        
+        // 转换屏幕坐标到UI坐标并设置箭头位置
+        if (TrySetArrowAnchoredFromScreen(arrowScreenPos, angle))
+        {
+            GameLogger.LogSystem($"Level3Manager: 箭头设置成功 - 屏幕坐标: {arrowScreenPos}, 角度: {angle}");
+        }
+        else
+        {
+            GameLogger.LogWarning("Level3Manager: 箭头坐标转换失败");
+        }
+    }
+    
+    /// <summary>
+    /// 将屏幕坐标转换为箭头所在Canvas的局部坐标并设置位置
+    /// </summary>
+    /// <param name="screenPos">屏幕坐标</param>
+    /// <param name="angle">箭头角度</param>
+    /// <returns>是否成功设置位置</returns>
+    private bool TrySetArrowAnchoredFromScreen(Vector3 screenPos, float angle)
+    {
+        if (arrowImage == null || arrowImage.canvas == null) 
+        {
+            GameLogger.LogWarning("Level3Manager: arrowImage 或 canvas 为空");
+            return false;
+        }
+
+        var canvas = arrowImage.canvas;
+        RectTransform canvasRect = canvas.transform as RectTransform;
+        Camera uiCam = canvas.renderMode == RenderMode.ScreenSpaceOverlay ? null : canvas.worldCamera;
+
+        if (RectTransformUtility.ScreenPointToLocalPointInRectangle(canvasRect, screenPos, uiCam, out Vector2 localPos))
+        {
+            RectTransform arrowRect = arrowImage.rectTransform;
+            arrowRect.anchoredPosition = localPos;
+            arrowRect.localRotation = Quaternion.Euler(0f, 0f, angle);
+            arrowRect.localScale = Vector3.one;
+
+            // 防止Z偏移
+            Vector3 lp = arrowRect.localPosition;
+            arrowRect.localPosition = new Vector3(lp.x, lp.y, 0f);
+            
+            return true;
+        }
+        
+        return false;
     }
 
     private System.Collections.IEnumerator EnsureEnableMovementNextFrame()
@@ -122,6 +476,32 @@ public class Level3Manager : MonoBehaviour
         else
         {
             GameLogger.LogWarning("Level3Manager: 未找到PlayerController，无法启用玩家移动");
+        }
+    }
+    
+    /// <summary>
+    /// 禁用所有玩家操作
+    /// </summary>
+    private void DisableAllOperations()
+    {
+        GameLogger.LogSystem("Level3Manager: 禁用所有操作。");
+        PlayerController playerController = FindObjectOfType<PlayerController>();
+        if (playerController != null)
+        {
+            for (int i = 0; i < playerController.GetPlayerCount(); i++)
+            {
+                Player player = playerController.GetPlayerByIndex(i);
+                if (player != null)
+                {
+                    player.SetInputEnabled(false);
+                    player.SetEnterKeyEnabled(false);
+                }
+            }
+            playerController.DisablePlayerSwitching();
+        }
+        else
+        {
+            GameLogger.LogWarning("Level3Manager: PlayerController为null，无法禁用操作。");
         }
     }
     

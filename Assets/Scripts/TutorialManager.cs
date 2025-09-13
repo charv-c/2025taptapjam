@@ -1364,8 +1364,19 @@ public class TutorialManager : MonoBehaviour
         // 在切换到level2之前，启用所有操作
         EnableAllOperations();
         
-        // 加载 Level2 场景
-        SceneManager.LoadScene("level2");
+        // 旧逻辑: 直接加载level2
+        // SceneManager.LoadScene("level2");
+        
+        // 新逻辑: 调用GameFlowManager来处理关卡完成流程
+        if (GameFlowManager.Instance != null)
+        {
+            GameFlowManager.Instance.CompleteLevel("level1");
+        }
+        else
+        {
+            GameLogger.LogError("TutorialManager: GameFlowManager实例不存在！无法完成关卡。将回退到加载level2。");
+            SceneManager.LoadScene("level2"); // 回退方案
+        }
     }
     
     // 启用所有操作（移动、切换、回车、空格）

@@ -47,6 +47,8 @@ public class AudioManager : MonoBehaviour
     public AudioClip sfxScholarEnlighten;    // 书生恍然大悟音效 (Level3)
     public AudioClip sfxBirdCall;            // 鸟叫音效 (Level3)
     public AudioClip sfxApplause;            // 胜利鼓掌音效 (EndLevel)
+    public AudioClip sfxBugEatLeaf;          // 虫子吃叶子音效 (Level3)
+    public AudioClip sfxSeedSprout;          // 籽发芽音效 (Level3)
 
     [Header("环境音 (Ambient)")]
     public AudioClip ambientRain;            // 循环播放的背景雨声 [cite: 12]
@@ -192,6 +194,48 @@ public class AudioManager : MonoBehaviour
     public void PlayApplause()
     {
         PlaySFX(sfxApplause);
+    }
+
+    /// <summary>
+    /// 播放虫子吃叶子音效 (Level3)
+    /// </summary>
+    public void PlayBugEatLeaf()
+    {
+        PlaySFX(sfxBugEatLeaf);
+    }
+
+    /// <summary>
+    /// 播放籽发芽音效 (Level3)
+    /// </summary>
+    public void PlaySeedSprout()
+    {
+        PlaySFX(sfxSeedSprout);
+    }
+
+    // --- UI音效专用方法 ---
+
+    /// <summary>
+    /// 播放按钮悬停音效
+    /// </summary>
+    public void PlayButtonHover()
+    {
+        PlaySFX(sfxButtonHover);
+    }
+
+    /// <summary>
+    /// 播放按钮点击音效
+    /// </summary>
+    public void PlayButtonClick()
+    {
+        PlaySFX(sfxButtonClick);
+    }
+    
+    /// <summary>
+    /// 播放通用UI点击音效
+    /// </summary>
+    public void PlayUIClick()
+    {
+        PlaySFX(sfxUIClick);
     }
 
     // --- BGM停止控制 ---
