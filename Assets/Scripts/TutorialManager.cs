@@ -348,7 +348,7 @@ public class TutorialManager : MonoBehaviour
         }
         
         SetGuideExpression(exprNormal);
-        hintText.text = "缘分如江河，文字作舟楫。\n 欢迎来到《字里人间》。";
+        hintText.text = "方块小字，大千人间。\n 执笔人，欢迎来到《字里人间》。";
         continueButton.gameObject.SetActive(true);
     }
 
@@ -1122,7 +1122,7 @@ public class TutorialManager : MonoBehaviour
         }
         
         SetGuideExpression(exprHappy);
-        hintText.text = "去吧，结缘者，让他们的思念，汇聚成重逢的诗篇。";
+        hintText.text = "去吧，执笔人，让他们的思念，汇聚成重逢的诗篇。";
         continueButton.GetComponentInChildren<TextMeshProUGUI>().text = "完成教学";
         continueButton.gameObject.SetActive(true);
     }
