@@ -74,6 +74,13 @@ public class TutorialManager : MonoBehaviour
 
     private void Start()
     {
+        // 设置当前关卡进度
+        if (LevelProgressManager.Instance != null)
+        {
+            LevelProgressManager.Instance.SetCurrentLevel("level1");
+            GameLogger.LogDev("TutorialManager: 已设置当前关卡为 level1");
+        }
+        
         // 获取PlayerController引用
         playerController = FindObjectOfType<PlayerController>();
 

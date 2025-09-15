@@ -31,6 +31,13 @@ public class Level2Manager : MonoBehaviour, IBootstrapAware
         // 确保Bootstrap系统初始化
         GameBootstrap.EnsureInitialized();
         
+        // 设置当前关卡进度
+        if (LevelProgressManager.Instance != null)
+        {
+            LevelProgressManager.Instance.SetCurrentLevel("level2");
+            GameLogger.LogSystem("Level2Manager: 已设置当前关卡为 level2");
+        }
+        
         // 获取对其他管理器的引用
         playerController = FindObjectOfType<PlayerController>();
         levelManager = GetComponent<LevelManager>();

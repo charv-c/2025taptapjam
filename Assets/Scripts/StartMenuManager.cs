@@ -4,12 +4,16 @@ using UnityEngine.SceneManagement;
 
 /// <summary>
 /// 开始菜单的管理器脚本
-/// 负责处理UI交互，如点击“开始游戏”按钮，并播放相关音效
+/// 负责处理UI交互，如点击"开始游戏"按钮，并播放相关音效
+/// 集成了关卡进度管理功能
 /// </summary>
 public class StartMenuManager : MonoBehaviour
 {
     [Header("场景设置")]
     public string sceneToLoad = "FormalLevel_Cowherd";
+    
+    [Header("进度管理")]
+    [SerializeField] private bool enableDebugLog = true;
 
     private void Start()
     {
@@ -24,6 +28,42 @@ public class StartMenuManager : MonoBehaviour
     {
         // 统一经由AudioManager播放点击音效，并在音效结束后加载场景
         StartCoroutine(LoadSceneAfterSound());
+    }
+    
+    /// <summary>
+    /// 开始新游戏
+    /// </summary>
+    public void OnStartNewGameClicked()
+    {
+        LogDebug("开始新游戏");
+        
+        // 重置游戏进度
+        if (LevelProgressManager.Instance != null)
+        {
+            LevelProgressManager.Instance.StartNewGame();
+        }
+        
+        // 播放音效并加载第一个关卡
+        StartCoroutine(LoadSceneAfterSound());
+    }
+    
+    /// <summary>
+    /// 继续游戏
+    /// </summary>
+    public void OnContinueGameClicked()
+    {
+        LogDebug("继续游戏");
+        
+        // 从上次进度继续
+        if (LevelProgressManager.Instance != null)
+        {
+            LevelProgressManager.Instance.ContinueGame();
+        }
+        else
+        {
+            LogDebug("LevelProgressManager未找到，使用默认场景");
+            StartCoroutine(LoadSceneAfterSound());
+        }
     }
 
     /// <summary>
@@ -41,7 +81,31 @@ public class StartMenuManager : MonoBehaviour
         // 若没有可用的AudioManager或音效未配置，则直接进入下一场景
 
         PublicData.OnBeforeSceneTransition();
-        SceneManager.LoadScene(sceneToLoad);
+        
+        // 确定要加载的场景
+        string targetScene = GetTargetScene();
+        LogDebug($"加载场景: {targetScene}");
+        SceneManager.LoadScene(targetScene);
+    }
+    
+    /// <summary>
+    /// 获取目标场景名称
+    /// </summary>
+    /// <returns>要加载的场景名称</returns>
+    private string GetTargetScene()
+    {
+        // 如果有LevelProgressManager，优先使用其逻辑
+        if (LevelProgressManager.Instance != null)
+        {
+            string progressScene = LevelProgressManager.Instance.GetCurrentLevelToLoad();
+            if (!string.IsNullOrEmpty(progressScene))
+            {
+                return progressScene;
+            }
+        }
+        
+        // 如果没有进度或LevelProgressManager不可用，使用默认场景
+        return sceneToLoad;
     }
 
     public void PlayHoverSound()
@@ -49,6 +113,47 @@ public class StartMenuManager : MonoBehaviour
         if (AudioManager.Instance != null && AudioManager.Instance.sfxButtonHover != null)
         {
             AudioManager.Instance.PlaySFX(AudioManager.Instance.sfxButtonHover);
+        }
+    }
+    
+    /// <summary>
+    /// 检查是否有游戏进度可以继续
+    /// </summary>
+    /// <returns>是否有进度可以继续</returns>
+    public bool HasGameProgress()
+    {
+        if (LevelProgressManager.Instance != null)
+        {
+            return LevelProgressManager.Instance.HasGameStarted();
+        }
+        return false;
+    }
+    
+    /// <summary>
+    /// 获取游戏进度信息
+    /// </summary>
+    /// <returns>进度信息字符串</returns>
+    public string GetProgressInfo()
+    {
+        if (LevelProgressManager.Instance != null)
+        {
+            int completed = LevelProgressManager.Instance.GetCompletedLevelsCount();
+            int total = LevelProgressManager.Instance.GetTotalLevelsCount();
+            float percentage = LevelProgressManager.Instance.GetProgressPercentage();
+            return $"已完成 {completed}/{total} 关卡 ({percentage:F0}%)";
+        }
+        return "无进度信息";
+    }
+    
+    /// <summary>
+    /// 调试日志输出
+    /// </summary>
+    /// <param name="message">日志消息</param>
+    private void LogDebug(string message)
+    {
+        if (enableDebugLog)
+        {
+            Debug.Log($"[StartMenuManager] {message}");
         }
     }
 }

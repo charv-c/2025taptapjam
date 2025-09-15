@@ -41,6 +41,14 @@ public class GameFlowManager : MonoBehaviour
         LastCompletedLevelName = levelName;
         GameLogger.LogSystem($"GameFlowManager: 关卡 '{levelName}' 已完成。LastCompletedLevelName已设置为: '{LastCompletedLevelName}'");
         GameLogger.LogSystem($"GameFlowManager: 关卡序列: [{string.Join(", ", PublicData.LevelSequence)}]");
+        
+        // 更新关卡进度管理器
+        if (LevelProgressManager.Instance != null)
+        {
+            LevelProgressManager.Instance.CompleteLevel(levelName);
+            GameLogger.LogSystem($"GameFlowManager: 已更新关卡进度管理器，关卡 '{levelName}' 标记为完成");
+        }
+        
         GameLogger.LogSystem("GameFlowManager: 即将进入结算页面 EndLevel");
         SceneManager.LoadScene("EndLevel");
     }
@@ -60,6 +68,14 @@ public class GameFlowManager : MonoBehaviour
         {
             string nextScene = GetNextLevelSceneName();
             GameLogger.LogSystem($"GameFlowManager: GetNextLevelSceneName() 返回: '{nextScene}'");
+            
+            // 更新关卡进度管理器中的当前关卡
+            if (LevelProgressManager.Instance != null)
+            {
+                LevelProgressManager.Instance.SetCurrentLevel(nextScene);
+                GameLogger.LogSystem($"GameFlowManager: 已更新关卡进度管理器，当前关卡设置为: '{nextScene}'");
+            }
+            
             GameLogger.LogSystem($"GameFlowManager: 正在加载下一个关卡: {nextScene}");
             SceneManager.LoadScene(nextScene);
         }

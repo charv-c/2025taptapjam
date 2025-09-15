@@ -90,6 +90,13 @@ public class Level3Manager : MonoBehaviour, IBootstrapAware
         // 确保Bootstrap系统初始化
         GameBootstrap.EnsureInitialized();
         
+        // 设置当前关卡进度
+        if (LevelProgressManager.Instance != null)
+        {
+            LevelProgressManager.Instance.SetCurrentLevel("level3");
+            GameLogger.LogSystem("Level3Manager: 已设置当前关卡为 level3");
+        }
+        
         // 初始化季节状态
         InitializeSeason();
         
