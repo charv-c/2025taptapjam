@@ -390,10 +390,9 @@ public class LevelProgressManager : MonoBehaviour
     /// </summary>
     public void UpdateButtonStates()
     {
-        // 仅以关卡进度为准：有“关卡进度”→显示“继续游戏 + 从头开始”；
-        // 否则仅显示“开始游戏”（隐藏继续）。
-        bool hasLevelProgress = HasGameStarted();
-        LogDebug($"更新按钮状态 - 仅按关卡进度判断，有进度: {hasLevelProgress}");
+        // 仅以“关卡已完成”为准：至少有一个关卡完成才算有进度
+        bool hasLevelProgress = GetCompletedLevelsCount() > 0;
+        LogDebug($"更新按钮状态 - 以已完成关卡数判断，有进度: {hasLevelProgress} (completed={GetCompletedLevelsCount()})");
 
         if (hasLevelProgress)
         {

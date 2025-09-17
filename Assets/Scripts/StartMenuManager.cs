@@ -131,7 +131,7 @@ public class StartMenuManager : MonoBehaviour
         }
 
         // 重置游戏进度（内存态）
-        LevelProgressManager.Instance?.StartNewGame();
+        LevelProgressManager.Instance?.StartNewGame(); // 会清空GameStarted与完成列表
 
         // 立即跳转到 level1（或 LevelSequence[0]）
         string level1 = (PublicData.LevelSequence != null && PublicData.LevelSequence.Length > 0)
