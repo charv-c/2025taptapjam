@@ -505,7 +505,13 @@ public class Level3Manager : MonoBehaviour, IBootstrapAware
     /// </summary>
     private void InitializeSeason()
     {
-        // 根据当前季节设置场景状态
+        // 如果有存档，避免用默认季节与背景覆盖恢复结果
+        if (GameStateManager.Instance != null && GameStateManager.Instance.HasSavedStateForActiveScene())
+        {
+            GameLogger.LogDev("Level3Manager: 检测到当前场景存在存档，跳过InitializeSeason对季节与背景的覆盖");
+            return;
+        }
+        // 无存档时，根据当前季节设置场景状态
         ApplySeasonEffects(currentSeason);
     }
     

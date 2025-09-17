@@ -31,11 +31,15 @@ public class Level2Manager : MonoBehaviour, IBootstrapAware
         // 确保Bootstrap系统初始化
         GameBootstrap.EnsureInitialized();
         
-        // 设置当前关卡进度
+        // 标记level1完成并设置当前关卡为level2（保险，避免某些路径漏记）
         if (LevelProgressManager.Instance != null)
         {
+            if (!LevelProgressManager.Instance.IsLevelCompleted("level1"))
+            {
+                LevelProgressManager.Instance.CompleteLevel("level1");
+            }
             LevelProgressManager.Instance.SetCurrentLevel("level2");
-            GameLogger.LogSystem("Level2Manager: 已设置当前关卡为 level2");
+            GameLogger.LogSystem("Level2Manager: 已设置当前关卡为 level2（并确保level1已完成）");
         }
         
         // 获取对其他管理器的引用
@@ -104,10 +108,23 @@ public class Level2Manager : MonoBehaviour, IBootstrapAware
         sceneInitialized = true;
         GameLogger.LogSystem("Level2Manager: 开始显示开场白");
         
+        // 若已经看过引导，则跳过
+        bool seenLevel2Intro = PlayerPrefs.GetInt("Seen_Level2_Intro", 0) == 1;
+        if (seenLevel2Intro)
+        {
+            GameLogger.LogSystem("Level2Manager: 已看过Level2引导，跳过开场白");
+            StartLevel();
+            return;
+        }
+        
         // 显示开场白，结束后再正式开始关卡
         if (InfoPopupManager.Instance != null)
         {
-            InfoPopupManager.Instance.ShowPopup(openingMessages, StartLevel);
+            InfoPopupManager.Instance.ShowPopup(openingMessages, () => {
+                PlayerPrefs.SetInt("Seen_Level2_Intro", 1);
+                PlayerPrefs.Save();
+                StartLevel();
+            });
         }
         else
         {

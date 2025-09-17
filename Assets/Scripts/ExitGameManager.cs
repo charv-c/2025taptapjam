@@ -8,6 +8,8 @@ using System.Collections;
 /// </summary>
 public class ExitGameManager : MonoBehaviour
 {
+    // 跨场景单例
+    public static ExitGameManager Instance { get; private set; }
     [Header("UI设置")]
     [SerializeField] private Button exitButton;
     
@@ -23,6 +25,10 @@ public class ExitGameManager : MonoBehaviour
     [SerializeField] private float buttonSpacing = 20f;
     [SerializeField] private Vector2 buttonSize = new Vector2(120f, 40f);
     [SerializeField] private bool autoLayoutButtons = true;
+    [Tooltip("按钮容器锚点的Y值（0=底部, 1=顶部）")]
+    [SerializeField, Range(0f,1f)] private float buttonAnchorY = 0.3f;
+    [Tooltip("在锚点基础上的Y偏移（像素，正值向上）")]
+    [SerializeField] private float buttonYOffset = 24f;
     
     [Header("音效设置")]
     [SerializeField] private bool playExitSound = true;
@@ -33,6 +39,8 @@ public class ExitGameManager : MonoBehaviour
     [Header("全屏控制")]
     [Tooltip("拦截Esc导致的全屏退出（Standalone等可控平台有效）")]
     [SerializeField] private bool preventEscExitFullScreen = true;
+    [Tooltip("Windows上使用无边框全屏模式，避免Esc触发系统级退出全屏")]
+    [SerializeField] private bool forceBorderlessFullscreenOnWindows = true;
     
     // 期望的全屏状态（用于在部分平台上被动退出时强制恢复）
     private bool desiredFullScreen;
@@ -41,6 +49,43 @@ public class ExitGameManager : MonoBehaviour
     private Button confirmExitButton;
     private Button cancelExitButton;
     
+    private void Awake()
+    {
+        // 单例与跨场景持久化
+        if (Instance == null)
+        {
+            Instance = this;
+            DontDestroyOnLoad(gameObject);
+        }
+        else if (Instance != this)
+        {
+            Destroy(gameObject);
+            return;
+        }
+        
+        // 订阅场景加载事件
+        UnityEngine.SceneManagement.SceneManager.sceneLoaded += HandleSceneLoaded;
+
+        // 在Windows上强制使用无边框全屏，避免Esc由系统层退出
+#if UNITY_STANDALONE_WIN
+        if (forceBorderlessFullscreenOnWindows)
+        {
+            try
+            {
+                if (Screen.fullScreenMode != FullScreenMode.FullScreenWindow)
+                {
+                    Screen.fullScreenMode = FullScreenMode.FullScreenWindow;
+                }
+                if (!Screen.fullScreen)
+                {
+                    Screen.fullScreen = true;
+                }
+            }
+            catch { }
+        }
+#endif
+    }
+
     private void Start()
     {
         SetupUI();
@@ -85,6 +130,83 @@ public class ExitGameManager : MonoBehaviour
             confirmationDialogInstance.SetActive(false);
         }
     }
+
+    private void OnDestroy()
+    {
+        if (Instance == this)
+        {
+            UnityEngine.SceneManagement.SceneManager.sceneLoaded -= HandleSceneLoaded;
+        }
+    }
+
+    /// <summary>
+    /// 场景加载完成后重新初始化UI引用与对话框
+    /// </summary>
+    private void HandleSceneLoaded(UnityEngine.SceneManagement.Scene scene, UnityEngine.SceneManagement.LoadSceneMode mode)
+    {
+        // 启动场景（startup）不创建退出对话框，避免重复或无意义的初始化
+        if (scene.name.Trim().ToLowerInvariant() == "startup")
+        {
+            LogDebug("Startup场景：跳过退出对话框的UI初始化");
+            return;
+        }
+        // 尝试从新场景中查找退出按钮（可选）
+        if (exitButton == null)
+        {
+            GameObject found = GameObject.Find("ExitButton");
+            if (found != null)
+            {
+                exitButton = found.GetComponent<Button>();
+            }
+        }
+        
+        // 重新设置UI（重新创建对话框与按钮），放到下一帧执行以确保新场景UI已初始化
+        StartCoroutine(RebuildUIAfterSceneLoaded());
+    }
+
+    /// <summary>
+    /// 场景切换后延迟一帧重建UI，确保Canvas与EventSystem已就绪
+    /// </summary>
+    private IEnumerator RebuildUIAfterSceneLoaded()
+    {
+        // 清理上一场景的对话框实例
+        if (confirmationDialogInstance != null)
+        {
+            Destroy(confirmationDialogInstance);
+            confirmationDialogInstance = null;
+        }
+
+        // 等待一帧，确保场景中的Canvas创建完成
+        yield return null;
+
+        // 额外再等一帧，兼容某些加载路径
+        yield return null;
+
+        // 尝试多次查找Canvas（最多尝试10帧）
+        bool ensured = false;
+        for (int i = 0; i < 10; i++)
+        {
+            if (EnsureConfirmationDialogInstance())
+            {
+                ensured = true;
+                break;
+            }
+            yield return null;
+        }
+
+        if (!ensured)
+        {
+            LogWarning("场景切换后未能创建确认对话框（未找到Canvas）");
+            yield break;
+        }
+
+        // 创建按钮并初始化隐藏
+        CreateConfirmationButtons();
+        if (confirmationDialogInstance != null)
+        {
+            confirmationDialogInstance.SetActive(false);
+        }
+    }
     
     /// <summary>
     /// 创建确认对话框按钮
@@ -96,6 +218,9 @@ public class ExitGameManager : MonoBehaviour
             LogWarning("确认对话框实例不存在，无法创建按钮");
             return;
         }
+        
+        // 先清理旧的按钮，避免在同一场景被多次初始化时出现重复按钮
+        ClearExistingButtons();
         
         // 查找Canvas或创建按钮容器
         Canvas canvas = confirmationDialogInstance.GetComponentInParent<Canvas>();
@@ -158,6 +283,14 @@ public class ExitGameManager : MonoBehaviour
         Transform existingContainer = confirmationDialogInstance.transform.Find("ButtonContainer");
         if (existingContainer != null)
         {
+            // 应用当前锚点与偏移设置到已有容器
+            RectTransform exRect = existingContainer.GetComponent<RectTransform>();
+            if (exRect != null)
+            {
+                exRect.anchorMin = new Vector2(0.5f, buttonAnchorY);
+                exRect.anchorMax = new Vector2(0.5f, buttonAnchorY);
+                exRect.anchoredPosition = new Vector2(0f, buttonYOffset);
+            }
             return existingContainer.gameObject;
         }
         
@@ -167,10 +300,10 @@ public class ExitGameManager : MonoBehaviour
         
         // 添加RectTransform组件
         RectTransform rectTransform = buttonContainer.AddComponent<RectTransform>();
-        rectTransform.anchorMin = new Vector2(0.5f, 0.1f);
-        rectTransform.anchorMax = new Vector2(0.5f, 0.1f);
+        rectTransform.anchorMin = new Vector2(0.5f, buttonAnchorY);
+        rectTransform.anchorMax = new Vector2(0.5f, buttonAnchorY);
         rectTransform.sizeDelta = new Vector2(300f, 60f);
-        rectTransform.anchoredPosition = Vector2.zero;
+        rectTransform.anchoredPosition = new Vector2(0f, buttonYOffset);
         
         // 添加HorizontalLayoutGroup组件用于自动布局
         UnityEngine.UI.HorizontalLayoutGroup layoutGroup = buttonContainer.AddComponent<UnityEngine.UI.HorizontalLayoutGroup>();
@@ -193,14 +326,14 @@ public class ExitGameManager : MonoBehaviour
     /// <summary>
     /// 确保确认对话框实例存在
     /// </summary>
-    private void EnsureConfirmationDialogInstance()
+    private bool EnsureConfirmationDialogInstance()
     {
-        if (confirmationDialogInstance != null) return;
+        if (confirmationDialogInstance != null) return true;
         
         if (confirmationDialogPrefab == null)
         {
             LogWarning("确认对话框预制体未设置，无法实例化对话框");
-            return;
+            return false;
         }
         
         // 查找画布
@@ -208,7 +341,7 @@ public class ExitGameManager : MonoBehaviour
         if (canvas == null)
         {
             LogWarning("场景中未找到Canvas，无法实例化确认对话框");
-            return;
+            return false;
         }
         
         // 实例化对话框到Canvas
@@ -217,6 +350,7 @@ public class ExitGameManager : MonoBehaviour
         confirmationDialogInstance.SetActive(false);
         
         LogDebug("已实例化确认对话框预制体");
+        return true;
     }
     
     /// <summary>
@@ -254,11 +388,18 @@ public class ExitGameManager : MonoBehaviour
     /// </summary>
     private void HandleKeyboardInput()
     {
-        // ESC键退出游戏
+        // 处理退出键
+#if UNITY_WEBGL
+        // WebGL 平台：浏览器层面会用 ESC 退出全屏，无法拦截。
+        // 因此在 WebGL 上忽略 ESC，并改用备用热键（例如 Q）弹出退出对话框。
+        if (Input.GetKeyDown(KeyCode.Q))
+        {
+            OnExitButtonClicked();
+        }
+#else
+        // 非 WebGL 平台：使用 ESC 弹出退出对话框，并强制保持全屏（若已启用防护）。
         if (Input.GetKeyDown(KeyCode.Escape))
         {
-            // 在可控平台上阻止Esc导致的全屏退出
-#if !UNITY_WEBGL
             if (preventEscExitFullScreen)
             {
                 desiredFullScreen = true; // 仍然期望保持全屏
@@ -267,9 +408,10 @@ public class ExitGameManager : MonoBehaviour
                     Screen.fullScreen = true;
                 }
             }
-#endif
-            OnExitButtonClicked();
+            // 延迟一帧再弹窗，避免个别显卡驱动在Esc后瞬时改变全屏状态导致UI重建
+            StartCoroutine(ShowExitDialogNextFrame());
         }
+#endif
         
         // Alt+F4退出游戏（Windows）
         if (Input.GetKey(KeyCode.LeftAlt) && Input.GetKeyDown(KeyCode.F4))
@@ -299,11 +441,8 @@ public class ExitGameManager : MonoBehaviour
     {
         LogDebug("确认退出游戏");
         
-        // 播放确认音效
-        PlayConfirmSound();
-        
-        // 退出游戏并保存状态
-        ExitGameWithSave();
+        // 立即退出：不播放任何音效，不等待
+        ExitGameImmediateNoSound();
     }
     
     /// <summary>
@@ -350,6 +489,39 @@ public class ExitGameManager : MonoBehaviour
         
         LogDebug("隐藏退出确认对话框");
     }
+
+    /// <summary>
+    /// 对外暴露：保证退出确认对话框处于隐藏状态（用于存档前）
+    /// </summary>
+    public void EnsureExitDialogHidden()
+    {
+        if (confirmationDialogInstance != null && confirmationDialogInstance.activeSelf)
+        {
+            confirmationDialogInstance.SetActive(false);
+            LogDebug("EnsureExitDialogHidden: 存档前已强制隐藏退出确认对话框");
+        }
+    }
+
+    /// <summary>
+    /// 在保存前强制将退出对话框设为隐藏，避免下次加载时被恢复为显示
+    /// </summary>
+    public void HideDialogForSaving()
+    {
+        if (confirmationDialogInstance != null && confirmationDialogInstance.activeSelf)
+        {
+            confirmationDialogInstance.SetActive(false);
+            LogDebug("保存前强制隐藏退出确认对话框");
+        }
+    }
+    
+    /// <summary>
+    /// 协程：下一帧再弹出退出确认对话框
+    /// </summary>
+    private IEnumerator ShowExitDialogNextFrame()
+    {
+        yield return null; // 等待一帧，避免Esc触发的全屏切换抖动影响UI
+        OnExitButtonClicked();
+    }
     
     /// <summary>
     /// 退出游戏并保存状态
@@ -385,6 +557,38 @@ public class ExitGameManager : MonoBehaviour
         
         // 延迟退出，确保保存完成
         StartCoroutine(ExitGameDelayed());
+    }
+
+    /// <summary>
+    /// 立即退出游戏（无音效、无延迟），但仍保存必要状态
+    /// </summary>
+    private void ExitGameImmediateNoSound()
+    {
+        // 保存游戏状态
+        if (GameStateManager.Instance != null)
+        {
+            GameStateManager.Instance.SaveGameState();
+            LogDebug("游戏状态已保存(立即退出)");
+        }
+        else
+        {
+            LogWarning("GameStateManager实例不存在，无法保存状态(立即退出)");
+        }
+        
+        // 保存关卡进度
+        if (LevelProgressManager.Instance != null)
+        {
+            string currentScene = UnityEngine.SceneManagement.SceneManager.GetActiveScene().name;
+            LevelProgressManager.Instance.SetCurrentLevel(currentScene);
+            LogDebug("关卡进度已保存(立即退出)");
+        }
+        
+        // 直接退出
+#if UNITY_EDITOR
+        UnityEditor.EditorApplication.isPlaying = false;
+#else
+        Application.Quit();
+#endif
     }
     
     /// <summary>

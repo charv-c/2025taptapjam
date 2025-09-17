@@ -1357,6 +1357,12 @@ public class TutorialManager : MonoBehaviour
         // 旧逻辑: 直接加载level2
         // SceneManager.LoadScene("level2");
         
+        // 在进入level2之前，标记level1已完成，并设置当前关卡到level2
+        if (LevelProgressManager.Instance != null)
+        {
+            LevelProgressManager.Instance.CompleteLevel("level1");
+        }
+        
         // 新逻辑: 直接加载level2场景，跳过通关界面
         GameLogger.LogSystem("TutorialManager: 教程完成，直接加载level2场景");
         SceneManager.LoadScene("level2");

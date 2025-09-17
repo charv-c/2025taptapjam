@@ -3,7 +3,11 @@ guid: CSwYsyuuAnyIBTfO4rVFVDGdhwHJYBynWlo8LqR/EOkmE3hhCtkvJ9c=
 MonoImporter:
   externalObjects: {}
   serializedVersion: 2
-  defaultReferences: []
+  defaultReferences:
+  - exitButton: {instanceID: 0}
+  - confirmationDialogPrefab: {fileID: 5305167510034110862, guid: d71e43f716377be4ca1000c408db1deb, type: 3}
+  - confirmButtonPrefab: {fileID: 5378356400903471203, guid: 7fe1e65952a636b459cf6df2600a2d99, type: 3}
+  - cancelButtonPrefab: {fileID: 5378356400903471203, guid: 32abf1d86ed7d7b4184489dff552dee2, type: 3}
   executionOrder: 0
   icon: {instanceID: 0}
   userData: 

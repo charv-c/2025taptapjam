@@ -796,60 +796,6 @@ MonoBehaviour:
   startGameButton: {fileID: 837470468}
   continueGameButton: {fileID: 812991040}
   autoManageButtons: 1
---- !u!1 &1374594424
-GameObject:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  serializedVersion: 7
-  m_Component:
-  - component: {fileID: 1374594426}
-  - component: {fileID: 1374594425}
-  m_Layer: 0
-  m_HasEditorInfo: 1
-  m_Name: ExitManager
-  m_TagString: Untagged
-  m_Icon: {fileID: 0}
-  m_NavMeshLayer: 0
-  m_StaticEditorFlags: 0
-  m_IsActive: 1
---- !u!114 &1374594425
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1374594424}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 6f7613a70adc4724e87cd4206c477986, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  exitButton: {fileID: 0}
-  confirmationDialog: {fileID: 0}
-  confirmButtonPrefab: {fileID: 0}
-  cancelButtonPrefab: {fileID: 0}
-  buttonSpacing: 20
-  buttonSize: {x: 120, y: 40}
-  autoLayoutButtons: 1
-  playExitSound: 1
-  enableDebugLog: 1
---- !u!4 &1374594426
-Transform:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1374594424}
-  serializedVersion: 2
-  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: 0, y: 0, z: 0}
-  m_LocalScale: {x: 1, y: 1, z: 1}
-  m_ConstrainProportionsScale: 0
-  m_Children: []
-  m_Father: {fileID: 0}
-  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1 &1388326658
 GameObject:
   m_ObjectHideFlags: 0
@@ -1039,6 +985,64 @@ MonoBehaviour:
     m_MipBias: 0
     m_VarianceClampScale: 0.9
     m_ContrastAdaptiveSharpening: 0
+--- !u!1 &2052858158
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 7
+  m_Component:
+  - component: {fileID: 2052858160}
+  - component: {fileID: 2052858159}
+  m_Layer: 0
+  m_HasEditorInfo: 1
+  m_Name: ExitManager
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!114 &2052858159
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 2052858158}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 6f7613a70adc4724e87cd4206c477986, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  exitButton: {fileID: 0}
+  confirmationDialogPrefab: {fileID: 5305167510034110862, guid: d71e43f716377be4ca1000c408db1deb, type: 3}
+  confirmButtonPrefab: {fileID: 5378356400903471203, guid: 7fe1e65952a636b459cf6df2600a2d99, type: 3}
+  cancelButtonPrefab: {fileID: 5378356400903471203, guid: 32abf1d86ed7d7b4184489dff552dee2, type: 3}
+  buttonSpacing: 20
+  buttonSize: {x: 120, y: 40}
+  autoLayoutButtons: 1
+  buttonAnchorY: 0.3
+  buttonYOffset: 24
+  playExitSound: 1
+  enableDebugLog: 1
+  preventEscExitFullScreen: 1
+  forceBorderlessFullscreenOnWindows: 1
+--- !u!4 &2052858160
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 2052858158}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 1.4245472, y: 0.66653085, z: -9.955432}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 0}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1001 &1971686224943307287
 PrefabInstance:
   m_ObjectHideFlags: 0
@@ -1258,5 +1262,5 @@ SceneRoots:
   - {fileID: 1971686224943307287}
   - {fileID: 1357333851}
   - {fileID: 521958442}
-  - {fileID: 1374594426}
   - {fileID: 7723515758857295852}
+  - {fileID: 2052858160}

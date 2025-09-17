@@ -58,6 +58,27 @@ public class LevelProgressManager : MonoBehaviour
             UpdateButtonStates();
         }
     }
+
+    private void OnEnable()
+    {
+        // 监听场景加载，切换场景后刷新按钮状态
+        UnityEngine.SceneManagement.SceneManager.sceneLoaded += OnSceneLoaded;
+    }
+
+    private void OnDisable()
+    {
+        UnityEngine.SceneManagement.SceneManager.sceneLoaded -= OnSceneLoaded;
+    }
+
+    private void OnSceneLoaded(UnityEngine.SceneManagement.Scene scene, UnityEngine.SceneManagement.LoadSceneMode mode)
+    {
+        // 场景切换后重新加载进度并更新按钮
+        LoadProgress();
+        if (autoManageButtons)
+        {
+            UpdateButtonStates();
+        }
+    }
     
     /// <summary>
     /// 从本地存储加载游戏进度
@@ -362,12 +383,9 @@ public class LevelProgressManager : MonoBehaviour
     /// </summary>
     public void UpdateButtonStates()
     {
-        bool hasProgress = HasGameStarted();
-        
-        LogDebug($"更新按钮状态 - 有进度: {hasProgress}");
-        
-        // 如果有进度，显示继续游戏按钮，隐藏开始游戏按钮
-        if (hasProgress)
+        bool showContinue = ShouldShowContinue();
+        LogDebug($"更新按钮状态 - 显示继续: {showContinue}");
+        if (showContinue)
         {
             ShowContinueGameButton();
         }
@@ -375,6 +393,24 @@ public class LevelProgressManager : MonoBehaviour
         {
             ShowStartGameButton();
         }
+    }
+
+    /// <summary>
+    /// 是否应该显示“继续游戏”按钮
+    /// 规则：必须已开始游戏，且level1已完成；否则显示“开始游戏”。
+    /// </summary>
+    private bool ShouldShowContinue()
+    {
+        if (!HasGameStarted())
+        {
+            return false;
+        }
+        // 拿到首关名称（默认PublicData.LevelSequence[0]）
+        string firstLevel = PublicData.LevelSequence != null && PublicData.LevelSequence.Length > 0
+            ? PublicData.LevelSequence[0]
+            : "level1";
+        // 未完成level1时，仍显示“开始游戏”
+        return IsLevelCompleted(firstLevel);
     }
     
     /// <summary>
@@ -489,14 +525,14 @@ public class LevelProgressManager : MonoBehaviour
     [ContextMenu("切换按钮状态")]
     public void ToggleButtonStates()
     {
-        bool hasProgress = HasGameStarted();
-        if (hasProgress)
+        bool showContinue = ShouldShowContinue();
+        if (showContinue)
         {
-            ShowStartGameButton();
+            ShowContinueGameButton();
         }
         else
         {
-            ShowContinueGameButton();
+            ShowStartGameButton();
         }
     }
     

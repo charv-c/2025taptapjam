@@ -167,6 +167,19 @@ public class BroadcastManager : MonoBehaviour
     }
     
     /// <summary>
+    /// 替换广播历史（用于存档恢复，不触发实际广播）
+    /// </summary>
+    /// <param name="history">新的历史列表</param>
+    public void ReplaceHistory(List<string> history)
+    {
+        broadcastHistory.Clear();
+        if (history != null)
+        {
+            broadcastHistory.AddRange(history);
+        }
+    }
+    
+    /// <summary>
     /// 清空广播历史记录
     /// </summary>
     public void ClearBroadcastHistory()

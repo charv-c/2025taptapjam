@@ -2,6 +2,7 @@ using UnityEngine;
 using UnityEngine.SceneManagement;
 using System.Collections.Generic;
 using System.Linq;
+using UnityEngine.Rendering.Universal;
 
 /// <summary>
 /// 游戏状态管理器 - 负责保存和恢复关卡内的详细状态
@@ -32,13 +33,22 @@ public class GameStateManager : MonoBehaviour
     {
         public string objectName;
         public string objectPath;
-        public bool isActive;
+        public bool isActive; // 兼容旧字段：表示activeInHierarchy（已弃用）
+        public bool isActiveSelf; // 新字段：表示activeSelf（用于正确恢复）
         public bool hasHighlight;
         public bool highlightEnabled;
         public string highlightLetter;
         public Vector3 position;
         public bool hasSpriteRenderer;
         public bool spriteRendererEnabled;
+        public bool hasCollider2D;
+        public bool collider2DEnabled;
+        public bool hasRenderer;
+        public bool rendererEnabled;
+        public bool hasLight2D;
+        public bool light2DEnabled;
+        public bool hasPlayer;
+        public string playerCarryCharacter;
     }
     
     [System.Serializable]
@@ -62,6 +72,8 @@ public class GameStateManager : MonoBehaviour
             DontDestroyOnLoad(gameObject);
             currentLevelName = SceneManager.GetActiveScene().name;
             LogDebug("GameStateManager 初始化并设置为跨场景持久化");
+            // 订阅场景加载事件，确保每次进入场景后尝试恢复该场景的存档
+            SceneManager.sceneLoaded += OnSceneLoaded;
         }
         else
         {
@@ -72,6 +84,27 @@ public class GameStateManager : MonoBehaviour
     private void Start()
     {
         // 检查是否需要恢复游戏状态
+        if (ShouldRestoreGameState())
+        {
+            StartCoroutine(RestoreGameStateDelayed());
+        }
+    }
+
+    private void OnDestroy()
+    {
+        if (Instance == this)
+        {
+            // 取消订阅，避免重复绑定或空引用
+            SceneManager.sceneLoaded -= OnSceneLoaded;
+        }
+    }
+
+    /// <summary>
+    /// 场景加载完成时回调：尝试恢复对应场景的存档
+    /// </summary>
+    private void OnSceneLoaded(Scene scene, LoadSceneMode mode)
+    {
+        // 延迟一点点再恢复，确保场景物体与各系统初始化完成
         if (ShouldRestoreGameState())
         {
             StartCoroutine(RestoreGameStateDelayed());
@@ -100,6 +133,17 @@ public class GameStateManager : MonoBehaviour
     public void SaveGameState()
     {
         currentLevelName = SceneManager.GetActiveScene().name;
+        if (IsStartupScene(currentLevelName))
+        {
+            LogDebug($"跳过保存，启动场景不参与存档: {currentLevelName}");
+            return;
+        }
+        
+        // 存档前，确保退出弹框隐藏，避免下次进入时立即显示
+        if (ExitGameManager.Instance != null)
+        {
+            ExitGameManager.Instance.EnsureExitDialogHidden();
+        }
         GameStateData stateData = new GameStateData
         {
             levelName = currentLevelName,
@@ -124,6 +168,11 @@ public class GameStateManager : MonoBehaviour
     public void RestoreGameState()
     {
         currentLevelName = SceneManager.GetActiveScene().name;
+        if (IsStartupScene(currentLevelName))
+        {
+            LogDebug($"跳过恢复，启动场景不参与存档: {currentLevelName}");
+            return;
+        }
         string jsonData = PlayerPrefs.GetString(GAME_STATE_KEY + currentLevelName, "");
         
         if (string.IsNullOrEmpty(jsonData))
@@ -150,6 +199,11 @@ public class GameStateManager : MonoBehaviour
     public void ClearGameState()
     {
         currentLevelName = SceneManager.GetActiveScene().name;
+        if (IsStartupScene(currentLevelName))
+        {
+            LogDebug($"跳过清理，启动场景不参与存档: {currentLevelName}");
+            return;
+        }
         PlayerPrefs.DeleteKey(GAME_STATE_KEY + currentLevelName);
         PlayerPrefs.DeleteKey(BROADCAST_HISTORY_KEY + currentLevelName);
         PlayerPrefs.DeleteKey(AVAILABLE_STRINGS_KEY + currentLevelName);
@@ -167,6 +221,7 @@ public class GameStateManager : MonoBehaviour
     {
         // 检查是否有保存数据
         currentLevelName = SceneManager.GetActiveScene().name;
+        if (IsStartupScene(currentLevelName)) return false;
         string jsonData = PlayerPrefs.GetString(GAME_STATE_KEY + currentLevelName, "");
         return !string.IsNullOrEmpty(jsonData);
     }
@@ -186,43 +241,93 @@ public class GameStateManager : MonoBehaviour
     private List<GameObjectState> CollectObjectStates()
     {
         List<GameObjectState> objectStates = new List<GameObjectState>();
-        
-        // 收集所有GameObject
-        GameObject[] allObjects = FindObjectsOfType<GameObject>();
-        
-        foreach (GameObject obj in allObjects)
+
+        var activeScene = SceneManager.GetActiveScene();
+
+        // 遍历场景的所有根对象（包含未激活），并递归收集（包含未激活的子物体）
+        var roots = activeScene.GetRootGameObjects();
+        foreach (var root in roots)
         {
-            if (obj == null || obj.scene != gameObject.scene) continue;
-            
-            GameObjectState state = new GameObjectState
-            {
-                objectName = obj.name,
-                objectPath = GetGameObjectPath(obj),
-                isActive = obj.activeInHierarchy,
-                position = obj.transform.position
-            };
-            
-            // 检查Highlight组件
-            Highlight highlight = obj.GetComponent<Highlight>();
-            if (highlight != null)
-            {
-                state.hasHighlight = true;
-                state.highlightEnabled = highlight.enabled;
-                state.highlightLetter = highlight.letter;
-            }
-            
-            // 检查SpriteRenderer组件
-            SpriteRenderer spriteRenderer = obj.GetComponent<SpriteRenderer>();
-            if (spriteRenderer != null)
-            {
-                state.hasSpriteRenderer = true;
-                state.spriteRendererEnabled = spriteRenderer.enabled;
-            }
-            
-            objectStates.Add(state);
+            CollectFromHierarchyRecursive(root, objectStates);
         }
-        
+
         return objectStates;
+    }
+
+    /// <summary>
+    /// 递归收集层级内所有对象（包含未激活对象）
+    /// </summary>
+    private void CollectFromHierarchyRecursive(GameObject obj, List<GameObjectState> collector)
+    {
+        if (obj == null) return;
+
+        GameObjectState state = new GameObjectState
+        {
+            objectName = obj.name,
+            objectPath = GetGameObjectPath(obj),
+            // 兼容：保留旧字段，同时新增activeSelf
+            isActive = obj.activeInHierarchy,
+            isActiveSelf = obj.activeSelf,
+            position = obj.transform.position
+        };
+
+        // 检查Highlight组件
+        Highlight highlight = obj.GetComponent<Highlight>();
+        if (highlight != null)
+        {
+            state.hasHighlight = true;
+            state.highlightEnabled = highlight.enabled;
+            state.highlightLetter = highlight.letter;
+        }
+
+        // 检查SpriteRenderer组件
+        SpriteRenderer spriteRenderer = obj.GetComponent<SpriteRenderer>();
+        if (spriteRenderer != null)
+        {
+            state.hasSpriteRenderer = true;
+            state.spriteRendererEnabled = spriteRenderer.enabled;
+        }
+
+        // 检查Collider2D组件（取第一个）
+        Collider2D collider2D = obj.GetComponent<Collider2D>();
+        if (collider2D != null)
+        {
+            state.hasCollider2D = true;
+            state.collider2DEnabled = collider2D.enabled;
+        }
+
+        // 检查通用Renderer（如MeshRenderer、SpriteRenderer的基类）
+        Renderer baseRenderer = obj.GetComponent<Renderer>();
+        if (baseRenderer != null)
+        {
+            state.hasRenderer = true;
+            state.rendererEnabled = baseRenderer.enabled;
+        }
+
+        // 检查Light2D组件（URP）
+        Light2D light2D = obj.GetComponent<Light2D>();
+        if (light2D != null)
+        {
+            state.hasLight2D = true;
+            state.light2DEnabled = light2D.enabled;
+        }
+
+        // 检查Player组件（保存携带字符）
+        Player player = obj.GetComponent<Player>();
+        if (player != null)
+        {
+            state.hasPlayer = true;
+            state.playerCarryCharacter = player.GetCarryCharacter();
+        }
+
+        collector.Add(state);
+
+        // 递归子节点（包含未激活）
+        Transform t = obj.transform;
+        for (int i = 0; i < t.childCount; i++)
+        {
+            CollectFromHierarchyRecursive(t.GetChild(i).gameObject, collector);
+        }
     }
     
     /// <summary>
@@ -249,12 +354,22 @@ public class GameStateManager : MonoBehaviour
     {
         string[] pathParts = path.Split('/');
         if (pathParts.Length == 0) return null;
-        
-        // 从根对象开始查找
-        GameObject root = GameObject.Find(pathParts[0]);
+
+        // 在当前场景根对象中查找首段（包含未激活）
+        var activeScene = SceneManager.GetActiveScene();
+        var roots = activeScene.GetRootGameObjects();
+        GameObject root = null;
+        foreach (var r in roots)
+        {
+            if (r.name == pathParts[0])
+            {
+                root = r;
+                break;
+            }
+        }
         if (root == null) return null;
-        
-        // 递归查找子对象
+
+        // 逐级在子层级中查找（Transform.Find 在已有父引用时能找到未激活子物体）
         Transform current = root.transform;
         for (int i = 1; i < pathParts.Length; i++)
         {
@@ -262,7 +377,7 @@ public class GameStateManager : MonoBehaviour
             if (child == null) return null;
             current = child;
         }
-        
+
         return current.gameObject;
     }
     
@@ -271,14 +386,24 @@ public class GameStateManager : MonoBehaviour
     /// </summary>
     private void ApplyGameState(GameStateData stateData)
     {
+        // 先建立存档中的路径集合
+        HashSet<string> savedPaths = new HashSet<string>();
+        foreach (var s in stateData.objectStates)
+        {
+            if (!string.IsNullOrEmpty(s.objectPath)) savedPaths.Add(s.objectPath);
+        }
+
         // 恢复物体状态
         foreach (GameObjectState objState in stateData.objectStates)
         {
             GameObject obj = FindGameObjectByPath(objState.objectPath);
             if (obj == null) continue;
             
-            // 恢复GameObject激活状态
-            obj.SetActive(objState.isActive);
+            // 恢复GameObject激活状态：兼容新旧存档
+            // 新版使用 activeSelf；旧版只有 isActive（activeInHierarchy）。
+            // 采用二者“或”以避免旧存档缺省字段导致的反转。
+            bool targetActive = objState.isActiveSelf || objState.isActive;
+            obj.SetActive(targetActive);
             
             // 恢复位置
             obj.transform.position = objState.position;
@@ -303,10 +428,54 @@ public class GameStateManager : MonoBehaviour
                     spriteRenderer.enabled = objState.spriteRendererEnabled;
                 }
             }
+
+            // 恢复Collider2D状态
+            if (objState.hasCollider2D)
+            {
+                Collider2D collider2D = obj.GetComponent<Collider2D>();
+                if (collider2D != null)
+                {
+                    collider2D.enabled = objState.collider2DEnabled;
+                }
+            }
+
+            // 恢复Renderer状态
+            if (objState.hasRenderer)
+            {
+                Renderer baseRenderer = obj.GetComponent<Renderer>();
+                if (baseRenderer != null)
+                {
+                    baseRenderer.enabled = objState.rendererEnabled;
+                }
+            }
+
+            // 恢复Light2D状态
+            if (objState.hasLight2D)
+            {
+                Light2D light2D = obj.GetComponent<Light2D>();
+                if (light2D != null)
+                {
+                    light2D.enabled = objState.light2DEnabled;
+                }
+            }
+
+            // 恢复Player携带字符并更新米字格
+            if (objState.hasPlayer)
+            {
+                Player player = obj.GetComponent<Player>();
+                if (player != null && !string.IsNullOrEmpty(objState.playerCarryCharacter))
+                {
+                    player.SetCarryCharacter(objState.playerCarryCharacter);
+                }
+            }
         }
         
-        // 恢复广播历史
-        RestoreBroadcastHistory(stateData.broadcastHistory);
+        // 恢复广播历史（不重放），避免重复触发AutoHint等逻辑
+        if (BroadcastManager.Instance != null)
+        {
+            BroadcastManager.Instance.ReplaceHistory(stateData.broadcastHistory);
+            LogDebug($"已恢复广播历史记录（不重播），数量: {stateData.broadcastHistory?.Count ?? 0}");
+        }
         
         // 恢复可用字符串
         RestoreAvailableStrings(stateData.availableStrings);
@@ -316,6 +485,85 @@ public class GameStateManager : MonoBehaviour
         
         // 恢复收集的字符串
         RestoreCollectedStrings(stateData.collectedStrings);
+
+        // 清理存档中不存在的场景对象
+        DestroyObjectsNotInSave(savedPaths);
+    }
+
+    /// <summary>
+    /// 销毁不在存档中的场景对象（仅限当前激活场景）
+    /// </summary>
+    private void DestroyObjectsNotInSave(HashSet<string> savedPaths)
+    {
+        var activeScene = SceneManager.GetActiveScene();
+        var roots = activeScene.GetRootGameObjects();
+        foreach (var root in roots)
+        {
+            DestroyIfNotSavedRecursive(root, savedPaths);
+        }
+    }
+
+    private void DestroyIfNotSavedRecursive(GameObject obj, HashSet<string> savedPaths)
+    {
+        if (obj == null) return;
+
+        // 先处理子节点，避免父先销毁导致迭代异常
+        Transform t = obj.transform;
+        List<GameObject> children = new List<GameObject>(t.childCount);
+        for (int i = 0; i < t.childCount; i++) children.Add(t.GetChild(i).gameObject);
+        foreach (var child in children)
+        {
+            DestroyIfNotSavedRecursive(child, savedPaths);
+        }
+
+        string path = GetGameObjectPath(obj);
+        if (!savedPaths.Contains(path) && ShouldDestroyObject(obj))
+        {
+            LogDebug($"移除未在存档中的对象: {path}");
+            Object.Destroy(obj);
+        }
+    }
+
+    /// <summary>
+    /// 判断对象是否允许被销毁（排除关键系统/管理器等）
+    /// </summary>
+    private bool ShouldDestroyObject(GameObject obj)
+    {
+        if (obj == null) return false;
+
+        // 排除：隐藏在DontDestroyOnLoad场景的对象（不属于当前关卡）
+        if (obj.scene.name != SceneManager.GetActiveScene().name) return false;
+
+        // 排除：常见的关键系统/管理器（根据项目内常用类型排除）
+        var excludedTypes = new System.Type[]
+        {
+            typeof(GameStateManager),
+            typeof(LevelProgressManager),
+            typeof(StartMenuManager),
+            typeof(GameFlowManager),
+            typeof(BroadcastManager),
+            typeof(AudioManager),
+            typeof(InfoPopupManager),
+            typeof(ButtonController),
+            typeof(PublicData),
+            typeof(Level3Manager),
+            typeof(PlayerController),
+            typeof(SeasonParticleManager),
+            typeof(BackgroundManager),
+            typeof(TutorialManager),
+            typeof(LevelManager)
+        };
+
+        foreach (var type in excludedTypes)
+        {
+            if (obj.GetComponent(type) != null) return false;
+        }
+
+        // 排除：场景主摄像机和EventSystem
+        if (obj.GetComponent<UnityEngine.Camera>() != null) return false;
+        if (obj.GetComponent<UnityEngine.EventSystems.EventSystem>() != null) return false;
+
+        return true;
     }
     
     /// <summary>
@@ -389,21 +637,7 @@ public class GameStateManager : MonoBehaviour
     /// <summary>
     /// 恢复广播历史
     /// </summary>
-    private void RestoreBroadcastHistory(List<string> history)
-    {
-        if (history == null || history.Count == 0) return;
-        
-        // 重新发送所有广播
-        foreach (string broadcast in history)
-        {
-            if (BroadcastManager.Instance != null)
-            {
-                BroadcastManager.Instance.BroadcastToAll(broadcast);
-            }
-        }
-        
-        LogDebug($"已恢复 {history.Count} 个广播历史");
-    }
+    private void RestoreBroadcastHistory(List<string> history) { }
     
     /// <summary>
     /// 恢复可用字符串
@@ -560,5 +794,25 @@ public class GameStateManager : MonoBehaviour
     public void ManualClearState()
     {
         ClearGameState();
+    }
+
+    /// <summary>
+    /// 检查当前激活场景是否存在保存数据
+    /// </summary>
+    public bool HasSavedStateForActiveScene()
+    {
+        string sceneName = SceneManager.GetActiveScene().name;
+        if (IsStartupScene(sceneName)) return false;
+        string jsonData = PlayerPrefs.GetString(GAME_STATE_KEY + sceneName, "");
+        return !string.IsNullOrEmpty(jsonData);
+    }
+
+    /// <summary>
+    /// 是否为启动场景（不参与存档）。大小写不敏感，匹配"startup"。
+    /// </summary>
+    private bool IsStartupScene(string sceneName)
+    {
+        if (string.IsNullOrEmpty(sceneName)) return false;
+        return sceneName.Trim().ToLowerInvariant() == "startup";
     }
 }
