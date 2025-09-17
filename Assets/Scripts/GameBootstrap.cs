@@ -17,6 +17,8 @@ public class GameBootstrap : MonoBehaviour
     [SerializeField] private GameObject infoPopupManagerPrefab;
     [Tooltip("GameFlowManager预制体路径")]
     [SerializeField] private GameObject gameFlowManagerPrefab;
+    [Tooltip("MouseCursorManager预制体路径")]
+    [SerializeField] private GameObject mouseCursorManagerPrefab;
     
     [Header("调试设置")]
     [SerializeField] private bool enableDebugLogs = true;
@@ -85,6 +87,11 @@ public class GameBootstrap : MonoBehaviour
             gameFlowManagerPrefab = Resources.Load<GameObject>("Prefabs/GameFlowManager");
         }
         
+        if (mouseCursorManagerPrefab == null)
+        {
+            mouseCursorManagerPrefab = Resources.Load<GameObject>("Prefabs/MouseCursorManager");
+        }
+        
         StartCoroutine(InitializeGameSystems());
     }
     
@@ -113,7 +120,11 @@ public class GameBootstrap : MonoBehaviour
         EnsureGameFlowManager();
         yield return null;
         
-        // 4. 标记初始化完成
+        // 4. 确保MouseCursorManager存在
+        EnsureMouseCursorManager();
+        yield return null;
+        
+        // 5. 标记初始化完成
         IsInitialized = true;
         
         if (enableDebugLogs)
@@ -296,6 +307,66 @@ public class GameBootstrap : MonoBehaviour
     }
     
     /// <summary>
+    /// 确保MouseCursorManager存在并正常工作
+    /// </summary>
+    private void EnsureMouseCursorManager()
+    {
+        if (MouseCursorManager.Instance == null)
+        {
+            if (enableDebugLogs)
+            {
+                GameLogger.LogSystem("GameBootstrap: 创建MouseCursorManager");
+            }
+            
+            GameObject mouseCursorObj = null;
+            
+            if (mouseCursorManagerPrefab != null)
+            {
+                // 使用预制体创建
+                mouseCursorObj = Instantiate(mouseCursorManagerPrefab);
+                DontDestroyOnLoad(mouseCursorObj);
+                if (enableDebugLogs)
+                {
+                    GameLogger.LogSystem("GameBootstrap: 使用预制体创建MouseCursorManager");
+                }
+            }
+            else
+            {
+                // 创建空对象并添加组件
+                mouseCursorObj = new GameObject("MouseCursorManager");
+                // 立即设置DontDestroyOnLoad，避免在Awake中被销毁
+                DontDestroyOnLoad(mouseCursorObj);
+                // 然后添加组件，这样Awake会在DontDestroyOnLoad之后执行
+                mouseCursorObj.AddComponent<MouseCursorManager>();
+                if (enableDebugLogs)
+                {
+                    GameLogger.LogSystem("GameBootstrap: 通过代码创建MouseCursorManager");
+                }
+            }
+            
+            // 额外验证
+            if (MouseCursorManager.Instance != null)
+            {
+                if (enableDebugLogs)
+                {
+                    GameLogger.LogSystem("GameBootstrap: MouseCursorManager创建成功，Instance已设置");
+                }
+            }
+            else
+            {
+                GameLogger.LogError("GameBootstrap: MouseCursorManager创建失败！Instance仍为null");
+            }
+        }
+        else
+        {
+            if (enableDebugLogs)
+            {
+                GameLogger.LogSystem("GameBootstrap: MouseCursorManager已存在");
+            }
+        }
+    }
+    
+    /// <summary>
     /// 通知其他系统初始化完成
     /// </summary>
     private void NotifySystemsReady()
@@ -348,6 +419,12 @@ public class GameBootstrap : MonoBehaviour
         if (GameFlowManager.Instance == null)
         {
             GameLogger.LogError("GameBootstrap: GameFlowManager.Instance 为空");
+            isValid = false;
+        }
+        
+        if (MouseCursorManager.Instance == null)
+        {
+            GameLogger.LogError("GameBootstrap: MouseCursorManager.Instance 为空");
             isValid = false;
         }
         
