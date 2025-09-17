@@ -14,6 +14,11 @@ public class StartMenuManager : MonoBehaviour
     
     [Header("进度管理")]
     [SerializeField] private bool enableDebugLog = true;
+    
+    [Header("按钮引用")]
+    [SerializeField] private Button startGameButton;
+    [SerializeField] private Button continueGameButton;
+    [SerializeField] private Text gameButtonText;
 
     private void Start()
     {
@@ -21,6 +26,67 @@ public class StartMenuManager : MonoBehaviour
         if (AudioManager.Instance != null && AudioManager.Instance.bgmMenu != null)
         {
             AudioManager.Instance.PlayBGM(AudioManager.Instance.bgmMenu);
+        }
+        
+        // 设置LevelProgressManager的按钮引用（如果存在）
+        SetupProgressManagerButtons();
+    }
+    
+    /// <summary>
+    /// 设置LevelProgressManager的按钮引用
+    /// </summary>
+    private void SetupProgressManagerButtons()
+    {
+        if (LevelProgressManager.Instance != null)
+        {
+            // 优先使用Inspector中设置的按钮引用
+            Button startBtn = startGameButton;
+            Button continueBtn = continueGameButton;
+            Text buttonText = gameButtonText;
+            
+            // 如果Inspector中没有设置，尝试通过名称查找
+            if (startBtn == null)
+            {
+                startBtn = GameObject.Find("StartGameButton")?.GetComponent<Button>();
+            }
+            if (continueBtn == null)
+            {
+                continueBtn = GameObject.Find("ContinueGameButton")?.GetComponent<Button>();
+            }
+            if (buttonText == null)
+            {
+                buttonText = GameObject.Find("GameButtonText")?.GetComponent<Text>();
+            }
+            
+            if (startBtn != null || continueBtn != null)
+            {
+                LevelProgressManager.Instance.SetButtonReferences(startBtn, continueBtn, buttonText);
+                LogDebug("已设置LevelProgressManager按钮引用");
+            }
+            else
+            {
+                LogDebug("未找到开始游戏或继续游戏按钮，请确保按钮名称正确或在Inspector中设置引用");
+            }
+        }
+    }
+    
+    /// <summary>
+    /// 手动设置按钮引用
+    /// </summary>
+    /// <param name="startBtn">开始游戏按钮</param>
+    /// <param name="continueBtn">继续游戏按钮</param>
+    /// <param name="text">按钮文本组件</param>
+    public void SetButtonReferences(Button startBtn, Button continueBtn, Text text = null)
+    {
+        startGameButton = startBtn;
+        continueGameButton = continueBtn;
+        gameButtonText = text;
+        
+        // 如果LevelProgressManager存在，立即设置引用
+        if (LevelProgressManager.Instance != null)
+        {
+            LevelProgressManager.Instance.SetButtonReferences(startBtn, continueBtn, text);
+            LogDebug("已手动设置按钮引用");
         }
     }
 

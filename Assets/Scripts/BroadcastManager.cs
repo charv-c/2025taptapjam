@@ -158,6 +158,15 @@ public class BroadcastManager : MonoBehaviour
     }
     
     /// <summary>
+    /// 获取广播历史记录（可修改副本）
+    /// </summary>
+    /// <returns>广播历史记录副本</returns>
+    public List<string> GetBroadcastHistoryCopy()
+    {
+        return new List<string>(broadcastHistory);
+    }
+    
+    /// <summary>
     /// 清空广播历史记录
     /// </summary>
     public void ClearBroadcastHistory()

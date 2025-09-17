@@ -1,5 +1,6 @@
 using UnityEngine;
 using UnityEngine.SceneManagement;
+using UnityEngine.UI;
 using System.Collections.Generic;
 
 /// <summary>
@@ -13,6 +14,12 @@ public class LevelProgressManager : MonoBehaviour
     
     [Header("进度设置")]
     [SerializeField] private bool enableDebugLog = true;
+    
+    [Header("按钮管理")]
+    [SerializeField] private Button startGameButton;
+    [SerializeField] private Button continueGameButton;
+    [SerializeField] private Text buttonText;
+    [SerializeField] private bool autoManageButtons = true;
     
     // PlayerPrefs键名常量
     private const string CURRENT_LEVEL_KEY = "CurrentLevel";
@@ -45,6 +52,12 @@ public class LevelProgressManager : MonoBehaviour
     private void InitializeProgress()
     {
         LoadProgress();
+        
+        // 自动管理按钮状态
+        if (autoManageButtons)
+        {
+            UpdateButtonStates();
+        }
     }
     
     /// <summary>
@@ -110,6 +123,12 @@ public class LevelProgressManager : MonoBehaviour
         PlayerPrefs.DeleteKey(COMPLETED_LEVELS_KEY);
         PlayerPrefs.DeleteKey(GAME_STARTED_KEY);
         PlayerPrefs.Save();
+        
+        // 更新按钮状态
+        if (autoManageButtons)
+        {
+            UpdateButtonStates();
+        }
         
         LogDebug("新游戏进度已重置");
     }
@@ -336,6 +355,182 @@ public class LevelProgressManager : MonoBehaviour
         completedLevels.Clear();
         
         LogDebug("所有进度数据已清除");
+    }
+    
+    /// <summary>
+    /// 更新按钮状态
+    /// 根据游戏进度自动设置按钮显示状态
+    /// </summary>
+    public void UpdateButtonStates()
+    {
+        bool hasProgress = HasGameProgress();
+        
+        LogDebug($"更新按钮状态 - 有进度: {hasProgress}");
+        
+        // 如果有进度，显示继续游戏按钮，隐藏开始游戏按钮
+        if (hasProgress)
+        {
+            ShowContinueGameButton();
+        }
+        else
+        {
+            ShowStartGameButton();
+        }
+    }
+    
+    /// <summary>
+    /// 显示继续游戏按钮
+    /// </summary>
+    private void ShowContinueGameButton()
+    {
+        if (continueGameButton != null)
+        {
+            continueGameButton.gameObject.SetActive(true);
+            LogDebug("显示继续游戏按钮");
+        }
+        
+        if (startGameButton != null)
+        {
+            startGameButton.gameObject.SetActive(false);
+            LogDebug("隐藏开始游戏按钮");
+        }
+        
+        if (buttonText != null)
+        {
+            buttonText.text = "继续游戏";
+            LogDebug("设置按钮文本为：继续游戏");
+        }
+    }
+    
+    /// <summary>
+    /// 显示开始游戏按钮
+    /// </summary>
+    private void ShowStartGameButton()
+    {
+        if (startGameButton != null)
+        {
+            startGameButton.gameObject.SetActive(true);
+            LogDebug("显示开始游戏按钮");
+        }
+        
+        if (continueGameButton != null)
+        {
+            continueGameButton.gameObject.SetActive(false);
+            LogDebug("隐藏继续游戏按钮");
+        }
+        
+        if (buttonText != null)
+        {
+            buttonText.text = "开始游戏";
+            LogDebug("设置按钮文本为：开始游戏");
+        }
+    }
+    
+    /// <summary>
+    /// 设置按钮引用
+    /// </summary>
+    /// <param name="startBtn">开始游戏按钮</param>
+    /// <param name="continueBtn">继续游戏按钮</param>
+    /// <param name="text">按钮文本组件</param>
+    public void SetButtonReferences(Button startBtn, Button continueBtn, Text text = null)
+    {
+        startGameButton = startBtn;
+        continueGameButton = continueBtn;
+        buttonText = text;
+        
+        LogDebug("已设置按钮引用");
+        
+        // 设置按钮事件
+        SetupButtonEvents();
+        
+        // 更新按钮状态
+        if (autoManageButtons)
+        {
+            UpdateButtonStates();
+        }
+    }
+    
+    /// <summary>
+    /// 设置按钮事件
+    /// </summary>
+    private void SetupButtonEvents()
+    {
+        if (startGameButton != null)
+        {
+            // 移除旧的事件监听器
+            startGameButton.onClick.RemoveAllListeners();
+            // 添加新的事件监听器
+            startGameButton.onClick.AddListener(OnStartGameButtonClicked);
+            LogDebug("已设置开始游戏按钮事件");
+        }
+        
+        if (continueGameButton != null)
+        {
+            // 移除旧的事件监听器
+            continueGameButton.onClick.RemoveAllListeners();
+            // 添加新的事件监听器
+            continueGameButton.onClick.AddListener(OnContinueGameButtonClicked);
+            LogDebug("已设置继续游戏按钮事件");
+        }
+    }
+    
+    /// <summary>
+    /// 开始游戏按钮点击事件
+    /// </summary>
+    private void OnStartGameButtonClicked()
+    {
+        LogDebug("开始游戏按钮被点击");
+        StartNewGame();
+        
+        // 加载第一个关卡
+        if (PublicData.LevelSequence.Length > 0)
+        {
+            SceneManager.LoadScene(PublicData.LevelSequence[0]);
+        }
+    }
+    
+    /// <summary>
+    /// 继续游戏按钮点击事件
+    /// </summary>
+    private void OnContinueGameButtonClicked()
+    {
+        LogDebug("继续游戏按钮被点击");
+        ContinueGame();
+    }
+    
+    /// <summary>
+    /// 手动切换按钮状态（用于测试）
+    /// </summary>
+    [ContextMenu("切换按钮状态")]
+    public void ToggleButtonStates()
+    {
+        bool hasProgress = HasGameProgress();
+        if (hasProgress)
+        {
+            ShowStartGameButton();
+        }
+        else
+        {
+            ShowContinueGameButton();
+        }
+    }
+    
+    /// <summary>
+    /// 强制显示开始游戏按钮
+    /// </summary>
+    [ContextMenu("强制显示开始游戏按钮")]
+    public void ForceShowStartGameButton()
+    {
+        ShowStartGameButton();
+    }
+    
+    /// <summary>
+    /// 强制显示继续游戏按钮
+    /// </summary>
+    [ContextMenu("强制显示继续游戏按钮")]
+    public void ForceShowContinueGameButton()
+    {
+        ShowContinueGameButton();
     }
     
     /// <summary>
