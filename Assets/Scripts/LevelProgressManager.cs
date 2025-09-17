@@ -18,7 +18,6 @@ public class LevelProgressManager : MonoBehaviour
     [Header("按钮管理")]
     [SerializeField] private Button startGameButton;
     [SerializeField] private Button continueGameButton;
-    [SerializeField] private Text buttonText;
     [SerializeField] private bool autoManageButtons = true;
     
     // PlayerPrefs键名常量
@@ -363,7 +362,7 @@ public class LevelProgressManager : MonoBehaviour
     /// </summary>
     public void UpdateButtonStates()
     {
-        bool hasProgress = HasGameProgress();
+        bool hasProgress = HasGameStarted();
         
         LogDebug($"更新按钮状态 - 有进度: {hasProgress}");
         
@@ -394,12 +393,6 @@ public class LevelProgressManager : MonoBehaviour
             startGameButton.gameObject.SetActive(false);
             LogDebug("隐藏开始游戏按钮");
         }
-        
-        if (buttonText != null)
-        {
-            buttonText.text = "继续游戏";
-            LogDebug("设置按钮文本为：继续游戏");
-        }
     }
     
     /// <summary>
@@ -418,12 +411,6 @@ public class LevelProgressManager : MonoBehaviour
             continueGameButton.gameObject.SetActive(false);
             LogDebug("隐藏继续游戏按钮");
         }
-        
-        if (buttonText != null)
-        {
-            buttonText.text = "开始游戏";
-            LogDebug("设置按钮文本为：开始游戏");
-        }
     }
     
     /// <summary>
@@ -431,12 +418,10 @@ public class LevelProgressManager : MonoBehaviour
     /// </summary>
     /// <param name="startBtn">开始游戏按钮</param>
     /// <param name="continueBtn">继续游戏按钮</param>
-    /// <param name="text">按钮文本组件</param>
-    public void SetButtonReferences(Button startBtn, Button continueBtn, Text text = null)
+    public void SetButtonReferences(Button startBtn, Button continueBtn)
     {
         startGameButton = startBtn;
         continueGameButton = continueBtn;
-        buttonText = text;
         
         LogDebug("已设置按钮引用");
         
@@ -504,7 +489,7 @@ public class LevelProgressManager : MonoBehaviour
     [ContextMenu("切换按钮状态")]
     public void ToggleButtonStates()
     {
-        bool hasProgress = HasGameProgress();
+        bool hasProgress = HasGameStarted();
         if (hasProgress)
         {
             ShowStartGameButton();

@@ -1,6 +1,7 @@
 using System.Collections; // 必须引用此命名空间才能使用协程
 using UnityEngine;
 using UnityEngine.SceneManagement;
+using UnityEngine.UI;
 
 /// <summary>
 /// 开始菜单的管理器脚本
@@ -18,7 +19,6 @@ public class StartMenuManager : MonoBehaviour
     [Header("按钮引用")]
     [SerializeField] private Button startGameButton;
     [SerializeField] private Button continueGameButton;
-    [SerializeField] private Text gameButtonText;
 
     private void Start()
     {
@@ -42,7 +42,6 @@ public class StartMenuManager : MonoBehaviour
             // 优先使用Inspector中设置的按钮引用
             Button startBtn = startGameButton;
             Button continueBtn = continueGameButton;
-            Text buttonText = gameButtonText;
             
             // 如果Inspector中没有设置，尝试通过名称查找
             if (startBtn == null)
@@ -53,14 +52,10 @@ public class StartMenuManager : MonoBehaviour
             {
                 continueBtn = GameObject.Find("ContinueGameButton")?.GetComponent<Button>();
             }
-            if (buttonText == null)
-            {
-                buttonText = GameObject.Find("GameButtonText")?.GetComponent<Text>();
-            }
             
             if (startBtn != null || continueBtn != null)
             {
-                LevelProgressManager.Instance.SetButtonReferences(startBtn, continueBtn, buttonText);
+                LevelProgressManager.Instance.SetButtonReferences(startBtn, continueBtn);
                 LogDebug("已设置LevelProgressManager按钮引用");
             }
             else
@@ -75,17 +70,15 @@ public class StartMenuManager : MonoBehaviour
     /// </summary>
     /// <param name="startBtn">开始游戏按钮</param>
     /// <param name="continueBtn">继续游戏按钮</param>
-    /// <param name="text">按钮文本组件</param>
-    public void SetButtonReferences(Button startBtn, Button continueBtn, Text text = null)
+    public void SetButtonReferences(Button startBtn, Button continueBtn)
     {
         startGameButton = startBtn;
         continueGameButton = continueBtn;
-        gameButtonText = text;
         
         // 如果LevelProgressManager存在，立即设置引用
         if (LevelProgressManager.Instance != null)
         {
-            LevelProgressManager.Instance.SetButtonReferences(startBtn, continueBtn, text);
+            LevelProgressManager.Instance.SetButtonReferences(startBtn, continueBtn);
             LogDebug("已手动设置按钮引用");
         }
     }
