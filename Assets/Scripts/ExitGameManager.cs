@@ -10,7 +10,10 @@ public class ExitGameManager : MonoBehaviour
 {
     [Header("UI设置")]
     [SerializeField] private Button exitButton;
-    [SerializeField] private GameObject confirmationDialog;
+    
+    [Header("确认对话框预制体")]
+    [SerializeField] private GameObject confirmationDialogPrefab;
+    private GameObject confirmationDialogInstance;
     
     [Header("按钮预制体")]
     [SerializeField] private GameObject confirmButtonPrefab;
@@ -27,6 +30,13 @@ public class ExitGameManager : MonoBehaviour
     [Header("调试设置")]
     [SerializeField] private bool enableDebugLog = true;
     
+    [Header("全屏控制")]
+    [Tooltip("拦截Esc导致的全屏退出（Standalone等可控平台有效）")]
+    [SerializeField] private bool preventEscExitFullScreen = true;
+    
+    // 期望的全屏状态（用于在部分平台上被动退出时强制恢复）
+    private bool desiredFullScreen;
+    
     // 动态创建的按钮引用
     private Button confirmExitButton;
     private Button cancelExitButton;
@@ -35,11 +45,21 @@ public class ExitGameManager : MonoBehaviour
     {
         SetupUI();
         SetupInputHandling();
+        desiredFullScreen = Screen.fullScreen;
     }
     
     private void Update()
     {
         HandleKeyboardInput();
+
+        // 在可控平台上强制保持全屏（例如Standalone）。
+        // 注：WebGL平台浏览器层面不允许拦截Esc退出全屏，无法强制恢复。
+#if !UNITY_WEBGL
+        if (preventEscExitFullScreen && desiredFullScreen && !Screen.fullScreen)
+        {
+            Screen.fullScreen = true;
+        }
+#endif
     }
     
     /// <summary>
@@ -53,13 +73,16 @@ public class ExitGameManager : MonoBehaviour
             exitButton.onClick.AddListener(OnExitButtonClicked);
         }
         
+        // 确保对话框实例存在
+        EnsureConfirmationDialogInstance();
+
         // 创建确认对话框按钮
         CreateConfirmationButtons();
         
-        // 初始隐藏确认对话框
-        if (confirmationDialog != null)
+        // 初始隐藏确认对话框（若已存在实例）
+        if (confirmationDialogInstance != null)
         {
-            confirmationDialog.SetActive(false);
+            confirmationDialogInstance.SetActive(false);
         }
     }
     
@@ -68,14 +91,14 @@ public class ExitGameManager : MonoBehaviour
     /// </summary>
     private void CreateConfirmationButtons()
     {
-        if (confirmationDialog == null)
+        if (confirmationDialogInstance == null)
         {
-            LogWarning("确认对话框未设置，无法创建按钮");
+            LogWarning("确认对话框实例不存在，无法创建按钮");
             return;
         }
         
         // 查找Canvas或创建按钮容器
-        Canvas canvas = confirmationDialog.GetComponentInParent<Canvas>();
+        Canvas canvas = confirmationDialogInstance.GetComponentInParent<Canvas>();
         if (canvas == null)
         {
             LogWarning("未找到Canvas，无法创建按钮");
@@ -132,7 +155,7 @@ public class ExitGameManager : MonoBehaviour
     private GameObject CreateButtonContainer(Canvas canvas)
     {
         // 查找现有的按钮容器
-        Transform existingContainer = confirmationDialog.transform.Find("ButtonContainer");
+        Transform existingContainer = confirmationDialogInstance.transform.Find("ButtonContainer");
         if (existingContainer != null)
         {
             return existingContainer.gameObject;
@@ -140,7 +163,7 @@ public class ExitGameManager : MonoBehaviour
         
         // 创建新的按钮容器
         GameObject buttonContainer = new GameObject("ButtonContainer");
-        buttonContainer.transform.SetParent(confirmationDialog.transform, false);
+        buttonContainer.transform.SetParent(confirmationDialogInstance.transform, false);
         
         // 添加RectTransform组件
         RectTransform rectTransform = buttonContainer.AddComponent<RectTransform>();
@@ -165,6 +188,35 @@ public class ExitGameManager : MonoBehaviour
         
         LogDebug("按钮容器已创建");
         return buttonContainer;
+    }
+
+    /// <summary>
+    /// 确保确认对话框实例存在
+    /// </summary>
+    private void EnsureConfirmationDialogInstance()
+    {
+        if (confirmationDialogInstance != null) return;
+        
+        if (confirmationDialogPrefab == null)
+        {
+            LogWarning("确认对话框预制体未设置，无法实例化对话框");
+            return;
+        }
+        
+        // 查找画布
+        Canvas canvas = FindObjectOfType<Canvas>();
+        if (canvas == null)
+        {
+            LogWarning("场景中未找到Canvas，无法实例化确认对话框");
+            return;
+        }
+        
+        // 实例化对话框到Canvas
+        confirmationDialogInstance = Instantiate(confirmationDialogPrefab, canvas.transform);
+        confirmationDialogInstance.name = "ConfirmationDialog";
+        confirmationDialogInstance.SetActive(false);
+        
+        LogDebug("已实例化确认对话框预制体");
     }
     
     /// <summary>
@@ -205,6 +257,17 @@ public class ExitGameManager : MonoBehaviour
         // ESC键退出游戏
         if (Input.GetKeyDown(KeyCode.Escape))
         {
+            // 在可控平台上阻止Esc导致的全屏退出
+#if !UNITY_WEBGL
+            if (preventEscExitFullScreen)
+            {
+                desiredFullScreen = true; // 仍然期望保持全屏
+                if (!Screen.fullScreen)
+                {
+                    Screen.fullScreen = true;
+                }
+            }
+#endif
             OnExitButtonClicked();
         }
         
@@ -262,15 +325,15 @@ public class ExitGameManager : MonoBehaviour
     /// </summary>
     private void ShowConfirmationDialog()
     {
-        if (confirmationDialog != null)
-        {
-            confirmationDialog.SetActive(true);
-            
-            // 暂停游戏（可选）
-            Time.timeScale = 0f;
-            
-            LogDebug("显示退出确认对话框");
-        }
+        EnsureConfirmationDialogInstance();
+        if (confirmationDialogInstance == null) return;
+        
+        confirmationDialogInstance.SetActive(true);
+        
+        // 暂停游戏（可选）
+        Time.timeScale = 0f;
+        
+        LogDebug("显示退出确认对话框");
     }
     
     /// <summary>
@@ -278,15 +341,14 @@ public class ExitGameManager : MonoBehaviour
     /// </summary>
     private void HideConfirmationDialog()
     {
-        if (confirmationDialog != null)
-        {
-            confirmationDialog.SetActive(false);
-            
-            // 恢复游戏（可选）
-            Time.timeScale = 1f;
-            
-            LogDebug("隐藏退出确认对话框");
-        }
+        if (confirmationDialogInstance == null) return;
+        
+        confirmationDialogInstance.SetActive(false);
+        
+        // 恢复游戏（可选）
+        Time.timeScale = 1f;
+        
+        LogDebug("隐藏退出确认对话框");
     }
     
     /// <summary>
@@ -457,9 +519,9 @@ public class ExitGameManager : MonoBehaviour
     /// </summary>
     private void ClearExistingButtons()
     {
-        if (confirmationDialog == null) return;
+        if (confirmationDialogInstance == null) return;
         
-        Transform buttonContainer = confirmationDialog.transform.Find("ButtonContainer");
+        Transform buttonContainer = confirmationDialogInstance.transform.Find("ButtonContainer");
         if (buttonContainer != null)
         {
             DestroyImmediate(buttonContainer.gameObject);

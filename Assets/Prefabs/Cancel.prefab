@@ -15,7 +15,7 @@ GameObject:
   - component: {fileID: 3181455464816486451}
   m_Layer: 5
   m_HasEditorInfo: 1
-  m_Name: button
+  m_Name: Cancel
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -68,7 +68,7 @@ MonoBehaviour:
   m_OnCullStateChanged:
     m_PersistentCalls:
       m_Calls: []
-  m_Sprite: {fileID: 21300000, guid: b6f85d4a5edf63544908a227c050e046, type: 3}
+  m_Sprite: {fileID: 21300000, guid: 21c8699828f93e34397740d64f069798, type: 3}
   m_Type: 0
   m_PreserveAspect: 0
   m_FillCenter: 1
@@ -121,19 +121,7 @@ MonoBehaviour:
   m_TargetGraphic: {fileID: 5179908796688356882}
   m_OnClick:
     m_PersistentCalls:
-      m_Calls:
-      - m_Target: {fileID: 0}
-        m_TargetAssemblyTypeName: StartMenuManager, Assembly-CSharp
-        m_MethodName: OnStartGameClicked
-        m_Mode: 1
-        m_Arguments:
-          m_ObjectArgument: {fileID: 0}
-          m_ObjectArgumentAssemblyTypeName: UnityEngine.Object, UnityEngine
-          m_IntArgument: 0
-          m_FloatArgument: 0
-          m_StringArgument: 
-          m_BoolArgument: 0
-        m_CallState: 2
+      m_Calls: []
 --- !u!114 &3181455464816486451
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -150,16 +138,4 @@ MonoBehaviour:
   - eventID: 0
     callback:
       m_PersistentCalls:
-        m_Calls:
-        - m_Target: {fileID: 0}
-          m_TargetAssemblyTypeName: StartMenuManager, Assembly-CSharp
-          m_MethodName: PlayHoverSound
-          m_Mode: 1
-          m_Arguments:
-            m_ObjectArgument: {fileID: 0}
-            m_ObjectArgumentAssemblyTypeName: UnityEngine.Object, UnityEngine
-            m_IntArgument: 0
-            m_FloatArgument: 0
-            m_StringArgument: 
-            m_BoolArgument: 0
-          m_CallState: 2
+        m_Calls: []
