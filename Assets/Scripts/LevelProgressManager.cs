@@ -16,7 +16,8 @@ public class LevelProgressManager : MonoBehaviour
     [SerializeField] private bool enableDebugLog = true;
     
     [Header("按钮管理")]
-    [SerializeField] private Button startGameButton;
+    [SerializeField] private Button startGameButton; // 无存档时的“开始游戏”
+    [SerializeField] private Button startNewGameButton; // 有存档时的“从头开始”
     [SerializeField] private Button continueGameButton;
     [SerializeField] private bool autoManageButtons = true;
     
@@ -248,6 +249,12 @@ public class LevelProgressManager : MonoBehaviour
             LogDebug("设置当前关卡失败：关卡名称为空");
             return;
         }
+        // 启动场景不参与记录当前关卡与开启进度标记
+        if (levelName.Trim().ToLowerInvariant() == "startup")
+        {
+            LogDebug("忽略设置当前关卡为 startup（不标记进度、不存档）");
+            return;
+        }
         
         currentLevel = levelName;
         SaveProgress();
@@ -383,15 +390,23 @@ public class LevelProgressManager : MonoBehaviour
     /// </summary>
     public void UpdateButtonStates()
     {
-        bool showContinue = ShouldShowContinue();
-        LogDebug($"更新按钮状态 - 显示继续: {showContinue}");
-        if (showContinue)
+        // 仅以关卡进度为准：有“关卡进度”→显示“继续游戏 + 从头开始”；
+        // 否则仅显示“开始游戏”（隐藏继续）。
+        bool hasLevelProgress = HasGameStarted();
+        LogDebug($"更新按钮状态 - 仅按关卡进度判断，有进度: {hasLevelProgress}");
+
+        if (hasLevelProgress)
         {
-            ShowContinueGameButton();
+            if (startGameButton != null) startGameButton.gameObject.SetActive(false); // 无存档按钮隐藏
+            if (startNewGameButton != null) startNewGameButton.gameObject.SetActive(true);   // 从头开始
+            if (continueGameButton != null) continueGameButton.gameObject.SetActive(true); // 继续游戏
         }
         else
         {
-            ShowStartGameButton();
+            // 仅显示“开始游戏”，隐藏“从头开始/继续游戏”
+            if (startGameButton != null) startGameButton.gameObject.SetActive(true);
+            if (startNewGameButton != null) startNewGameButton.gameObject.SetActive(false);
+            if (continueGameButton != null) continueGameButton.gameObject.SetActive(false);
         }
     }
 
@@ -424,11 +439,7 @@ public class LevelProgressManager : MonoBehaviour
             LogDebug("显示继续游戏按钮");
         }
         
-        if (startGameButton != null)
-        {
-            startGameButton.gameObject.SetActive(false);
-            LogDebug("隐藏开始游戏按钮");
-        }
+        // 当需要仅显示继续时可隐藏开始按钮；在有存档的场景由外层逻辑同时显示
     }
     
     /// <summary>
@@ -442,6 +453,11 @@ public class LevelProgressManager : MonoBehaviour
             LogDebug("显示开始游戏按钮");
         }
         
+        if (startNewGameButton != null)
+        {
+            startNewGameButton.gameObject.SetActive(false);
+            LogDebug("隐藏从头开始按钮");
+        }
         if (continueGameButton != null)
         {
             continueGameButton.gameObject.SetActive(false);
@@ -465,6 +481,19 @@ public class LevelProgressManager : MonoBehaviour
         SetupButtonEvents();
         
         // 更新按钮状态
+        if (autoManageButtons)
+        {
+            UpdateButtonStates();
+        }
+    }
+
+    /// <summary>
+    /// 仅设置“从头开始”按钮引用（可选）。
+    /// </summary>
+    public void SetStartNewGameButton(Button startNewBtn)
+    {
+        startNewGameButton = startNewBtn;
+        LogDebug("已设置从头开始按钮引用");
         if (autoManageButtons)
         {
             UpdateButtonStates();

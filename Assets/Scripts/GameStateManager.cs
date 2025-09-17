@@ -133,9 +133,9 @@ public class GameStateManager : MonoBehaviour
     public void SaveGameState()
     {
         currentLevelName = SceneManager.GetActiveScene().name;
-        if (IsStartupScene(currentLevelName))
+        if (IsStartupScene(currentLevelName) || IsLevel1Scene(currentLevelName))
         {
-            LogDebug($"跳过保存，启动场景不参与存档: {currentLevelName}");
+            LogDebug($"跳过保存，场景不参与存档: {currentLevelName}");
             return;
         }
         
@@ -168,9 +168,9 @@ public class GameStateManager : MonoBehaviour
     public void RestoreGameState()
     {
         currentLevelName = SceneManager.GetActiveScene().name;
-        if (IsStartupScene(currentLevelName))
+        if (IsStartupScene(currentLevelName) || IsLevel1Scene(currentLevelName))
         {
-            LogDebug($"跳过恢复，启动场景不参与存档: {currentLevelName}");
+            LogDebug($"跳过恢复，场景不参与存档: {currentLevelName}");
             return;
         }
         string jsonData = PlayerPrefs.GetString(GAME_STATE_KEY + currentLevelName, "");
@@ -199,9 +199,9 @@ public class GameStateManager : MonoBehaviour
     public void ClearGameState()
     {
         currentLevelName = SceneManager.GetActiveScene().name;
-        if (IsStartupScene(currentLevelName))
+        if (IsStartupScene(currentLevelName) || IsLevel1Scene(currentLevelName))
         {
-            LogDebug($"跳过清理，启动场景不参与存档: {currentLevelName}");
+            LogDebug($"跳过清理，场景不参与存档: {currentLevelName}");
             return;
         }
         PlayerPrefs.DeleteKey(GAME_STATE_KEY + currentLevelName);
@@ -221,7 +221,7 @@ public class GameStateManager : MonoBehaviour
     {
         // 检查是否有保存数据
         currentLevelName = SceneManager.GetActiveScene().name;
-        if (IsStartupScene(currentLevelName)) return false;
+        if (IsStartupScene(currentLevelName) || IsLevel1Scene(currentLevelName)) return false;
         string jsonData = PlayerPrefs.GetString(GAME_STATE_KEY + currentLevelName, "");
         return !string.IsNullOrEmpty(jsonData);
     }
@@ -802,17 +802,118 @@ public class GameStateManager : MonoBehaviour
     public bool HasSavedStateForActiveScene()
     {
         string sceneName = SceneManager.GetActiveScene().name;
-        if (IsStartupScene(sceneName)) return false;
+        if (IsStartupScene(sceneName) || IsLevel1Scene(sceneName)) return false;
         string jsonData = PlayerPrefs.GetString(GAME_STATE_KEY + sceneName, "");
         return !string.IsNullOrEmpty(jsonData);
     }
 
     /// <summary>
+    /// 清空所有关卡的保存状态（遍历关卡序列）
+    /// </summary>
+    public static void ClearAllSavedStatesForAllLevels()
+    {
+        if (PublicData.LevelSequence == null) return;
+        foreach (var level in PublicData.LevelSequence)
+        {
+            if (string.IsNullOrEmpty(level)) continue;
+            PlayerPrefs.DeleteKey(GAME_STATE_KEY + level);
+            PlayerPrefs.DeleteKey(BROADCAST_HISTORY_KEY + level);
+            PlayerPrefs.DeleteKey(AVAILABLE_STRINGS_KEY + level);
+            PlayerPrefs.DeleteKey(CURRENT_SEASON_KEY + level);
+            PlayerPrefs.DeleteKey(COLLECTED_STRINGS_KEY + level);
+        }
+        PlayerPrefs.Save();
+    }
+
+    /// <summary>
+    /// 是否存在任何可继续的关卡状态（遍历关卡序列，检测GameState_*是否存在）
+    /// </summary>
+    public static bool HasAnySavedLevelState()
+    {
+        if (PublicData.LevelSequence == null || PublicData.LevelSequence.Length == 0) return false;
+        foreach (var level in PublicData.LevelSequence)
+        {
+            if (string.IsNullOrEmpty(level)) continue;
+            // 跳过 level1
+            if (IsLevel1Scene(level)) continue;
+            string json = PlayerPrefs.GetString(GAME_STATE_KEY + level, "");
+            if (!string.IsNullOrEmpty(json)) return true;
+        }
+        return false;
+    }
+
+    /// <summary>
+    /// 清除所有关卡的存档（基于 PublicData.LevelSequence）
+    /// </summary>
+    public static void ClearAllGameStates()
+    {
+        // 清理已知关卡序列
+        foreach (var level in PublicData.LevelSequence)
+        {
+            if (string.IsNullOrEmpty(level)) continue;
+            PlayerPrefs.DeleteKey(GAME_STATE_KEY + level);
+            PlayerPrefs.DeleteKey(BROADCAST_HISTORY_KEY + level);
+            PlayerPrefs.DeleteKey(AVAILABLE_STRINGS_KEY + level);
+            PlayerPrefs.DeleteKey(CURRENT_SEASON_KEY + level);
+            PlayerPrefs.DeleteKey(COLLECTED_STRINGS_KEY + level);
+        }
+
+        // 也尝试清理当前激活场景一次（若不在序列中但有保存）
+        string current = SceneManager.GetActiveScene().name;
+        if (!string.IsNullOrEmpty(current) && !IsStartupScene(current) && !IsLevel1Scene(current))
+        {
+            PlayerPrefs.DeleteKey(GAME_STATE_KEY + current);
+            PlayerPrefs.DeleteKey(BROADCAST_HISTORY_KEY + current);
+            PlayerPrefs.DeleteKey(AVAILABLE_STRINGS_KEY + current);
+            PlayerPrefs.DeleteKey(CURRENT_SEASON_KEY + current);
+            PlayerPrefs.DeleteKey(COLLECTED_STRINGS_KEY + current);
+        }
+
+        // 最后显式将GameStarted清零，确保开始菜单只显示“开始游戏”
+        PlayerPrefs.SetInt("GameStarted", 0);
+
+        PlayerPrefs.Save();
+    }
+
+    
+
+    /// <summary>
     /// 是否为启动场景（不参与存档）。大小写不敏感，匹配"startup"。
     /// </summary>
-    private bool IsStartupScene(string sceneName)
+    private static bool IsStartupScene(string sceneName)
     {
         if (string.IsNullOrEmpty(sceneName)) return false;
         return sceneName.Trim().ToLowerInvariant() == "startup";
+    }
+
+    /// <summary>
+    /// 是否为level1（不参与关卡内状态存档）
+    /// </summary>
+    private static bool IsLevel1Scene(string sceneName)
+    {
+        if (string.IsNullOrEmpty(sceneName)) return false;
+        string lower = sceneName.Trim().ToLowerInvariant();
+        if (lower == "level1") return true;
+        // 同时兼容把首关名配置在 LevelSequence[0] 的情况
+        if (PublicData.LevelSequence != null && PublicData.LevelSequence.Length > 0)
+        {
+            string first = (PublicData.LevelSequence[0] ?? "").Trim().ToLowerInvariant();
+            if (!string.IsNullOrEmpty(first) && first == lower) return true;
+        }
+        return false;
+    }
+
+    /// <summary>
+    /// 是否存在任意关卡的关卡内存档（用于决定是否可“继续游戏”）
+    /// </summary>
+    public static bool HasAnySavedStatesForLevels()
+    {
+        if (PublicData.LevelSequence == null) return false;
+        foreach (var level in PublicData.LevelSequence)
+        {
+            if (string.IsNullOrEmpty(level)) continue;
+            if (PlayerPrefs.HasKey(GAME_STATE_KEY + level)) return true;
+        }
+        return false;
     }
 }

@@ -40,6 +40,9 @@ public class Level2Manager : MonoBehaviour, IBootstrapAware
             }
             LevelProgressManager.Instance.SetCurrentLevel("level2");
             GameLogger.LogSystem("Level2Manager: 已设置当前关卡为 level2（并确保level1已完成）");
+            // 显式标记游戏已开始，避免某些平台上PlayerPrefs延迟写入导致菜单误判
+            PlayerPrefs.SetInt("GameStarted", 1);
+            PlayerPrefs.Save();
         }
         
         // 获取对其他管理器的引用

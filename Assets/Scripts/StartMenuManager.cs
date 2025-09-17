@@ -17,6 +17,7 @@ public class StartMenuManager : MonoBehaviour
     [SerializeField] private bool enableDebugLog = true;
     
     [Header("按钮引用")]
+    [SerializeField] private Button startNewGameButton; // 从头开始按钮（序列化引用）
     [SerializeField] private Button startGameButton;
     [SerializeField] private Button continueGameButton;
 
@@ -40,13 +41,16 @@ public class StartMenuManager : MonoBehaviour
         if (LevelProgressManager.Instance != null)
         {
             // 优先使用Inspector中设置的按钮引用
-            Button startBtn = startGameButton;
+            // 如果提供了“从头开始”按钮，则优先使用它
+            Button startBtn = startNewGameButton != null ? startNewGameButton : startGameButton;
             Button continueBtn = continueGameButton;
             
             // 如果Inspector中没有设置，尝试通过名称查找
             if (startBtn == null)
             {
-                startBtn = GameObject.Find("StartGameButton")?.GetComponent<Button>();
+                // 先找从头开始按钮
+                startBtn = GameObject.Find("StartNewGameButton")?.GetComponent<Button>()
+                           ?? GameObject.Find("StartGameButton")?.GetComponent<Button>();
             }
             if (continueBtn == null)
             {
@@ -57,6 +61,21 @@ public class StartMenuManager : MonoBehaviour
             {
                 LevelProgressManager.Instance.SetButtonReferences(startBtn, continueBtn);
                 LogDebug("已设置LevelProgressManager按钮引用");
+
+                // 覆盖“从头开始”按钮事件为本地清档逻辑
+                if (startBtn != null)
+                {
+                    startBtn.onClick.RemoveAllListeners();
+                    startBtn.onClick.AddListener(OnStartNewGameClicked);
+                    LogDebug("已绑定从头开始按钮事件到 StartMenuManager.OnStartNewGameClicked");
+                }
+
+                // 传递“从头开始”按钮引用，便于显示逻辑隐藏/显示
+                if (startNewGameButton != null)
+                {
+                    LevelProgressManager.Instance.SetStartNewGameButton(startNewGameButton);
+                    LogDebug("已传递从头开始按钮引用到LevelProgressManager");
+                }
             }
             else
             {
@@ -96,14 +115,30 @@ public class StartMenuManager : MonoBehaviour
     {
         LogDebug("开始新游戏");
         
-        // 重置游戏进度
-        if (LevelProgressManager.Instance != null)
+        // 清空所有本地存档（包括关卡进度与关卡内状态）
+        GameStateManager.ClearAllGameStates();
+        LevelProgressManager.Instance?.ClearAllProgress();
+        PlayerPrefs.SetInt("GameStarted", 0); // 显式清零开关
+        PlayerPrefs.Save();
+        LogDebug("已清空所有关卡状态与进度，并将GameStarted=0");
+
+        // 调用测试清空器（若场景中挂载）以保持一致的清理逻辑
+        ClearAllLocalDataTester tester = FindObjectOfType<ClearAllLocalDataTester>();
+        if (tester != null)
         {
-            LevelProgressManager.Instance.StartNewGame();
+            tester.ClearAllLocalData();
+            LogDebug("已调用 ClearAllLocalDataTester.ClearAllLocalData()");
         }
-        
-        // 播放音效并加载第一个关卡
-        StartCoroutine(LoadSceneAfterSound());
+
+        // 重置游戏进度（内存态）
+        LevelProgressManager.Instance?.StartNewGame();
+
+        // 立即跳转到 level1（或 LevelSequence[0]）
+        string level1 = (PublicData.LevelSequence != null && PublicData.LevelSequence.Length > 0)
+            ? PublicData.LevelSequence[0]
+            : "level1";
+        LogDebug($"立即加载首关: {level1}");
+        UnityEngine.SceneManagement.SceneManager.LoadScene(level1);
     }
     
     /// <summary>
