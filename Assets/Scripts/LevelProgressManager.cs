@@ -719,7 +719,15 @@ public class LevelProgressManager : MonoBehaviour
     private void OnStartGameButtonClicked()
     {
         LogDebug("开始游戏按钮被点击");
-        StartNewGame();
+        
+        // 先清空所有本地存档
+        ClearAllProgress();
+        
+        // 清空后根据需要刷新按钮显示
+        if (autoManageButtons)
+        {
+            UpdateButtonStates();
+        }
         
         // 加载第一个关卡
         if (PublicData.LevelSequence.Length > 0)
