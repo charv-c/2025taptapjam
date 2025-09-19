@@ -84,15 +84,21 @@ public class LevelProgressManager : MonoBehaviour
         }
     }
     
+    // 规范化关卡名：去首尾空格并转为小写
+    private static string NormalizeLevelName(string levelName)
+    {
+        return string.IsNullOrEmpty(levelName) ? "" : levelName.Trim().ToLowerInvariant();
+    }
+
     /// <summary>
     /// 从本地存储加载游戏进度
     /// </summary>
     private void LoadProgress()
     {
-        // 加载当前关卡
-        currentLevel = PlayerPrefs.GetString(CURRENT_LEVEL_KEY, "");
+        // 加载当前关卡并规范化
+        currentLevel = NormalizeLevelName(PlayerPrefs.GetString(CURRENT_LEVEL_KEY, ""));
         
-        // 加载已完成的关卡列表
+        // 加载已完成的关卡列表（按规范化存储）
         string completedLevelsString = PlayerPrefs.GetString(COMPLETED_LEVELS_KEY, "");
         completedLevels = new HashSet<string>();
         
@@ -103,7 +109,7 @@ public class LevelProgressManager : MonoBehaviour
             {
                 if (!string.IsNullOrEmpty(level))
                 {
-                    string trimmedLevel = level.Trim();
+                    string trimmedLevel = NormalizeLevelName(level);
                     // 验证关卡名称是否在有效序列中
                     if (IsValidLevelName(trimmedLevel))
                     {
@@ -111,7 +117,7 @@ public class LevelProgressManager : MonoBehaviour
                     }
                     else
                     {
-                        LogDebug($"警告：发现无效的关卡名称 '{trimmedLevel}'，已忽略");
+                        LogDebug($"警告：发现无效的关卡名称 '{level}', 规范化为'{trimmedLevel}'后仍无效，已忽略");
                     }
                 }
             }
@@ -133,10 +139,10 @@ public class LevelProgressManager : MonoBehaviour
     /// </summary>
     private void SaveProgress()
     {
-        // 保存当前关卡
+        // 保存当前关卡（已为规范化值）
         PlayerPrefs.SetString(CURRENT_LEVEL_KEY, currentLevel);
         
-        // 保存已完成的关卡列表
+        // 保存已完成的关卡列表（规范化值）
         string completedLevelsString = string.Join(",", completedLevels);
         PlayerPrefs.SetString(COMPLETED_LEVELS_KEY, completedLevelsString);
         
@@ -217,7 +223,7 @@ public class LevelProgressManager : MonoBehaviour
             // 找到第一个未完成的关卡
             foreach (string level in PublicData.LevelSequence)
             {
-                if (!completedLevels.Contains(level))
+                if (!completedLevels.Contains(NormalizeLevelName(level)))
                 {
                     LogDebug($"当前关卡为空，找到第一个未完成关卡: '{level}'");
                     return level;
@@ -235,7 +241,7 @@ public class LevelProgressManager : MonoBehaviour
         else
         {
             // 检查当前关卡是否已完成
-            if (completedLevels.Contains(currentLevel))
+            if (completedLevels.Contains(NormalizeLevelName(currentLevel)))
             {
                 // 当前关卡已完成，找到下一个未完成的关卡
                 int currentIndex = System.Array.IndexOf(PublicData.LevelSequence, currentLevel);
@@ -276,9 +282,9 @@ public class LevelProgressManager : MonoBehaviour
             return;
         }
         
-        currentLevel = levelName;
+        currentLevel = NormalizeLevelName(levelName);
         SaveProgress();
-        LogDebug($"设置当前关卡为: '{levelName}'");
+        LogDebug($"设置当前关卡为: '{currentLevel}'");
     }
     
     /// <summary>
@@ -293,9 +299,10 @@ public class LevelProgressManager : MonoBehaviour
             return;
         }
         
-        completedLevels.Add(levelName);
+        string normalized = NormalizeLevelName(levelName);
+        completedLevels.Add(normalized);
         SaveProgress();
-        LogDebug($"关卡 '{levelName}' 已标记为完成");
+        LogDebug($"关卡 '{normalized}' 已标记为完成");
     }
     
     /// <summary>
@@ -305,7 +312,7 @@ public class LevelProgressManager : MonoBehaviour
     /// <returns>是否已完成</returns>
     public bool IsLevelCompleted(string levelName)
     {
-        return completedLevels.Contains(levelName);
+        return completedLevels.Contains(NormalizeLevelName(levelName));
     }
     
     /// <summary>
@@ -349,7 +356,7 @@ public class LevelProgressManager : MonoBehaviour
         // 检查关卡序列中的每个关卡是否都已完成
         foreach (string level in PublicData.LevelSequence)
         {
-            if (!completedLevels.Contains(level))
+            if (!completedLevels.Contains(NormalizeLevelName(level)))
             {
                 return false;
             }
@@ -376,10 +383,11 @@ public class LevelProgressManager : MonoBehaviour
             return false;
         }
         
-        // 检查关卡名称是否在有效序列中
+        // 使用规范化比较
+        string norm = NormalizeLevelName(levelName);
         foreach (string validLevel in PublicData.LevelSequence)
         {
-            if (string.Equals(levelName, validLevel, System.StringComparison.OrdinalIgnoreCase))
+            if (norm == NormalizeLevelName(validLevel))
             {
                 return true;
             }
@@ -411,7 +419,16 @@ public class LevelProgressManager : MonoBehaviour
             return -1;
         }
         
-        return System.Array.IndexOf(PublicData.LevelSequence, currentLevel);
+        // 在序列中按规范化比较
+        string normCurrent = NormalizeLevelName(currentLevel);
+        for (int i = 0; i < PublicData.LevelSequence.Length; i++)
+        {
+            if (NormalizeLevelName(PublicData.LevelSequence[i]) == normCurrent)
+            {
+                return i;
+            }
+        }
+        return -1;
     }
     
     /// <summary>
