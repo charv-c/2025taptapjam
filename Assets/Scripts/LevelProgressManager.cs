@@ -316,6 +316,29 @@ public class LevelProgressManager : MonoBehaviour
     }
     
     /// <summary>
+    /// 检查是否所有关卡都已完成
+    /// </summary>
+    /// <returns>是否所有关卡都已完成</returns>
+    public bool AreAllLevelsCompleted()
+    {
+        if (PublicData.LevelSequence == null || PublicData.LevelSequence.Length == 0)
+        {
+            return false;
+        }
+        
+        // 检查关卡序列中的每个关卡是否都已完成
+        foreach (string level in PublicData.LevelSequence)
+        {
+            if (!completedLevels.Contains(level))
+            {
+                return false;
+            }
+        }
+        
+        return true;
+    }
+    
+    /// <summary>
     /// 获取游戏进度百分比
     /// </summary>
     /// <returns>进度百分比 (0-100)</returns>
@@ -390,19 +413,25 @@ public class LevelProgressManager : MonoBehaviour
     /// </summary>
     public void UpdateButtonStates()
     {
-        // 仅以“关卡已完成”为准：至少有一个关卡完成才算有进度
+        // 检查是否所有关卡都已完成
+        bool allLevelsCompleted = AreAllLevelsCompleted();
+        
+        // 如果有进度但不是所有关卡都完成，显示继续游戏按钮
         bool hasLevelProgress = GetCompletedLevelsCount() > 0;
-        LogDebug($"更新按钮状态 - 以已完成关卡数判断，有进度: {hasLevelProgress} (completed={GetCompletedLevelsCount()})");
+        bool shouldShowContinue = hasLevelProgress && !allLevelsCompleted;
+        
+        LogDebug($"更新按钮状态 - 已完成关卡数: {GetCompletedLevelsCount()}, 总关卡数: {GetTotalLevelsCount()}, 所有关卡完成: {allLevelsCompleted}, 显示继续游戏: {shouldShowContinue}");
 
-        if (hasLevelProgress)
+        if (shouldShowContinue)
         {
+            // 有进度但未全部完成，显示继续游戏和从头开始
             if (startGameButton != null) startGameButton.gameObject.SetActive(false); // 无存档按钮隐藏
             if (startNewGameButton != null) startNewGameButton.gameObject.SetActive(true);   // 从头开始
             if (continueGameButton != null) continueGameButton.gameObject.SetActive(true); // 继续游戏
         }
         else
         {
-            // 仅显示“开始游戏”，隐藏“从头开始/继续游戏”
+            // 无进度或所有关卡都已完成，仅显示"开始游戏"
             if (startGameButton != null) startGameButton.gameObject.SetActive(true);
             if (startNewGameButton != null) startNewGameButton.gameObject.SetActive(false);
             if (continueGameButton != null) continueGameButton.gameObject.SetActive(false);
@@ -410,8 +439,8 @@ public class LevelProgressManager : MonoBehaviour
     }
 
     /// <summary>
-    /// 是否应该显示“继续游戏”按钮
-    /// 规则：必须已开始游戏，且level1已完成；否则显示“开始游戏”。
+    /// 是否应该显示"继续游戏"按钮
+    /// 规则：必须已开始游戏，有进度，但不是所有关卡都已完成；否则显示"开始游戏"。
     /// </summary>
     private bool ShouldShowContinue()
     {
@@ -419,12 +448,22 @@ public class LevelProgressManager : MonoBehaviour
         {
             return false;
         }
-        // 拿到首关名称（默认PublicData.LevelSequence[0]）
-        string firstLevel = PublicData.LevelSequence != null && PublicData.LevelSequence.Length > 0
-            ? PublicData.LevelSequence[0]
-            : "level1";
-        // 未完成level1时，仍显示“开始游戏”
-        return IsLevelCompleted(firstLevel);
+        
+        // 检查是否有进度
+        bool hasProgress = GetCompletedLevelsCount() > 0;
+        if (!hasProgress)
+        {
+            return false;
+        }
+        
+        // 检查是否所有关卡都已完成
+        bool allCompleted = AreAllLevelsCompleted();
+        if (allCompleted)
+        {
+            return false; // 所有关卡都完成时显示"开始游戏"
+        }
+        
+        return true; // 有进度但未全部完成时显示"继续游戏"
     }
     
     /// <summary>
