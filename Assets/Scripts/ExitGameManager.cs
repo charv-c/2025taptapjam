@@ -45,6 +45,9 @@ public class ExitGameManager : MonoBehaviour
     // 期望的全屏状态（用于在部分平台上被动退出时强制恢复）
     private bool desiredFullScreen;
     
+    // ESC弹窗禁用状态（用于在飞行动画期间禁用ESC弹窗）
+    private bool exitDialogDisabled = false;
+    
     // 动态创建的按钮引用
     private Button confirmExitButton;
     private Button cancelExitButton;
@@ -388,6 +391,12 @@ public class ExitGameManager : MonoBehaviour
     /// </summary>
     private void HandleKeyboardInput()
     {
+        // 如果ESC弹窗被禁用，忽略所有退出相关的键盘输入
+        if (exitDialogDisabled)
+        {
+            return;
+        }
+        
         // 处理退出键
 #if UNITY_WEBGL
         // WebGL 平台：浏览器层面会用 ESC 退出全屏，无法拦截。
@@ -762,5 +771,24 @@ public class ExitGameManager : MonoBehaviour
     public Button[] GetButtonReferences()
     {
         return new Button[] { confirmExitButton, cancelExitButton };
+    }
+    
+    /// <summary>
+    /// 设置ESC弹窗禁用状态
+    /// </summary>
+    /// <param name="disabled">是否禁用ESC弹窗</param>
+    public void SetExitDialogDisabled(bool disabled)
+    {
+        exitDialogDisabled = disabled;
+        LogDebug($"ESC弹窗禁用状态已设置为: {disabled}");
+    }
+    
+    /// <summary>
+    /// 获取ESC弹窗禁用状态
+    /// </summary>
+    /// <returns>是否禁用ESC弹窗</returns>
+    public bool IsExitDialogDisabled()
+    {
+        return exitDialogDisabled;
     }
 }

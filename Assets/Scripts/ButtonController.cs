@@ -382,6 +382,13 @@ public class ButtonController : MonoBehaviour
                 {
                     GameLogger.LogDev($"ButtonController: 字符 '{originalString}' 在目标列表中");
                     
+                    // 合成目标字成功的那一刻立即禁用ESC弹窗功能
+                    if (ExitGameManager.Instance != null)
+                    {
+                        ExitGameManager.Instance.SetExitDialogDisabled(true);
+                        GameLogger.LogDev("ButtonController: 合成目标字成功，已禁用ESC弹窗功能");
+                    }
+                    
                     Transform targetPosition = PublicData.GetTargetPositionForCharacter(originalString);
                     GameLogger.LogDev($"ButtonController: 获取目标位置: {targetPosition?.name ?? "null"}");
                     
@@ -401,6 +408,13 @@ public class ButtonController : MonoBehaviour
                     {
                         GameLogger.LogWarning($"ButtonController: 目标位置为空，直接添加字符 '{originalString}'");
                         stringSelector.InsertAvailableStringAt(originalString, insertIndex);
+                        
+                        // 如果没有飞行动画，立即重新启用ESC弹窗功能
+                        if (ExitGameManager.Instance != null)
+                        {
+                            ExitGameManager.Instance.SetExitDialogDisabled(false);
+                            GameLogger.LogDev("ButtonController: 无飞行动画，已重新启用ESC弹窗功能");
+                        }
                     }
                 }
                 else
@@ -765,6 +779,13 @@ public class ButtonController : MonoBehaviour
         
         // 飞行动画结束，解锁按钮
         SetFlyingAnimationActive(false);
+        
+        // 飞行动画完成后重新启用ESC弹窗功能
+        if (ExitGameManager.Instance != null)
+        {
+            ExitGameManager.Instance.SetExitDialogDisabled(false);
+            GameLogger.LogDev("ButtonController: 飞行动画完成，已重新启用ESC弹窗功能");
+        }
     }
     
     // 计算螺旋轨迹位置
@@ -1015,6 +1036,13 @@ public class ButtonController : MonoBehaviour
         rect.localScale = Vector3.one;
 
         SetFlyingAnimationActive(false);
+        
+        // 飞行动画完成后重新启用ESC弹窗功能
+        if (ExitGameManager.Instance != null)
+        {
+            ExitGameManager.Instance.SetExitDialogDisabled(false);
+            GameLogger.LogDev("ButtonController: 统一飞行动画完成，已重新启用ESC弹窗功能");
+        }
     }
     
     #region Level3 彩蛋功能
