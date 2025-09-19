@@ -48,19 +48,22 @@ public class StartMenuManager : MonoBehaviour
             // 如果Inspector中没有设置，尝试通过名称查找
             if (startBtn == null)
             {
-                // 先找从头开始按钮
-                startBtn = GameObject.Find("StartNewGameButton")?.GetComponent<Button>()
-                           ?? GameObject.Find("StartGameButton")?.GetComponent<Button>();
+                // 多重查找策略
+                startBtn = FindButtonByMultipleNames(new string[] {
+                    "StartNewGameButton", "StartGameButton", "开始游戏", "NewGameButton"
+                });
             }
             if (continueBtn == null)
             {
-                continueBtn = GameObject.Find("ContinueGameButton")?.GetComponent<Button>();
+                continueBtn = FindButtonByMultipleNames(new string[] {
+                    "ContinueGameButton", "继续游戏", "ContinueButton", "ResumeButton"
+                });
             }
             
             if (startBtn != null || continueBtn != null)
             {
                 LevelProgressManager.Instance.SetButtonReferences(startBtn, continueBtn);
-                LogDebug("已设置LevelProgressManager按钮引用");
+                LogDebug($"按钮设置成功 - Start: {startBtn?.name ?? "null"}, Continue: {continueBtn?.name ?? "null"}");
 
                 // 覆盖“从头开始”按钮事件为本地清档逻辑
                 if (startBtn != null)
@@ -82,6 +85,26 @@ public class StartMenuManager : MonoBehaviour
                 LogDebug("未找到开始游戏或继续游戏按钮，请确保按钮名称正确或在Inspector中设置引用");
             }
         }
+    }
+    
+    /// <summary>
+    /// 通过多个名称查找按钮
+    /// </summary>
+    /// <param name="names">可能的按钮名称数组</param>
+    /// <returns>找到的按钮，如果都没找到则返回null</returns>
+    private Button FindButtonByMultipleNames(string[] names)
+    {
+        foreach (string name in names)
+        {
+            Button btn = GameObject.Find(name)?.GetComponent<Button>();
+            if (btn != null)
+            {
+                LogDebug($"找到按钮: {name}");
+                return btn;
+            }
+        }
+        LogDebug($"未找到按钮，尝试的名称: [{string.Join(", ", names)}]");
+        return null;
     }
     
     /// <summary>
@@ -134,8 +157,9 @@ public class StartMenuManager : MonoBehaviour
         LevelProgressManager.Instance?.StartNewGame(); // 会清空GameStarted与完成列表
 
         // 立即跳转到 level1（或 LevelSequence[0]）
-        string level1 = (PublicData.LevelSequence != null && PublicData.LevelSequence.Length > 0)
-            ? PublicData.LevelSequence[0]
+        string[] levelSequence = PublicData.GetLevelSequence();
+        string level1 = (levelSequence != null && levelSequence.Length > 0)
+            ? levelSequence[0]
             : "level1";
         LogDebug($"立即加载首关: {level1}");
         UnityEngine.SceneManagement.SceneManager.LoadScene(level1);

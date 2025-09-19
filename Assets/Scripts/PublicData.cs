@@ -2,6 +2,7 @@ using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.SceneManagement;
+using System.Linq;
 
 public class PublicData : MonoBehaviour
 {
@@ -56,6 +57,9 @@ public class PublicData : MonoBehaviour
     
     // 新增：数据驱动的关卡序列
     public static readonly string[] LevelSequence = { "level1", "level2", "level3" };
+    
+    // 动态关卡序列获取
+    private static string[] _cachedLevelSequence = null;
     
     // 新增：用于存储不同关卡通关后的背景图
     public static Dictionary<string, Sprite> LevelEndBackgrounds = new Dictionary<string, Sprite>();
@@ -634,6 +638,64 @@ public class PublicData : MonoBehaviour
         stringKeyValuePairs.Clear();
         autoHintDict.Clear();
         listofhua.Clear();
+    }
+    
+    /// <summary>
+    /// 获取关卡序列（动态获取，兼容不同构建环境）
+    /// </summary>
+    /// <returns>关卡序列数组</returns>
+    public static string[] GetLevelSequence()
+    {
+        // 如果已缓存，直接返回
+        if (_cachedLevelSequence != null)
+        {
+            return _cachedLevelSequence;
+        }
+        
+        try
+        {
+            // 尝试从构建设置中获取场景列表
+            var buildScenes = new List<string>();
+            int sceneCount = UnityEngine.SceneManagement.SceneManager.sceneCountInBuildSettings;
+            
+            for (int i = 0; i < sceneCount; i++)
+            {
+                string scenePath = UnityEngine.SceneManagement.SceneUtility.GetScenePathByBuildIndex(i);
+                string sceneName = System.IO.Path.GetFileNameWithoutExtension(scenePath);
+                
+                // 只包含以"level"开头的场景
+                if (sceneName.ToLowerInvariant().StartsWith("level"))
+                {
+                    buildScenes.Add(sceneName);
+                }
+            }
+            
+            // 如果构建设置中找到关卡场景，使用它们
+            if (buildScenes.Count > 0)
+            {
+                _cachedLevelSequence = buildScenes.ToArray();
+                UnityEngine.Debug.Log($"[PublicData] 从构建设置获取关卡序列: [{string.Join(", ", _cachedLevelSequence)}]");
+                return _cachedLevelSequence;
+            }
+        }
+        catch (System.Exception e)
+        {
+            UnityEngine.Debug.LogWarning($"[PublicData] 从构建设置获取关卡序列失败: {e.Message}");
+        }
+        
+        // 如果构建设置中没有找到或出错，使用默认序列
+        _cachedLevelSequence = LevelSequence;
+        UnityEngine.Debug.Log($"[PublicData] 使用默认关卡序列: [{string.Join(", ", _cachedLevelSequence)}]");
+        return _cachedLevelSequence;
+    }
+    
+    /// <summary>
+    /// 清除关卡序列缓存（用于测试或重新加载）
+    /// </summary>
+    public static void ClearLevelSequenceCache()
+    {
+        _cachedLevelSequence = null;
+        UnityEngine.Debug.Log("[PublicData] 关卡序列缓存已清除");
     }
     
 }

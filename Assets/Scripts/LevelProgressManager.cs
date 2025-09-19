@@ -51,6 +51,16 @@ public class LevelProgressManager : MonoBehaviour
     /// </summary>
     private void InitializeProgress()
     {
+        LogDebug("=== 开始初始化进度数据 ===");
+        
+        // 添加PlayerPrefs可用性检查
+        if (!IsPlayerPrefsAvailable())
+        {
+            LogDebug("警告：PlayerPrefs不可用，使用默认状态");
+            ShowStartGameOnly();
+            return;
+        }
+        
         LoadProgress();
         
         // 自动修复无效的存档数据
@@ -61,6 +71,8 @@ public class LevelProgressManager : MonoBehaviour
         {
             UpdateButtonStates();
         }
+        
+        LogDebug("=== 进度数据初始化完成 ===");
     }
 
     private void OnEnable()
@@ -88,6 +100,33 @@ public class LevelProgressManager : MonoBehaviour
     private static string NormalizeLevelName(string levelName)
     {
         return string.IsNullOrEmpty(levelName) ? "" : levelName.Trim().ToLowerInvariant();
+    }
+    
+    /// <summary>
+    /// 检查PlayerPrefs是否可用
+    /// </summary>
+    /// <returns>PlayerPrefs是否可用</returns>
+    private bool IsPlayerPrefsAvailable()
+    {
+        try
+        {
+            // 测试写入和读取
+            string testKey = "PlayerPrefsTest_" + System.DateTime.Now.Ticks;
+            PlayerPrefs.SetString(testKey, "test");
+            PlayerPrefs.Save();
+            string result = PlayerPrefs.GetString(testKey, "");
+            PlayerPrefs.DeleteKey(testKey);
+            PlayerPrefs.Save();
+            
+            bool isAvailable = result == "test";
+            LogDebug($"PlayerPrefs可用性测试: {isAvailable}");
+            return isAvailable;
+        }
+        catch (System.Exception e)
+        {
+            LogDebug($"PlayerPrefs不可用，错误: {e.Message}");
+            return false;
+        }
     }
 
     /// <summary>
@@ -197,9 +236,10 @@ public class LevelProgressManager : MonoBehaviour
             LogDebug("没有找到可继续的关卡，开始新游戏");
             StartNewGame();
             // 加载第一个关卡
-            if (PublicData.LevelSequence.Length > 0)
+            string[] levelSequence = PublicData.GetLevelSequence();
+            if (levelSequence.Length > 0)
             {
-                SceneManager.LoadScene(PublicData.LevelSequence[0]);
+                SceneManager.LoadScene(levelSequence[0]);
             }
         }
     }
@@ -221,7 +261,8 @@ public class LevelProgressManager : MonoBehaviour
         if (string.IsNullOrEmpty(currentLevel))
         {
             // 找到第一个未完成的关卡
-            foreach (string level in PublicData.LevelSequence)
+            string[] levelSequence = PublicData.GetLevelSequence();
+            foreach (string level in levelSequence)
             {
                 if (!completedLevels.Contains(NormalizeLevelName(level)))
                 {
@@ -231,9 +272,9 @@ public class LevelProgressManager : MonoBehaviour
             }
             
             // 如果所有关卡都已完成，返回最后一个关卡
-            if (PublicData.LevelSequence.Length > 0)
+            if (levelSequence.Length > 0)
             {
-                string lastLevel = PublicData.LevelSequence[PublicData.LevelSequence.Length - 1];
+                string lastLevel = levelSequence[levelSequence.Length - 1];
                 LogDebug($"所有关卡都已完成，返回最后一个关卡: '{lastLevel}'");
                 return lastLevel;
             }
@@ -244,10 +285,11 @@ public class LevelProgressManager : MonoBehaviour
             if (completedLevels.Contains(NormalizeLevelName(currentLevel)))
             {
                 // 当前关卡已完成，找到下一个未完成的关卡
-                int currentIndex = System.Array.IndexOf(PublicData.LevelSequence, currentLevel);
-                if (currentIndex >= 0 && currentIndex < PublicData.LevelSequence.Length - 1)
+                string[] levelSequence = PublicData.GetLevelSequence();
+                int currentIndex = System.Array.IndexOf(levelSequence, currentLevel);
+                if (currentIndex >= 0 && currentIndex < levelSequence.Length - 1)
                 {
-                    string nextLevel = PublicData.LevelSequence[currentIndex + 1];
+                    string nextLevel = levelSequence[currentIndex + 1];
                     LogDebug($"当前关卡 '{currentLevel}' 已完成，返回下一个关卡: '{nextLevel}'");
                     return nextLevel;
                 }
@@ -339,7 +381,7 @@ public class LevelProgressManager : MonoBehaviour
     /// <returns>总关卡数量</returns>
     public int GetTotalLevelsCount()
     {
-        return PublicData.LevelSequence.Length;
+        return PublicData.GetLevelSequence().Length;
     }
     
     /// <summary>
@@ -348,13 +390,14 @@ public class LevelProgressManager : MonoBehaviour
     /// <returns>是否所有关卡都已完成</returns>
     public bool AreAllLevelsCompleted()
     {
-        if (PublicData.LevelSequence == null || PublicData.LevelSequence.Length == 0)
+        string[] levelSequence = PublicData.GetLevelSequence();
+        if (levelSequence == null || levelSequence.Length == 0)
         {
             return false;
         }
         
         // 检查关卡序列中的每个关卡是否都已完成
-        foreach (string level in PublicData.LevelSequence)
+        foreach (string level in levelSequence)
         {
             if (!completedLevels.Contains(NormalizeLevelName(level)))
             {
@@ -377,7 +420,8 @@ public class LevelProgressManager : MonoBehaviour
             return false;
         }
         
-        if (PublicData.LevelSequence == null || PublicData.LevelSequence.Length == 0)
+        string[] levelSequence = PublicData.GetLevelSequence();
+        if (levelSequence == null || levelSequence.Length == 0)
         {
             LogDebug("警告：关卡序列未初始化");
             return false;
@@ -385,7 +429,7 @@ public class LevelProgressManager : MonoBehaviour
         
         // 使用规范化比较
         string norm = NormalizeLevelName(levelName);
-        foreach (string validLevel in PublicData.LevelSequence)
+        foreach (string validLevel in levelSequence)
         {
             if (norm == NormalizeLevelName(validLevel))
             {
@@ -421,9 +465,10 @@ public class LevelProgressManager : MonoBehaviour
         
         // 在序列中按规范化比较
         string normCurrent = NormalizeLevelName(currentLevel);
-        for (int i = 0; i < PublicData.LevelSequence.Length; i++)
+        string[] levelSequence = PublicData.GetLevelSequence();
+        for (int i = 0; i < levelSequence.Length; i++)
         {
-            if (NormalizeLevelName(PublicData.LevelSequence[i]) == normCurrent)
+            if (NormalizeLevelName(levelSequence[i]) == normCurrent)
             {
                 return i;
             }
@@ -438,9 +483,10 @@ public class LevelProgressManager : MonoBehaviour
     public string GetNextLevelName()
     {
         int currentIndex = GetCurrentLevelIndex();
-        if (currentIndex >= 0 && currentIndex < PublicData.LevelSequence.Length - 1)
+        string[] levelSequence = PublicData.GetLevelSequence();
+        if (currentIndex >= 0 && currentIndex < levelSequence.Length - 1)
         {
-            return PublicData.LevelSequence[currentIndex + 1];
+            return levelSequence[currentIndex + 1];
         }
         
         return "";
@@ -531,8 +577,13 @@ public class LevelProgressManager : MonoBehaviour
     /// </summary>
     public void UpdateButtonStates()
     {
-        // 检查关卡序列是否有效
-        if (PublicData.LevelSequence == null || PublicData.LevelSequence.Length == 0)
+        LogDebug("=== 按钮状态更新开始 ===");
+        LogDebug($"PlayerPrefs可用性: {IsPlayerPrefsAvailable()}");
+        LogDebug($"游戏已开始: {HasGameStarted()}");
+        
+        // 检查关卡序列是否有效（使用动态获取）
+        string[] levelSequence = PublicData.GetLevelSequence();
+        if (levelSequence == null || levelSequence.Length == 0)
         {
             LogDebug("错误：关卡序列未初始化，显示开始游戏按钮");
             ShowStartGameOnly();
@@ -546,20 +597,27 @@ public class LevelProgressManager : MonoBehaviour
         bool hasLevelProgress = GetCompletedLevelsCount() > 0;
         bool shouldShowContinue = hasLevelProgress && !allLevelsCompleted;
         
-        LogDebug($"更新按钮状态 - 已完成关卡数: {GetCompletedLevelsCount()}, 总关卡数: {GetTotalLevelsCount()}, 所有关卡完成: {allLevelsCompleted}, 显示继续游戏: {shouldShowContinue}");
+        LogDebug($"已完成关卡数: {GetCompletedLevelsCount()}, 总关卡数: {GetTotalLevelsCount()}, 所有关卡完成: {allLevelsCompleted}, 显示继续游戏: {shouldShowContinue}");
         LogDebug($"当前关卡: '{currentLevel}', 已完成关卡: [{string.Join(", ", completedLevels)}]");
-        LogDebug($"关卡序列: [{string.Join(", ", PublicData.LevelSequence)}]");
+        LogDebug($"关卡序列: [{string.Join(", ", levelSequence)}]");
+        
+        // 检查按钮引用
+        LogDebug($"按钮引用状态 - Start: {startGameButton?.name ?? "null"}, New: {startNewGameButton?.name ?? "null"}, Continue: {continueGameButton?.name ?? "null"}");
 
         if (shouldShowContinue)
         {
             // 有进度但未全部完成，显示继续游戏和从头开始
+            LogDebug("决定显示：继续游戏 + 从头开始按钮");
             ShowContinueAndNewGame();
         }
         else
         {
             // 无进度或所有关卡都已完成，仅显示"开始游戏"
+            LogDebug("决定显示：仅开始游戏按钮");
             ShowStartGameOnly();
         }
+        
+        LogDebug("=== 按钮状态更新完成 ===");
     }
     
     /// <summary>
@@ -794,7 +852,32 @@ public class LevelProgressManager : MonoBehaviour
     [ContextMenu("强制显示继续游戏按钮")]
     public void ForceShowContinueGameButton()
     {
-        ShowContinueGameButton();
+        if (continueGameButton != null)
+        {
+            continueGameButton.gameObject.SetActive(true);
+            LogDebug("强制显示继续游戏按钮");
+        }
+        else
+        {
+            LogDebug("错误：继续游戏按钮引用为空");
+        }
+    }
+    
+    /// <summary>
+    /// 强制显示继续按钮（用于调试和兼容性）
+    /// </summary>
+    [ContextMenu("强制显示继续按钮")]
+    public void ForceShowContinueButton()
+    {
+        if (continueGameButton != null)
+        {
+            continueGameButton.gameObject.SetActive(true);
+            LogDebug("强制显示继续游戏按钮");
+        }
+        else
+        {
+            LogDebug("错误：继续游戏按钮引用为空");
+        }
     }
     
     /// <summary>
