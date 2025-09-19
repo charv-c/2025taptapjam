@@ -53,6 +53,9 @@ public class LevelProgressManager : MonoBehaviour
     {
         LoadProgress();
         
+        // 自动修复无效的存档数据
+        FixInvalidSaveData();
+        
         // 自动管理按钮状态
         if (autoManageButtons)
         {
@@ -100,12 +103,29 @@ public class LevelProgressManager : MonoBehaviour
             {
                 if (!string.IsNullOrEmpty(level))
                 {
-                    completedLevels.Add(level.Trim());
+                    string trimmedLevel = level.Trim();
+                    // 验证关卡名称是否在有效序列中
+                    if (IsValidLevelName(trimmedLevel))
+                    {
+                        completedLevels.Add(trimmedLevel);
+                    }
+                    else
+                    {
+                        LogDebug($"警告：发现无效的关卡名称 '{trimmedLevel}'，已忽略");
+                    }
                 }
             }
         }
         
+        // 验证当前关卡是否有效
+        if (!string.IsNullOrEmpty(currentLevel) && !IsValidLevelName(currentLevel))
+        {
+            LogDebug($"警告：当前关卡 '{currentLevel}' 无效，已重置为空");
+            currentLevel = "";
+        }
+        
         LogDebug($"加载进度 - 当前关卡: '{currentLevel}', 已完成关卡: [{string.Join(", ", completedLevels)}]");
+        LogDebug($"关卡序列: [{string.Join(", ", PublicData.LevelSequence)}]");
     }
     
     /// <summary>
@@ -339,6 +359,36 @@ public class LevelProgressManager : MonoBehaviour
     }
     
     /// <summary>
+    /// 验证关卡名称是否有效
+    /// </summary>
+    /// <param name="levelName">关卡名称</param>
+    /// <returns>是否有效</returns>
+    private bool IsValidLevelName(string levelName)
+    {
+        if (string.IsNullOrEmpty(levelName))
+        {
+            return false;
+        }
+        
+        if (PublicData.LevelSequence == null || PublicData.LevelSequence.Length == 0)
+        {
+            LogDebug("警告：关卡序列未初始化");
+            return false;
+        }
+        
+        // 检查关卡名称是否在有效序列中
+        foreach (string validLevel in PublicData.LevelSequence)
+        {
+            if (string.Equals(levelName, validLevel, System.StringComparison.OrdinalIgnoreCase))
+            {
+                return true;
+            }
+        }
+        
+        return false;
+    }
+    
+    /// <summary>
     /// 获取游戏进度百分比
     /// </summary>
     /// <returns>进度百分比 (0-100)</returns>
@@ -408,11 +458,70 @@ public class LevelProgressManager : MonoBehaviour
     }
     
     /// <summary>
+    /// 修复无效的存档数据
+    /// </summary>
+    [ContextMenu("修复存档数据")]
+    public void FixInvalidSaveData()
+    {
+        LogDebug("开始修复存档数据");
+        
+        bool needsSave = false;
+        
+        // 检查并修复当前关卡
+        if (!string.IsNullOrEmpty(currentLevel) && !IsValidLevelName(currentLevel))
+        {
+            LogDebug($"修复无效的当前关卡: '{currentLevel}' -> ''");
+            currentLevel = "";
+            needsSave = true;
+        }
+        
+        // 检查并修复已完成的关卡列表
+        var validCompletedLevels = new HashSet<string>();
+        foreach (string level in completedLevels)
+        {
+            if (IsValidLevelName(level))
+            {
+                validCompletedLevels.Add(level);
+            }
+            else
+            {
+                LogDebug($"移除无效的已完成关卡: '{level}'");
+                needsSave = true;
+            }
+        }
+        completedLevels = validCompletedLevels;
+        
+        if (needsSave)
+        {
+            SaveProgress();
+            LogDebug("存档数据已修复并保存");
+        }
+        else
+        {
+            LogDebug("存档数据无需修复");
+        }
+        
+        // 更新按钮状态
+        if (autoManageButtons)
+        {
+            UpdateButtonStates();
+        }
+    }
+    
+    /// <summary>
     /// 更新按钮状态
     /// 根据游戏进度自动设置按钮显示状态
     /// </summary>
     public void UpdateButtonStates()
     {
+        // 检查关卡序列是否有效
+        if (PublicData.LevelSequence == null || PublicData.LevelSequence.Length == 0)
+        {
+            LogDebug("错误：关卡序列未初始化，显示开始游戏按钮");
+            ShowStartGameOnly();
+            return;
+        }
+        
         // 检查是否所有关卡都已完成
         bool allLevelsCompleted = AreAllLevelsCompleted();
         
@@ -421,20 +530,62 @@ public class LevelProgressManager : MonoBehaviour
         bool shouldShowContinue = hasLevelProgress && !allLevelsCompleted;
         
         LogDebug($"更新按钮状态 - 已完成关卡数: {GetCompletedLevelsCount()}, 总关卡数: {GetTotalLevelsCount()}, 所有关卡完成: {allLevelsCompleted}, 显示继续游戏: {shouldShowContinue}");
+        LogDebug($"当前关卡: '{currentLevel}', 已完成关卡: [{string.Join(", ", completedLevels)}]");
+        LogDebug($"关卡序列: [{string.Join(", ", PublicData.LevelSequence)}]");
 
         if (shouldShowContinue)
         {
             // 有进度但未全部完成，显示继续游戏和从头开始
-            if (startGameButton != null) startGameButton.gameObject.SetActive(false); // 无存档按钮隐藏
-            if (startNewGameButton != null) startNewGameButton.gameObject.SetActive(true);   // 从头开始
-            if (continueGameButton != null) continueGameButton.gameObject.SetActive(true); // 继续游戏
+            ShowContinueAndNewGame();
         }
         else
         {
             // 无进度或所有关卡都已完成，仅显示"开始游戏"
-            if (startGameButton != null) startGameButton.gameObject.SetActive(true);
-            if (startNewGameButton != null) startNewGameButton.gameObject.SetActive(false);
-            if (continueGameButton != null) continueGameButton.gameObject.SetActive(false);
+            ShowStartGameOnly();
+        }
+    }
+    
+    /// <summary>
+    /// 仅显示开始游戏按钮
+    /// </summary>
+    private void ShowStartGameOnly()
+    {
+        if (startGameButton != null) 
+        {
+            startGameButton.gameObject.SetActive(true);
+            LogDebug("显示开始游戏按钮");
+        }
+        if (startNewGameButton != null) 
+        {
+            startNewGameButton.gameObject.SetActive(false);
+            LogDebug("隐藏从头开始按钮");
+        }
+        if (continueGameButton != null) 
+        {
+            continueGameButton.gameObject.SetActive(false);
+            LogDebug("隐藏继续游戏按钮");
+        }
+    }
+    
+    /// <summary>
+    /// 显示继续游戏和从头开始按钮
+    /// </summary>
+    private void ShowContinueAndNewGame()
+    {
+        if (startGameButton != null) 
+        {
+            startGameButton.gameObject.SetActive(false);
+            LogDebug("隐藏开始游戏按钮");
+        }
+        if (startNewGameButton != null) 
+        {
+            startNewGameButton.gameObject.SetActive(true);
+            LogDebug("显示从头开始按钮");
+        }
+        if (continueGameButton != null) 
+        {
+            continueGameButton.gameObject.SetActive(true);
+            LogDebug("显示继续游戏按钮");
         }
     }
 
