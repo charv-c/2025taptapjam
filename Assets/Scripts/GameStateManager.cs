@@ -63,6 +63,12 @@ public class GameStateManager : MonoBehaviour
     }
     
     [System.Serializable]
+    public class BeachObjectState
+    {
+        public bool hasYaBeenPlanted; // 芽是否已被种下
+    }
+    
+    [System.Serializable]
     public class GameStateData
     {
         public string levelName;
@@ -72,6 +78,9 @@ public class GameStateManager : MonoBehaviour
         public string currentSeason;
         public List<string> collectedStrings;
         public List<FlyingCharacterData> flyingCharacters; // 飞字物体数据
+        public List<string> completedTargets; // 已完成的目标列表
+        public List<string> currentTargetList; // 当前目标列表（未完成的）
+        public BeachObjectState beachObjectState; // BeachObject状态
         public float saveTime;
     }
     
@@ -165,6 +174,9 @@ public class GameStateManager : MonoBehaviour
             currentSeason = GetCurrentSeason(),
             collectedStrings = GetCollectedStrings(),
             flyingCharacters = CollectFlyingCharacters(),
+            completedTargets = GetCompletedTargets(),
+            currentTargetList = GetCurrentTargetList(),
+            beachObjectState = GetBeachObjectState(),
             saveTime = Time.time
         };
         
@@ -531,6 +543,12 @@ public class GameStateManager : MonoBehaviour
         // 恢复飞字物体
         RestoreFlyingCharacters(stateData.flyingCharacters);
 
+        // 恢复目标完成情况
+        RestoreTargetCompletion(stateData.completedTargets, stateData.currentTargetList);
+
+        // 恢复BeachObject状态
+        RestoreBeachObjectState(stateData.beachObjectState);
+
         // 清理存档中不存在的场景对象
         DestroyObjectsNotInSave(savedPaths);
         
@@ -796,6 +814,38 @@ public class GameStateManager : MonoBehaviour
     }
     
     /// <summary>
+    /// 获取已完成的目标列表
+    /// </summary>
+    private List<string> GetCompletedTargets()
+    {
+        return PublicData.GetCompletedTargets();
+    }
+    
+    /// <summary>
+    /// 获取当前目标列表（未完成的）
+    /// </summary>
+    private List<string> GetCurrentTargetList()
+    {
+        return PublicData.GetCurrentTargetList();
+    }
+    
+    /// <summary>
+    /// 获取BeachObject状态
+    /// </summary>
+    private BeachObjectState GetBeachObjectState()
+    {
+        BeachObject beachObject = FindObjectOfType<BeachObject>();
+        if (beachObject != null)
+        {
+            return new BeachObjectState
+            {
+                hasYaBeenPlanted = beachObject.GetHasYaBeenPlanted()
+            };
+        }
+        return new BeachObjectState { hasYaBeenPlanted = false };
+    }
+    
+    /// <summary>
     /// 恢复广播历史
     /// </summary>
     private void RestoreBroadcastHistory(List<string> history) { }
@@ -919,6 +969,51 @@ public class GameStateManager : MonoBehaviour
         }
         
         LogDebug("所有飞字动画恢复完成");
+    }
+    
+    /// <summary>
+    /// 恢复目标完成情况
+    /// </summary>
+    private void RestoreTargetCompletion(List<string> completedTargets, List<string> currentTargetList)
+    {
+        if (completedTargets != null)
+        {
+            PublicData.SetCompletedTargets(completedTargets);
+            LogDebug($"已恢复 {completedTargets.Count} 个已完成的目标");
+        }
+        
+        if (currentTargetList != null)
+        {
+            PublicData.SetCurrentTargetList(currentTargetList);
+            LogDebug($"已恢复 {currentTargetList.Count} 个未完成的目标");
+        }
+        
+        // 输出恢复后的状态信息
+        int totalTargets = (completedTargets?.Count ?? 0) + (currentTargetList?.Count ?? 0);
+        if (totalTargets > 0)
+        {
+            float progress = (float)(completedTargets?.Count ?? 0) / totalTargets * 100f;
+            LogDebug($"目标完成进度: {completedTargets?.Count ?? 0}/{totalTargets} ({progress:F1}%)");
+        }
+    }
+    
+    /// <summary>
+    /// 恢复BeachObject状态
+    /// </summary>
+    private void RestoreBeachObjectState(BeachObjectState beachState)
+    {
+        if (beachState == null) return;
+        
+        BeachObject beachObject = FindObjectOfType<BeachObject>();
+        if (beachObject != null)
+        {
+            beachObject.SetHasYaBeenPlanted(beachState.hasYaBeenPlanted);
+            LogDebug($"已恢复BeachObject状态: hasYaBeenPlanted = {beachState.hasYaBeenPlanted}");
+        }
+        else
+        {
+            LogDebug("未找到BeachObject，跳过状态恢复");
+        }
     }
     
     /// <summary>

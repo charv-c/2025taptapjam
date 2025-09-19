@@ -515,6 +515,38 @@ public class PublicData : MonoBehaviour
         return incomplete;
     }
     
+    // 获取已完成的目标列表
+    public static List<string> GetCompletedTargets()
+    {
+        return new List<string>(completedTargets);
+    }
+    
+    // 获取当前目标列表（未完成的）
+    public static List<string> GetCurrentTargetList()
+    {
+        return new List<string>(targetList);
+    }
+    
+    // 设置已完成的目标列表（用于存档恢复）
+    public static void SetCompletedTargets(List<string> completed)
+    {
+        completedTargets.Clear();
+        if (completed != null)
+        {
+            completedTargets.UnionWith(completed);
+        }
+    }
+    
+    // 设置当前目标列表（用于存档恢复）
+    public static void SetCurrentTargetList(List<string> targets)
+    {
+        targetList.Clear();
+        if (targets != null)
+        {
+            targetList.AddRange(targets);
+        }
+    }
+    
     // 批量设置左米字格图片映射
     public static void SetLeftMiZiGeSpriteMappings(Dictionary<string, Sprite> mappings)
     {

@@ -682,4 +682,24 @@ public class BeachObject : MonoBehaviour
             GameLogger.LogDev("BeachObject: 已隐藏花和隹物体");
         }
     }
+    
+    /// <summary>
+    /// 获取芽是否已被种下的状态（用于存档）
+    /// </summary>
+    public bool GetHasYaBeenPlanted()
+    {
+        return hasYaBeenPlanted;
+    }
+    
+    /// <summary>
+    /// 设置芽是否已被种下的状态（用于存档恢复）
+    /// </summary>
+    public void SetHasYaBeenPlanted(bool planted)
+    {
+        hasYaBeenPlanted = planted;
+        if (enableDebugLog)
+        {
+            GameLogger.LogDev($"BeachObject: 设置hasYaBeenPlanted = {planted}");
+        }
+    }
 }
