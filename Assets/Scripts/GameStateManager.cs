@@ -49,6 +49,17 @@ public class GameStateManager : MonoBehaviour
         public bool light2DEnabled;
         public bool hasPlayer;
         public string playerCarryCharacter;
+        public bool playerInputEnabled; // 玩家输入状态
+        public bool playerEnterKeyEnabled; // 玩家回车键状态
+    }
+    
+    [System.Serializable]
+    public class FlyingCharacterData
+    {
+        public string character;
+        public string targetObjectName;
+        public Vector3 targetPosition;
+        public float delay; // 延迟播放时间
     }
     
     [System.Serializable]
@@ -60,6 +71,7 @@ public class GameStateManager : MonoBehaviour
         public List<string> availableStrings;
         public string currentSeason;
         public List<string> collectedStrings;
+        public List<FlyingCharacterData> flyingCharacters; // 飞字物体数据
         public float saveTime;
     }
     
@@ -152,6 +164,7 @@ public class GameStateManager : MonoBehaviour
             availableStrings = GetAvailableStrings(),
             currentSeason = GetCurrentSeason(),
             collectedStrings = GetCollectedStrings(),
+            flyingCharacters = CollectFlyingCharacters(),
             saveTime = Time.time
         };
         
@@ -312,12 +325,14 @@ public class GameStateManager : MonoBehaviour
             state.light2DEnabled = light2D.enabled;
         }
 
-        // 检查Player组件（保存携带字符）
+        // 检查Player组件（保存携带字符和输入状态）
         Player player = obj.GetComponent<Player>();
         if (player != null)
         {
             state.hasPlayer = true;
             state.playerCarryCharacter = player.GetCarryCharacter();
+            state.playerInputEnabled = player.IsInputEnabled();
+            state.playerEnterKeyEnabled = player.IsEnterKeyEnabled();
         }
 
         collector.Add(state);
@@ -374,11 +389,32 @@ public class GameStateManager : MonoBehaviour
         for (int i = 1; i < pathParts.Length; i++)
         {
             Transform child = current.Find(pathParts[i]);
-            if (child == null) return null;
+            if (child == null) 
+            {
+                // 如果Transform.Find找不到，尝试通过遍历所有子物体来查找
+                child = FindChildByName(current, pathParts[i]);
+                if (child == null) return null;
+            }
             current = child;
         }
 
         return current.gameObject;
+    }
+    
+    /// <summary>
+    /// 通过遍历所有子物体来查找指定名称的子物体
+    /// </summary>
+    private Transform FindChildByName(Transform parent, string childName)
+    {
+        for (int i = 0; i < parent.childCount; i++)
+        {
+            Transform child = parent.GetChild(i);
+            if (child.name == childName)
+            {
+                return child;
+            }
+        }
+        return null;
     }
     
     /// <summary>
@@ -459,13 +495,19 @@ public class GameStateManager : MonoBehaviour
                 }
             }
 
-            // 恢复Player携带字符并更新米字格
+            // 恢复Player携带字符、输入状态并更新米字格
             if (objState.hasPlayer)
             {
                 Player player = obj.GetComponent<Player>();
-                if (player != null && !string.IsNullOrEmpty(objState.playerCarryCharacter))
+                if (player != null)
                 {
-                    player.SetCarryCharacter(objState.playerCarryCharacter);
+                    if (!string.IsNullOrEmpty(objState.playerCarryCharacter))
+                    {
+                        player.SetCarryCharacter(objState.playerCarryCharacter);
+                    }
+                    // 恢复输入状态
+                    player.SetInputEnabled(objState.playerInputEnabled);
+                    player.SetEnterKeyEnabled(objState.playerEnterKeyEnabled);
                 }
             }
         }
@@ -486,10 +528,75 @@ public class GameStateManager : MonoBehaviour
         // 恢复收集的字符串
         RestoreCollectedStrings(stateData.collectedStrings);
 
+        // 恢复飞字物体
+        RestoreFlyingCharacters(stateData.flyingCharacters);
+
         // 清理存档中不存在的场景对象
         DestroyObjectsNotInSave(savedPaths);
+        
+        // 特殊处理：Level3场景恢复后检查是否需要重新启用玩家移动
+        if (currentLevelName.ToLower().Contains("level3"))
+        {
+            StartCoroutine(CheckLevel3PlayerMovementAfterRestore());
+        }
     }
 
+    /// <summary>
+    /// 检查Level3场景恢复后是否需要重新启用玩家移动
+    /// </summary>
+    private System.Collections.IEnumerator CheckLevel3PlayerMovementAfterRestore()
+    {
+        // 等待一帧确保所有系统初始化完成
+        yield return null;
+        
+        // 检查Level3Manager是否存在且场景已初始化
+        Level3Manager level3Manager = FindObjectOfType<Level3Manager>();
+        if (level3Manager != null)
+        {
+            // 检查是否有任何玩家输入被禁用
+            PlayerController playerController = FindObjectOfType<PlayerController>();
+            if (playerController != null)
+            {
+                bool hasDisabledPlayers = false;
+                for (int i = 0; i < playerController.GetPlayerCount(); i++)
+                {
+                    Player player = playerController.GetPlayerByIndex(i);
+                    if (player != null && !player.IsInputEnabled())
+                    {
+                        hasDisabledPlayers = true;
+                        break;
+                    }
+                }
+                
+                // 如果有玩家输入被禁用，说明这是引导结束后的存档，需要重新启用移动
+                if (hasDisabledPlayers)
+                {
+                    LogDebug("检测到Level3引导结束后的存档，重新启用玩家移动");
+                    
+                    // 启用当前玩家移动
+                    playerController.EnableCurrentPlayerMovement();
+                    
+                    // 启用所有玩家的输入和回车键
+                    for (int i = 0; i < playerController.GetPlayerCount(); i++)
+                    {
+                        Player player = playerController.GetPlayerByIndex(i);
+                        if (player != null)
+                        {
+                            player.SetInputEnabled(true);
+                            player.SetEnterKeyEnabled(true);
+                        }
+                    }
+                    
+                    // 启用玩家切换和更新颜色
+                    playerController.EnablePlayerSwitching();
+                    playerController.UpdatePlayerColors();
+                    
+                    LogDebug("Level3存档恢复后已重新启用玩家移动");
+                }
+            }
+        }
+    }
+    
     /// <summary>
     /// 销毁不在存档中的场景对象（仅限当前激活场景）
     /// </summary>
@@ -635,6 +742,60 @@ public class GameStateManager : MonoBehaviour
     }
     
     /// <summary>
+    /// 收集当前场景中的飞字物体信息
+    /// </summary>
+    private List<FlyingCharacterData> CollectFlyingCharacters()
+    {
+        List<FlyingCharacterData> flyingCharacters = new List<FlyingCharacterData>();
+        
+        // 查找所有以"Flying_"开头的GameObject
+        GameObject[] allObjects = FindObjectsOfType<GameObject>();
+        foreach (GameObject obj in allObjects)
+        {
+            if (obj.name.StartsWith("Flying_"))
+            {
+                // 提取字符名称
+                string character = obj.name.Substring(7); // 移除"Flying_"前缀
+                
+                // 获取目标位置信息
+                Vector3 targetPosition = Vector3.zero;
+                string targetObjectName = "";
+                
+                // 尝试通过PublicData获取目标位置
+                if (PublicData.IsCharacterInTargetList(character))
+                {
+                    Transform targetTransform = PublicData.GetTargetPositionForCharacter(character);
+                    if (targetTransform != null)
+                    {
+                        targetObjectName = targetTransform.name;
+                        targetPosition = targetTransform.position;
+                    }
+                }
+                
+                // 如果无法获取目标信息，使用当前位置
+                if (string.IsNullOrEmpty(targetObjectName))
+                {
+                    targetPosition = obj.transform.position;
+                    targetObjectName = $"UnknownTarget_{character}";
+                }
+                
+                FlyingCharacterData flyingData = new FlyingCharacterData
+                {
+                    character = character,
+                    targetObjectName = targetObjectName,
+                    targetPosition = targetPosition,
+                    delay = 0f // 默认无延迟
+                };
+                
+                flyingCharacters.Add(flyingData);
+                LogDebug($"收集到飞字物体: {character}, 目标: {targetObjectName}");
+            }
+        }
+        
+        return flyingCharacters;
+    }
+    
+    /// <summary>
     /// 恢复广播历史
     /// </summary>
     private void RestoreBroadcastHistory(List<string> history) { }
@@ -694,6 +855,70 @@ public class GameStateManager : MonoBehaviour
         }
         
         LogDebug($"已恢复 {collectedStrings.Count} 个收集的字符串");
+    }
+    
+    /// <summary>
+    /// 恢复飞字物体并依次播放动画
+    /// </summary>
+    private void RestoreFlyingCharacters(List<FlyingCharacterData> flyingCharacters)
+    {
+        if (flyingCharacters == null || flyingCharacters.Count == 0) return;
+        
+        LogDebug($"开始恢复 {flyingCharacters.Count} 个飞字物体");
+        
+        // 启动协程依次播放飞字动画
+        StartCoroutine(RestoreFlyingCharactersCoroutine(flyingCharacters));
+    }
+    
+    /// <summary>
+    /// 恢复飞字物体的协程
+    /// </summary>
+    private System.Collections.IEnumerator RestoreFlyingCharactersCoroutine(List<FlyingCharacterData> flyingCharacters)
+    {
+        // 等待一帧确保所有系统初始化完成
+        yield return null;
+        
+        ButtonController buttonController = FindObjectOfType<ButtonController>();
+        if (buttonController == null)
+        {
+            LogDebug("未找到ButtonController，无法恢复飞字动画");
+            yield break;
+        }
+        
+        // 依次播放每个飞字动画
+        for (int i = 0; i < flyingCharacters.Count; i++)
+        {
+            FlyingCharacterData flyingData = flyingCharacters[i];
+            
+            // 查找目标位置
+            Transform targetTransform = null;
+            if (!string.IsNullOrEmpty(flyingData.targetObjectName))
+            {
+                GameObject targetObj = GameObject.Find(flyingData.targetObjectName);
+                if (targetObj != null)
+                {
+                    targetTransform = targetObj.transform;
+                }
+            }
+            
+            // 如果找不到目标对象，尝试使用保存的位置创建临时目标
+            if (targetTransform == null)
+            {
+                // 创建一个临时的目标Transform
+                GameObject tempTarget = new GameObject($"TempTarget_{flyingData.character}");
+                tempTarget.transform.position = flyingData.targetPosition;
+                targetTransform = tempTarget.transform;
+            }
+            
+            // 播放飞字动画
+            LogDebug($"播放飞字动画: {flyingData.character}");
+            buttonController.Fly(flyingData.character, targetTransform);
+            
+            // 等待动画完成（大约1.5秒）再加上延迟时间
+            yield return new WaitForSeconds(1.5f + flyingData.delay);
+        }
+        
+        LogDebug("所有飞字动画恢复完成");
     }
     
     /// <summary>

@@ -500,6 +500,13 @@ public class ExitGameManager : MonoBehaviour
             confirmationDialogInstance.SetActive(false);
             LogDebug("EnsureExitDialogHidden: 存档前已强制隐藏退出确认对话框");
         }
+
+        // 确保恢复时间流逝到正常速度（防止上一场景打开对话框把时间冻结在0）
+        if (Time.timeScale == 0f)
+        {
+            Time.timeScale = 1f;
+            LogDebug("EnsureExitDialogHidden: 恢复 Time.timeScale = 1");
+        }
     }
 
     /// <summary>
