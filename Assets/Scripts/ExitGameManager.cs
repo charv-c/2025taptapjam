@@ -147,12 +147,6 @@ public class ExitGameManager : MonoBehaviour
     /// </summary>
     private void HandleSceneLoaded(UnityEngine.SceneManagement.Scene scene, UnityEngine.SceneManagement.LoadSceneMode mode)
     {
-        // 启动场景（startup）不创建退出对话框，避免重复或无意义的初始化
-        if (scene.name.Trim().ToLowerInvariant() == "startup")
-        {
-            LogDebug("Startup场景：跳过退出对话框的UI初始化");
-            return;
-        }
         // 尝试从新场景中查找退出按钮（可选）
         if (exitButton == null)
         {
