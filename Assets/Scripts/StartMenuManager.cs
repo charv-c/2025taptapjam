@@ -138,6 +138,9 @@ public class StartMenuManager : MonoBehaviour
     {
         LogDebug("开始新游戏");
         
+        // 确保GameBootstrap已初始化
+        GameBootstrap.EnsureInitialized();
+        
         // 清空所有本地存档（包括关卡进度与关卡内状态）
         GameStateManager.ClearAllGameStates();
         LevelProgressManager.Instance?.ClearAllProgress();
@@ -156,13 +159,93 @@ public class StartMenuManager : MonoBehaviour
         // 重置游戏进度（内存态）
         LevelProgressManager.Instance?.StartNewGame(); // 会清空GameStarted与完成列表
 
-        // 立即跳转到 level1（或 LevelSequence[0]）
-        string[] levelSequence = PublicData.GetLevelSequence();
-        string level1 = (levelSequence != null && levelSequence.Length > 0)
-            ? levelSequence[0]
-            : "level1";
-        LogDebug($"立即加载首关: {level1}");
-        UnityEngine.SceneManagement.SceneManager.LoadScene(level1);
+        // 安全地获取关卡序列并加载场景
+        StartCoroutine(LoadFirstLevelSafely());
+    }
+    
+    /// <summary>
+    /// 安全地加载第一关
+    /// </summary>
+    private IEnumerator LoadFirstLevelSafely()
+    {
+        // 等待一帧确保所有清理操作完成
+        yield return null;
+        
+        try
+        {
+            // 获取关卡序列
+            string[] levelSequence = PublicData.GetLevelSequence();
+            string level1 = "level1"; // 默认回退场景
+            
+            if (levelSequence != null && levelSequence.Length > 0)
+            {
+                level1 = levelSequence[0];
+                LogDebug($"从关卡序列获取首关: {level1}");
+            }
+            else
+            {
+                LogDebug("关卡序列为空，使用默认场景: level1");
+            }
+            
+            // 验证场景是否存在
+            if (IsSceneInBuildSettings(level1))
+            {
+                LogDebug($"立即加载首关: {level1}");
+                PublicData.OnBeforeSceneTransition();
+                UnityEngine.SceneManagement.SceneManager.LoadScene(level1);
+            }
+            else
+            {
+                LogDebug($"场景 {level1} 不在构建设置中，尝试加载 level1");
+                if (IsSceneInBuildSettings("level1"))
+                {
+                    UnityEngine.SceneManagement.SceneManager.LoadScene("level1");
+                }
+                else
+                {
+                    LogDebug("错误：无法找到可用的关卡场景！");
+                    // 可以在这里显示错误提示或回退到主菜单
+                }
+            }
+        }
+        catch (System.Exception e)
+        {
+            LogDebug($"加载场景时发生错误: {e.Message}");
+            // 紧急回退：尝试加载 level1
+            try
+            {
+                UnityEngine.SceneManagement.SceneManager.LoadScene("level1");
+            }
+            catch
+            {
+                LogDebug("紧急回退也失败了，请检查场景配置");
+            }
+        }
+    }
+    
+    /// <summary>
+    /// 检查场景是否在构建设置中
+    /// </summary>
+    private bool IsSceneInBuildSettings(string sceneName)
+    {
+        try
+        {
+            int sceneCount = UnityEngine.SceneManagement.SceneManager.sceneCountInBuildSettings;
+            for (int i = 0; i < sceneCount; i++)
+            {
+                string scenePath = UnityEngine.SceneManagement.SceneUtility.GetScenePathByBuildIndex(i);
+                string sceneNameInBuild = System.IO.Path.GetFileNameWithoutExtension(scenePath);
+                if (sceneNameInBuild.Equals(sceneName, System.StringComparison.OrdinalIgnoreCase))
+                {
+                    return true;
+                }
+            }
+        }
+        catch (System.Exception e)
+        {
+            LogDebug($"检查场景构建设置时出错: {e.Message}");
+        }
+        return false;
     }
     
     /// <summary>
@@ -189,6 +272,9 @@ public class StartMenuManager : MonoBehaviour
     /// </summary>
     private IEnumerator LoadSceneAfterSound()
     {
+        // 确保GameBootstrap已初始化
+        GameBootstrap.EnsureInitialized();
+        
         AudioClip clickClip = (AudioManager.Instance != null) ? AudioManager.Instance.sfxButtonClick : null;
 
         if (AudioManager.Instance != null && clickClip != null)
@@ -200,10 +286,27 @@ public class StartMenuManager : MonoBehaviour
 
         PublicData.OnBeforeSceneTransition();
         
-        // 确定要加载的场景
+        // 安全地确定要加载的场景
         string targetScene = GetTargetScene();
-        LogDebug($"加载场景: {targetScene}");
-        SceneManager.LoadScene(targetScene);
+        LogDebug($"准备加载场景: {targetScene}");
+        
+        // 验证场景是否存在
+        if (IsSceneInBuildSettings(targetScene))
+        {
+            SceneManager.LoadScene(targetScene);
+        }
+        else
+        {
+            LogDebug($"场景 {targetScene} 不在构建设置中，尝试加载默认场景");
+            if (IsSceneInBuildSettings("level1"))
+            {
+                SceneManager.LoadScene("level1");
+            }
+            else
+            {
+                LogDebug("错误：无法找到可用的场景！");
+            }
+        }
     }
     
     /// <summary>

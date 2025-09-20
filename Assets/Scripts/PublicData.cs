@@ -647,7 +647,7 @@ public class PublicData : MonoBehaviour
     public static string[] GetLevelSequence()
     {
         // 如果已缓存，直接返回
-        if (_cachedLevelSequence != null)
+        if (_cachedLevelSequence != null && _cachedLevelSequence.Length > 0)
         {
             return _cachedLevelSequence;
         }
@@ -686,6 +686,14 @@ public class PublicData : MonoBehaviour
         // 如果构建设置中没有找到或出错，使用默认序列
         _cachedLevelSequence = LevelSequence;
         UnityEngine.Debug.Log($"[PublicData] 使用默认关卡序列: [{string.Join(", ", _cachedLevelSequence)}]");
+        
+        // 最终安全检查：确保返回的序列不为空
+        if (_cachedLevelSequence == null || _cachedLevelSequence.Length == 0)
+        {
+            UnityEngine.Debug.LogError("[PublicData] 警告：关卡序列为空！使用紧急回退方案");
+            _cachedLevelSequence = new string[] { "level1" };
+        }
+        
         return _cachedLevelSequence;
     }
     
@@ -695,7 +703,105 @@ public class PublicData : MonoBehaviour
     public static void ClearLevelSequenceCache()
     {
         _cachedLevelSequence = null;
-        UnityEngine.Debug.Log("[PublicData] 关卡序列缓存已清除");
+        UnityEngine.Debug.Log("[PublicData] 已清除关卡序列缓存");
+    }
+    
+    /// <summary>
+    /// 清空特定关卡及后续关卡的缓存数据
+    /// </summary>
+    /// <param name="currentLevel">当前关卡名称</param>
+    public static void ClearLevelAndSubsequentCache(string currentLevel)
+    {
+        if (string.IsNullOrEmpty(currentLevel))
+        {
+            UnityEngine.Debug.LogWarning("[PublicData] 当前关卡名称为空，无法清空缓存");
+            return;
+        }
+        
+        string normalizedCurrentLevel = NormalizeLevelName(currentLevel);
+        UnityEngine.Debug.Log($"[PublicData] 开始清空关卡 {normalizedCurrentLevel} 及后续关卡的缓存");
+        
+        // 获取关卡序列
+        string[] levelSequence = GetLevelSequence();
+        if (levelSequence == null || levelSequence.Length == 0)
+        {
+            UnityEngine.Debug.LogWarning("[PublicData] 关卡序列为空，无法清空缓存");
+            return;
+        }
+        
+        // 找到当前关卡在序列中的位置
+        int currentIndex = -1;
+        for (int i = 0; i < levelSequence.Length; i++)
+        {
+            if (NormalizeLevelName(levelSequence[i]) == normalizedCurrentLevel)
+            {
+                currentIndex = i;
+                break;
+            }
+        }
+        
+        if (currentIndex == -1)
+        {
+            UnityEngine.Debug.LogWarning($"[PublicData] 未找到关卡 {normalizedCurrentLevel} 在序列中的位置");
+            return;
+        }
+        
+        // 清空当前关卡及后续关卡的相关数据
+        for (int i = currentIndex; i < levelSequence.Length; i++)
+        {
+            string levelName = levelSequence[i];
+            ClearSpecificLevelCache(levelName);
+        }
+        
+        UnityEngine.Debug.Log($"[PublicData] 已清空关卡 {normalizedCurrentLevel} 及后续关卡的缓存");
+    }
+    
+    /// <summary>
+    /// 清空特定关卡的缓存数据
+    /// </summary>
+    /// <param name="levelName">关卡名称</param>
+    private static void ClearSpecificLevelCache(string levelName)
+    {
+        string normalizedLevel = NormalizeLevelName(levelName);
+        UnityEngine.Debug.Log($"[PublicData] 清空关卡 {normalizedLevel} 的缓存数据");
+        
+        // 清空关卡特定的静态数据
+        // 这里可以根据需要添加更多关卡特定的数据清理
+        
+        // 清空关卡结束背景图缓存
+        if (LevelEndBackgrounds.ContainsKey(normalizedLevel))
+        {
+            LevelEndBackgrounds.Remove(normalizedLevel);
+        }
+        
+        // 清空关卡结束按钮素材缓存
+        if (LevelEndButtonSprites.ContainsKey(normalizedLevel))
+        {
+            LevelEndButtonSprites.Remove(normalizedLevel);
+        }
+        
+        // 清空关卡结束按钮文案缓存
+        if (LevelEndButtonTexts.ContainsKey(normalizedLevel))
+        {
+            LevelEndButtonTexts.Remove(normalizedLevel);
+        }
+        
+        // 清空谢幕界面背景图缓存
+        if (CreditsBackgrounds.ContainsKey(normalizedLevel))
+        {
+            CreditsBackgrounds.Remove(normalizedLevel);
+        }
+        
+        // 可以在这里添加更多关卡特定数据的清理
+        UnityEngine.Debug.Log($"[PublicData] 关卡 {normalizedLevel} 的缓存数据已清空");
+    }
+    
+    /// <summary>
+    /// 规范化关卡名称（与LevelProgressManager保持一致）
+    /// </summary>
+    private static string NormalizeLevelName(string levelName)
+    {
+        return string.IsNullOrEmpty(levelName) ? "" : levelName.Trim().ToLowerInvariant();
     }
     
 }

@@ -94,12 +94,89 @@ public class LevelProgressManager : MonoBehaviour
         {
             UpdateButtonStates();
         }
+        
+        // 在特定关卡中自动清空后续关卡的缓存
+        AutoClearSubsequentLevelCache(scene.name);
     }
     
     // 规范化关卡名：去首尾空格并转为小写
     private static string NormalizeLevelName(string levelName)
     {
         return string.IsNullOrEmpty(levelName) ? "" : levelName.Trim().ToLowerInvariant();
+    }
+    
+    /// <summary>
+    /// 自动清空后续关卡的缓存
+    /// 在level1中清空level2、level3的缓存
+    /// 在level2中清空level3的缓存
+    /// </summary>
+    /// <param name="currentSceneName">当前场景名称</param>
+    private void AutoClearSubsequentLevelCache(string currentSceneName)
+    {
+        if (string.IsNullOrEmpty(currentSceneName))
+        {
+            return;
+        }
+        
+        string normalizedSceneName = NormalizeLevelName(currentSceneName);
+        LogDebug($"检查是否需要清空后续关卡缓存，当前场景: {normalizedSceneName}");
+        
+        // 检查是否是level场景
+        if (!normalizedSceneName.StartsWith("level"))
+        {
+            LogDebug("当前场景不是level场景，跳过缓存清理");
+            return;
+        }
+        
+        // 获取关卡序列
+        string[] levelSequence = PublicData.GetLevelSequence();
+        if (levelSequence == null || levelSequence.Length == 0)
+        {
+            LogDebug("关卡序列为空，无法进行缓存清理");
+            return;
+        }
+        
+        // 检查当前关卡是否在序列中
+        bool isCurrentLevelInSequence = false;
+        for (int i = 0; i < levelSequence.Length; i++)
+        {
+            if (NormalizeLevelName(levelSequence[i]) == normalizedSceneName)
+            {
+                isCurrentLevelInSequence = true;
+                break;
+            }
+        }
+        
+        if (!isCurrentLevelInSequence)
+        {
+            LogDebug($"当前场景 {normalizedSceneName} 不在关卡序列中，跳过缓存清理");
+            return;
+        }
+        
+        // 根据当前关卡清空后续关卡缓存
+        switch (normalizedSceneName)
+        {
+            case "level1":
+                LogDebug("在level1中，清空level2和level3的缓存");
+                PublicData.ClearLevelAndSubsequentCache("level2");
+                PublicData.ClearLevelAndSubsequentCache("level3");
+                break;
+                
+            case "level2":
+                LogDebug("在level2中，清空level3的缓存");
+                PublicData.ClearLevelAndSubsequentCache("level3");
+                break;
+                
+            case "level3":
+                LogDebug("在level3中，无需清空后续关卡缓存");
+                break;
+                
+            default:
+                // 对于其他level场景，也清空后续关卡的缓存
+                LogDebug($"在 {normalizedSceneName} 中，清空后续关卡的缓存");
+                PublicData.ClearLevelAndSubsequentCache(normalizedSceneName);
+                break;
+        }
     }
     
     /// <summary>
@@ -210,6 +287,9 @@ public class LevelProgressManager : MonoBehaviour
         PlayerPrefs.DeleteKey(GAME_STARTED_KEY);
         PlayerPrefs.Save();
         
+        // 清除PublicData的关卡序列缓存
+        PublicData.ClearLevelSequenceCache();
+        
         // 更新按钮状态
         if (autoManageButtons)
         {
@@ -224,24 +304,96 @@ public class LevelProgressManager : MonoBehaviour
     /// </summary>
     public void ContinueGame()
     {
+        // 确保GameBootstrap已初始化
+        GameBootstrap.EnsureInitialized();
+        
         string levelToLoad = GetCurrentLevelToLoad();
         LogDebug($"继续游戏，加载关卡: '{levelToLoad}'");
         
         if (!string.IsNullOrEmpty(levelToLoad))
         {
-            SceneManager.LoadScene(levelToLoad);
+            // 验证场景是否存在
+            if (IsSceneInBuildSettings(levelToLoad))
+            {
+                SceneManager.LoadScene(levelToLoad);
+            }
+            else
+            {
+                LogDebug($"场景 {levelToLoad} 不在构建设置中，回退到第一关");
+                LoadFirstLevelSafely();
+            }
         }
         else
         {
             LogDebug("没有找到可继续的关卡，开始新游戏");
             StartNewGame();
-            // 加载第一个关卡
-            string[] levelSequence = PublicData.GetLevelSequence();
-            if (levelSequence.Length > 0)
+            LoadFirstLevelSafely();
+        }
+    }
+    
+    /// <summary>
+    /// 安全地加载第一关
+    /// </summary>
+    private void LoadFirstLevelSafely()
+    {
+        string[] levelSequence = PublicData.GetLevelSequence();
+        if (levelSequence != null && levelSequence.Length > 0)
+        {
+            string firstLevel = levelSequence[0];
+            if (IsSceneInBuildSettings(firstLevel))
             {
-                SceneManager.LoadScene(levelSequence[0]);
+                SceneManager.LoadScene(firstLevel);
+            }
+            else
+            {
+                LogDebug($"第一关 {firstLevel} 不在构建设置中，尝试加载 level1");
+                if (IsSceneInBuildSettings("level1"))
+                {
+                    SceneManager.LoadScene("level1");
+                }
+                else
+                {
+                    LogDebug("错误：无法找到可用的关卡场景！");
+                }
             }
         }
+        else
+        {
+            LogDebug("关卡序列为空，尝试加载 level1");
+            if (IsSceneInBuildSettings("level1"))
+            {
+                SceneManager.LoadScene("level1");
+            }
+            else
+            {
+                LogDebug("错误：无法找到可用的关卡场景！");
+            }
+        }
+    }
+    
+    /// <summary>
+    /// 检查场景是否在构建设置中
+    /// </summary>
+    private bool IsSceneInBuildSettings(string sceneName)
+    {
+        try
+        {
+            int sceneCount = UnityEngine.SceneManagement.SceneManager.sceneCountInBuildSettings;
+            for (int i = 0; i < sceneCount; i++)
+            {
+                string scenePath = UnityEngine.SceneManagement.SceneUtility.GetScenePathByBuildIndex(i);
+                string sceneNameInBuild = System.IO.Path.GetFileNameWithoutExtension(scenePath);
+                if (sceneNameInBuild.Equals(sceneName, System.StringComparison.OrdinalIgnoreCase))
+                {
+                    return true;
+                }
+            }
+        }
+        catch (System.Exception e)
+        {
+            LogDebug($"检查场景构建设置时出错: {e.Message}");
+        }
+        return false;
     }
     
     /// <summary>
@@ -517,7 +669,28 @@ public class LevelProgressManager : MonoBehaviour
         currentLevel = "";
         completedLevels.Clear();
         
+        // 清除PublicData的关卡序列缓存，确保重新加载时使用最新数据
+        PublicData.ClearLevelSequenceCache();
+        
         LogDebug("所有进度数据已清除");
+    }
+    
+    /// <summary>
+    /// 手动清空当前关卡及后续关卡的缓存
+    /// </summary>
+    [ContextMenu("清空当前关卡及后续关卡缓存")]
+    public void ClearCurrentAndSubsequentLevelCache()
+    {
+        string currentSceneName = UnityEngine.SceneManagement.SceneManager.GetActiveScene().name;
+        if (!string.IsNullOrEmpty(currentSceneName))
+        {
+            LogDebug($"手动清空当前关卡 {currentSceneName} 及后续关卡的缓存");
+            PublicData.ClearLevelAndSubsequentCache(currentSceneName);
+        }
+        else
+        {
+            LogDebug("无法获取当前场景名称");
+        }
     }
     
     /// <summary>
@@ -795,6 +968,9 @@ public class LevelProgressManager : MonoBehaviour
     {
         LogDebug("开始游戏按钮被点击");
         
+        // 确保GameBootstrap已初始化
+        GameBootstrap.EnsureInitialized();
+        
         // 先清空所有本地存档
         ClearAllProgress();
         
@@ -804,11 +980,8 @@ public class LevelProgressManager : MonoBehaviour
             UpdateButtonStates();
         }
         
-        // 加载第一个关卡
-        if (PublicData.LevelSequence.Length > 0)
-        {
-            SceneManager.LoadScene(PublicData.LevelSequence[0]);
-        }
+        // 安全地加载第一个关卡
+        LoadFirstLevelSafely();
     }
     
     /// <summary>
