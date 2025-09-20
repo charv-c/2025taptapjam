@@ -21,14 +21,8 @@ public class LevelProgressManager : MonoBehaviour
     [SerializeField] private Button continueGameButton;
     [SerializeField] private bool autoManageButtons = true;
     
-    // PlayerPrefs键名常量
-    private const string CURRENT_LEVEL_KEY = "CurrentLevel";
-    private const string COMPLETED_LEVELS_KEY = "CompletedLevels";
-    private const string GAME_STARTED_KEY = "GameStarted";
-    
-    // 当前游戏进度
-    private string currentLevel;
-    private HashSet<string> completedLevels;
+    // JSON存储的进度数据
+    private GameProgressData progressData;
     
     private void Awake()
     {
@@ -53,14 +47,7 @@ public class LevelProgressManager : MonoBehaviour
     {
         LogDebug("=== 开始初始化进度数据 ===");
         
-        // 添加PlayerPrefs可用性检查
-        if (!IsPlayerPrefsAvailable())
-        {
-            LogDebug("警告：PlayerPrefs不可用，使用默认状态");
-            ShowStartGameOnly();
-            return;
-        }
-        
+        // 加载JSON进度数据
         LoadProgress();
         
         // 自动修复无效的存档数据
@@ -97,6 +84,9 @@ public class LevelProgressManager : MonoBehaviour
         
         // 在特定关卡中自动清空后续关卡的缓存
         AutoClearSubsequentLevelCache(scene.name);
+        
+        // 在新关卡开始时清空当前关卡的存储状态
+        ClearCurrentLevelStateOnNewLevel(scene.name);
     }
     
     // 规范化关卡名：去首尾空格并转为小写
@@ -180,94 +170,162 @@ public class LevelProgressManager : MonoBehaviour
     }
     
     /// <summary>
-    /// 检查PlayerPrefs是否可用
+    /// 在新关卡开始时清空当前关卡的存储状态
     /// </summary>
-    /// <returns>PlayerPrefs是否可用</returns>
-    private bool IsPlayerPrefsAvailable()
+    /// <param name="currentSceneName">当前场景名称</param>
+    private void ClearCurrentLevelStateOnNewLevel(string currentSceneName)
     {
-        try
+        if (string.IsNullOrEmpty(currentSceneName) || progressData == null)
         {
-            // 测试写入和读取
-            string testKey = "PlayerPrefsTest_" + System.DateTime.Now.Ticks;
-            PlayerPrefs.SetString(testKey, "test");
-            PlayerPrefs.Save();
-            string result = PlayerPrefs.GetString(testKey, "");
-            PlayerPrefs.DeleteKey(testKey);
-            PlayerPrefs.Save();
-            
-            bool isAvailable = result == "test";
-            LogDebug($"PlayerPrefs可用性测试: {isAvailable}");
-            return isAvailable;
+            return;
         }
-        catch (System.Exception e)
+        
+        string normalizedSceneName = NormalizeLevelName(currentSceneName);
+        LogDebug($"检查是否需要清空关卡 {normalizedSceneName} 的存储状态");
+        
+        // 检查是否是level场景
+        if (!normalizedSceneName.StartsWith("level"))
         {
-            LogDebug($"PlayerPrefs不可用，错误: {e.Message}");
-            return false;
+            LogDebug("当前场景不是level场景，跳过状态清理");
+            return;
+        }
+        
+        // 获取关卡序列
+        string[] levelSequence = PublicData.GetLevelSequence();
+        if (levelSequence == null || levelSequence.Length == 0)
+        {
+            LogDebug("关卡序列为空，无法进行状态清理");
+            return;
+        }
+        
+        // 检查当前关卡是否在序列中
+        bool isCurrentLevelInSequence = false;
+        for (int i = 0; i < levelSequence.Length; i++)
+        {
+            if (NormalizeLevelName(levelSequence[i]) == normalizedSceneName)
+            {
+                isCurrentLevelInSequence = true;
+                break;
+            }
+        }
+        
+        if (!isCurrentLevelInSequence)
+        {
+            LogDebug($"当前场景 {normalizedSceneName} 不在关卡序列中，跳过状态清理");
+            return;
+        }
+        
+        // 清空当前关卡的状态数据
+        if (progressData.levelStates.ContainsKey(normalizedSceneName))
+        {
+            LogDebug($"清空关卡 {normalizedSceneName} 的存储状态");
+            progressData.ClearLevelState(normalizedSceneName);
+            SaveProgress();
+        }
+        else
+        {
+            LogDebug($"关卡 {normalizedSceneName} 没有存储的状态数据");
         }
     }
 
     /// <summary>
-    /// 从本地存储加载游戏进度
+    /// 从JSON文件加载游戏进度
     /// </summary>
     private void LoadProgress()
     {
-        // 加载当前关卡并规范化
-        currentLevel = NormalizeLevelName(PlayerPrefs.GetString(CURRENT_LEVEL_KEY, ""));
-        
-        // 加载已完成的关卡列表（按规范化存储）
-        string completedLevelsString = PlayerPrefs.GetString(COMPLETED_LEVELS_KEY, "");
-        completedLevels = new HashSet<string>();
-        
-        if (!string.IsNullOrEmpty(completedLevelsString))
+        try
         {
-            string[] levels = completedLevelsString.Split(',');
-            foreach (string level in levels)
+            // 从JSON文件加载进度数据
+            progressData = JsonStorageManager.LoadGameProgress();
+            
+            if (progressData == null)
             {
-                if (!string.IsNullOrEmpty(level))
-                {
-                    string trimmedLevel = NormalizeLevelName(level);
-                    // 验证关卡名称是否在有效序列中
-                    if (IsValidLevelName(trimmedLevel))
-                    {
-                        completedLevels.Add(trimmedLevel);
-                    }
-                    else
-                    {
-                        LogDebug($"警告：发现无效的关卡名称 '{level}', 规范化为'{trimmedLevel}'后仍无效，已忽略");
-                    }
-                }
+                LogDebug("警告：JSON进度数据加载失败，创建新的进度数据");
+                progressData = new GameProgressData();
             }
+            
+            // 验证并规范化数据
+            ValidateAndNormalizeProgressData();
+            
+            LogDebug($"加载进度 - 当前关卡: '{progressData.currentLevel}', 已完成关卡: [{string.Join(", ", progressData.completedLevels)}]");
+            LogDebug($"游戏已开始: {progressData.gameStarted}, 最后保存时间: {progressData.lastSaveTime}");
+            LogDebug($"关卡序列: [{string.Join(", ", PublicData.GetLevelSequence())}]");
         }
-        
-        // 验证当前关卡是否有效
-        if (!string.IsNullOrEmpty(currentLevel) && !IsValidLevelName(currentLevel))
+        catch (System.Exception e)
         {
-            LogDebug($"警告：当前关卡 '{currentLevel}' 无效，已重置为空");
-            currentLevel = "";
+            LogDebug($"加载进度数据时发生错误: {e.Message}，创建新的进度数据");
+            progressData = new GameProgressData();
         }
-        
-        LogDebug($"加载进度 - 当前关卡: '{currentLevel}', 已完成关卡: [{string.Join(", ", completedLevels)}]");
-        LogDebug($"关卡序列: [{string.Join(", ", PublicData.LevelSequence)}]");
     }
     
     /// <summary>
-    /// 保存游戏进度到本地存储
+    /// 验证并规范化进度数据
+    /// </summary>
+    private void ValidateAndNormalizeProgressData()
+    {
+        // 规范化当前关卡名称
+        progressData.currentLevel = NormalizeLevelName(progressData.currentLevel);
+        
+        // 验证当前关卡是否有效
+        if (!string.IsNullOrEmpty(progressData.currentLevel) && !IsValidLevelName(progressData.currentLevel))
+        {
+            LogDebug($"警告：当前关卡 '{progressData.currentLevel}' 无效，已重置为空");
+            progressData.currentLevel = "";
+        }
+        
+        // 验证并规范化已完成的关卡列表
+        var validCompletedLevels = new List<string>();
+        foreach (string level in progressData.completedLevels)
+        {
+            if (!string.IsNullOrEmpty(level))
+            {
+                string trimmedLevel = NormalizeLevelName(level);
+                // 验证关卡名称是否在有效序列中
+                if (IsValidLevelName(trimmedLevel))
+                {
+                    validCompletedLevels.Add(trimmedLevel);
+                }
+                else
+                {
+                    LogDebug($"警告：发现无效的关卡名称 '{level}', 规范化为'{trimmedLevel}'后仍无效，已忽略");
+                }
+            }
+        }
+        progressData.completedLevels = validCompletedLevels;
+    }
+    
+    /// <summary>
+    /// 保存游戏进度到JSON文件
     /// </summary>
     private void SaveProgress()
     {
-        // 保存当前关卡（已为规范化值）
-        PlayerPrefs.SetString(CURRENT_LEVEL_KEY, currentLevel);
-        
-        // 保存已完成的关卡列表（规范化值）
-        string completedLevelsString = string.Join(",", completedLevels);
-        PlayerPrefs.SetString(COMPLETED_LEVELS_KEY, completedLevelsString);
-        
-        // 标记游戏已开始
-        PlayerPrefs.SetInt(GAME_STARTED_KEY, 1);
-        
-        PlayerPrefs.Save();
-        
-        LogDebug($"保存进度 - 当前关卡: '{currentLevel}', 已完成关卡: [{string.Join(", ", completedLevels)}]");
+        try
+        {
+            if (progressData == null)
+            {
+                progressData = new GameProgressData();
+            }
+            
+            // 更新保存时间
+            progressData.UpdateSaveTime();
+            
+            // 保存到JSON文件
+            bool saveSuccess = JsonStorageManager.SaveGameProgress(progressData);
+            
+            if (saveSuccess)
+            {
+                LogDebug($"保存进度 - 当前关卡: '{progressData.currentLevel}', 已完成关卡: [{string.Join(", ", progressData.completedLevels)}]");
+                LogDebug($"游戏已开始: {progressData.gameStarted}, 保存时间: {progressData.lastSaveTime}");
+            }
+            else
+            {
+                LogDebug("保存进度失败");
+            }
+        }
+        catch (System.Exception e)
+        {
+            LogDebug($"保存进度时发生错误: {e.Message}");
+        }
     }
     
     /// <summary>
@@ -277,15 +335,11 @@ public class LevelProgressManager : MonoBehaviour
     {
         LogDebug("开始新游戏，重置所有进度");
         
-        // 重置进度
-        currentLevel = "";
-        completedLevels.Clear();
+        // 重置进度数据
+        progressData.Reset();
         
-        // 清除本地存储
-        PlayerPrefs.DeleteKey(CURRENT_LEVEL_KEY);
-        PlayerPrefs.DeleteKey(COMPLETED_LEVELS_KEY);
-        PlayerPrefs.DeleteKey(GAME_STARTED_KEY);
-        PlayerPrefs.Save();
+        // 保存重置后的数据
+        SaveProgress();
         
         // 清除PublicData的关卡序列缓存
         PublicData.ClearLevelSequenceCache();
@@ -402,21 +456,27 @@ public class LevelProgressManager : MonoBehaviour
     /// <returns>关卡场景名称</returns>
     public string GetCurrentLevelToLoad()
     {
+        if (progressData == null)
+        {
+            LogDebug("进度数据为空");
+            return "";
+        }
+        
         // 如果游戏从未开始过，返回空字符串
-        if (!HasGameStarted())
+        if (!progressData.gameStarted)
         {
             LogDebug("游戏从未开始过");
             return "";
         }
         
         // 如果当前关卡为空，尝试从已完成关卡推断
-        if (string.IsNullOrEmpty(currentLevel))
+        if (string.IsNullOrEmpty(progressData.currentLevel))
         {
             // 找到第一个未完成的关卡
             string[] levelSequence = PublicData.GetLevelSequence();
             foreach (string level in levelSequence)
             {
-                if (!completedLevels.Contains(NormalizeLevelName(level)))
+                if (!progressData.IsLevelCompleted(NormalizeLevelName(level)))
                 {
                     LogDebug($"当前关卡为空，找到第一个未完成关卡: '{level}'");
                     return level;
@@ -434,23 +494,23 @@ public class LevelProgressManager : MonoBehaviour
         else
         {
             // 检查当前关卡是否已完成
-            if (completedLevels.Contains(NormalizeLevelName(currentLevel)))
+            if (progressData.IsLevelCompleted(NormalizeLevelName(progressData.currentLevel)))
             {
                 // 当前关卡已完成，找到下一个未完成的关卡
                 string[] levelSequence = PublicData.GetLevelSequence();
-                int currentIndex = System.Array.IndexOf(levelSequence, currentLevel);
+                int currentIndex = System.Array.IndexOf(levelSequence, progressData.currentLevel);
                 if (currentIndex >= 0 && currentIndex < levelSequence.Length - 1)
                 {
                     string nextLevel = levelSequence[currentIndex + 1];
-                    LogDebug($"当前关卡 '{currentLevel}' 已完成，返回下一个关卡: '{nextLevel}'");
+                    LogDebug($"当前关卡 '{progressData.currentLevel}' 已完成，返回下一个关卡: '{nextLevel}'");
                     return nextLevel;
                 }
             }
             else
             {
                 // 当前关卡未完成，继续当前关卡
-                LogDebug($"当前关卡 '{currentLevel}' 未完成，继续当前关卡");
-                return currentLevel;
+                LogDebug($"当前关卡 '{progressData.currentLevel}' 未完成，继续当前关卡");
+                return progressData.currentLevel;
             }
         }
         
@@ -464,6 +524,11 @@ public class LevelProgressManager : MonoBehaviour
     /// <param name="levelName">关卡名称</param>
     public void SetCurrentLevel(string levelName)
     {
+        if (progressData == null)
+        {
+            progressData = new GameProgressData();
+        }
+        
         if (string.IsNullOrEmpty(levelName))
         {
             LogDebug("设置当前关卡失败：关卡名称为空");
@@ -476,9 +541,10 @@ public class LevelProgressManager : MonoBehaviour
             return;
         }
         
-        currentLevel = NormalizeLevelName(levelName);
+        progressData.currentLevel = NormalizeLevelName(levelName);
+        progressData.gameStarted = true; // 设置当前关卡时标记游戏已开始
         SaveProgress();
-        LogDebug($"设置当前关卡为: '{currentLevel}'");
+        LogDebug($"设置当前关卡为: '{progressData.currentLevel}'");
     }
     
     /// <summary>
@@ -487,6 +553,11 @@ public class LevelProgressManager : MonoBehaviour
     /// <param name="levelName">关卡名称</param>
     public void CompleteLevel(string levelName)
     {
+        if (progressData == null)
+        {
+            progressData = new GameProgressData();
+        }
+        
         if (string.IsNullOrEmpty(levelName))
         {
             LogDebug("完成关卡失败：关卡名称为空");
@@ -494,7 +565,7 @@ public class LevelProgressManager : MonoBehaviour
         }
         
         string normalized = NormalizeLevelName(levelName);
-        completedLevels.Add(normalized);
+        progressData.AddCompletedLevel(normalized);
         SaveProgress();
         LogDebug($"关卡 '{normalized}' 已标记为完成");
     }
@@ -506,7 +577,8 @@ public class LevelProgressManager : MonoBehaviour
     /// <returns>是否已完成</returns>
     public bool IsLevelCompleted(string levelName)
     {
-        return completedLevels.Contains(NormalizeLevelName(levelName));
+        if (progressData == null) return false;
+        return progressData.IsLevelCompleted(NormalizeLevelName(levelName));
     }
     
     /// <summary>
@@ -515,7 +587,8 @@ public class LevelProgressManager : MonoBehaviour
     /// <returns>是否已开始</returns>
     public bool HasGameStarted()
     {
-        return PlayerPrefs.GetInt(GAME_STARTED_KEY, 0) == 1;
+        if (progressData == null) return false;
+        return progressData.gameStarted;
     }
     
     /// <summary>
@@ -524,7 +597,8 @@ public class LevelProgressManager : MonoBehaviour
     /// <returns>已完成关卡数量</returns>
     public int GetCompletedLevelsCount()
     {
-        return completedLevels.Count;
+        if (progressData == null) return 0;
+        return progressData.completedLevels.Count;
     }
     
     /// <summary>
@@ -542,6 +616,8 @@ public class LevelProgressManager : MonoBehaviour
     /// <returns>是否所有关卡都已完成</returns>
     public bool AreAllLevelsCompleted()
     {
+        if (progressData == null) return false;
+        
         string[] levelSequence = PublicData.GetLevelSequence();
         if (levelSequence == null || levelSequence.Length == 0)
         {
@@ -551,7 +627,7 @@ public class LevelProgressManager : MonoBehaviour
         // 检查关卡序列中的每个关卡是否都已完成
         foreach (string level in levelSequence)
         {
-            if (!completedLevels.Contains(NormalizeLevelName(level)))
+            if (!progressData.IsLevelCompleted(NormalizeLevelName(level)))
             {
                 return false;
             }
@@ -610,13 +686,13 @@ public class LevelProgressManager : MonoBehaviour
     /// <returns>关卡索引，如果未找到返回-1</returns>
     public int GetCurrentLevelIndex()
     {
-        if (string.IsNullOrEmpty(currentLevel))
+        if (progressData == null || string.IsNullOrEmpty(progressData.currentLevel))
         {
             return -1;
         }
         
         // 在序列中按规范化比较
-        string normCurrent = NormalizeLevelName(currentLevel);
+        string normCurrent = NormalizeLevelName(progressData.currentLevel);
         string[] levelSequence = PublicData.GetLevelSequence();
         for (int i = 0; i < levelSequence.Length; i++)
         {
@@ -661,18 +737,149 @@ public class LevelProgressManager : MonoBehaviour
     {
         LogDebug("清除所有进度数据");
         
-        PlayerPrefs.DeleteKey(CURRENT_LEVEL_KEY);
-        PlayerPrefs.DeleteKey(COMPLETED_LEVELS_KEY);
-        PlayerPrefs.DeleteKey(GAME_STARTED_KEY);
-        PlayerPrefs.Save();
+        // 删除JSON文件
+        JsonStorageManager.DeleteGameProgress();
         
-        currentLevel = "";
-        completedLevels.Clear();
+        // 重置内存中的进度数据
+        progressData = new GameProgressData();
         
         // 清除PublicData的关卡序列缓存，确保重新加载时使用最新数据
         PublicData.ClearLevelSequenceCache();
         
         LogDebug("所有进度数据已清除");
+    }
+    
+    /// <summary>
+    /// 保存关卡状态数据
+    /// </summary>
+    /// <param name="levelName">关卡名称</param>
+    /// <param name="stateData">状态数据</param>
+    public void SaveLevelState(string levelName, GameProgressData.LevelStateData stateData)
+    {
+        if (progressData == null)
+        {
+            progressData = new GameProgressData();
+        }
+        
+        if (string.IsNullOrEmpty(levelName) || stateData == null)
+        {
+            LogDebug("保存关卡状态失败：关卡名称或状态数据为空");
+            return;
+        }
+        
+        string normalizedLevelName = NormalizeLevelName(levelName);
+        progressData.SetLevelState(normalizedLevelName, stateData);
+        SaveProgress();
+        LogDebug($"关卡 {normalizedLevelName} 的状态数据已保存");
+    }
+    
+    /// <summary>
+    /// 加载关卡状态数据
+    /// </summary>
+    /// <param name="levelName">关卡名称</param>
+    /// <returns>关卡状态数据，如果不存在则返回null</returns>
+    public GameProgressData.LevelStateData LoadLevelState(string levelName)
+    {
+        if (progressData == null)
+        {
+            LogDebug("进度数据为空，无法加载关卡状态");
+            return null;
+        }
+        
+        if (string.IsNullOrEmpty(levelName))
+        {
+            LogDebug("关卡名称为空，无法加载关卡状态");
+            return null;
+        }
+        
+        string normalizedLevelName = NormalizeLevelName(levelName);
+        var stateData = progressData.GetLevelState(normalizedLevelName);
+        
+        if (stateData != null)
+        {
+            LogDebug($"关卡 {normalizedLevelName} 的状态数据已加载");
+        }
+        else
+        {
+            LogDebug($"关卡 {normalizedLevelName} 没有保存的状态数据");
+        }
+        
+        return stateData;
+    }
+    
+    /// <summary>
+    /// 清除指定关卡的状态数据
+    /// </summary>
+    /// <param name="levelName">关卡名称</param>
+    public void ClearLevelState(string levelName)
+    {
+        if (progressData == null)
+        {
+            return;
+        }
+        
+        if (string.IsNullOrEmpty(levelName))
+        {
+            LogDebug("关卡名称为空，无法清除关卡状态");
+            return;
+        }
+        
+        string normalizedLevelName = NormalizeLevelName(levelName);
+        progressData.ClearLevelState(normalizedLevelName);
+        SaveProgress();
+        LogDebug($"关卡 {normalizedLevelName} 的状态数据已清除");
+    }
+    
+    /// <summary>
+    /// 清除所有关卡的状态数据
+    /// </summary>
+    public void ClearAllLevelStates()
+    {
+        if (progressData == null)
+        {
+            return;
+        }
+        
+        progressData.ClearAllLevelStates();
+        SaveProgress();
+        LogDebug("所有关卡的状态数据已清除");
+    }
+    
+    /// <summary>
+    /// 清除指定关卡及后续关卡的状态数据
+    /// </summary>
+    /// <param name="levelName">关卡名称</param>
+    public void ClearLevelAndSubsequentStates(string levelName)
+    {
+        if (progressData == null)
+        {
+            return;
+        }
+        
+        if (string.IsNullOrEmpty(levelName))
+        {
+            LogDebug("关卡名称为空，无法清除关卡状态");
+            return;
+        }
+        
+        string[] levelSequence = PublicData.GetLevelSequence();
+        progressData.ClearLevelAndSubsequentStates(levelName, levelSequence);
+        SaveProgress();
+        LogDebug($"关卡 {levelName} 及后续关卡的状态数据已清除");
+    }
+    
+    /// <summary>
+    /// 检查是否有任何关卡状态数据
+    /// </summary>
+    /// <returns>是否有关卡状态数据</returns>
+    public bool HasAnyLevelStates()
+    {
+        if (progressData == null)
+        {
+            return false;
+        }
+        
+        return progressData.HasAnyLevelStates();
     }
     
     /// <summary>
@@ -694,6 +901,83 @@ public class LevelProgressManager : MonoBehaviour
     }
     
     /// <summary>
+    /// 手动清空所有关卡状态
+    /// </summary>
+    [ContextMenu("清空所有关卡状态")]
+    public void ClearAllLevelStatesManually()
+    {
+        ClearAllLevelStates();
+    }
+    
+    /// <summary>
+    /// 手动清空当前关卡状态
+    /// </summary>
+    [ContextMenu("清空当前关卡状态")]
+    public void ClearCurrentLevelStateManually()
+    {
+        string currentSceneName = UnityEngine.SceneManagement.SceneManager.GetActiveScene().name;
+        if (!string.IsNullOrEmpty(currentSceneName))
+        {
+            ClearLevelState(currentSceneName);
+        }
+        else
+        {
+            LogDebug("无法获取当前场景名称");
+        }
+    }
+    
+    /// <summary>
+    /// 测试关卡状态功能
+    /// </summary>
+    [ContextMenu("测试关卡状态功能")]
+    public void TestLevelStateFunctionality()
+    {
+        string currentSceneName = UnityEngine.SceneManagement.SceneManager.GetActiveScene().name;
+        LogDebug($"=== 测试关卡状态功能 - 当前场景: {currentSceneName} ===");
+        
+        // 创建测试状态数据
+        var testStateData = new GameProgressData.LevelStateData();
+        testStateData.levelName = currentSceneName;
+        testStateData.objectStates.Add(new GameProgressData.GameObjectStateData
+        {
+            objectName = "TestObject",
+            isActive = true,
+            highlightEnabled = true
+        });
+        testStateData.broadcastHistory.Add("测试广播消息");
+        testStateData.availableStrings.Add("测试字符串");
+        testStateData.currentSeason = "春季";
+        testStateData.collectedStrings.Add("收集的字符串");
+        testStateData.completedTargets.Add("测试目标");
+        testStateData.currentTargetList.Add("当前目标");
+        
+        LogDebug("1. 保存测试关卡状态数据");
+        SaveLevelState(currentSceneName, testStateData);
+        
+        LogDebug("2. 加载关卡状态数据");
+        var loadedState = LoadLevelState(currentSceneName);
+        if (loadedState != null)
+        {
+            LogDebug($"加载成功 - 物体数量: {loadedState.objectStates.Count}, 广播数量: {loadedState.broadcastHistory.Count}");
+        }
+        else
+        {
+            LogDebug("加载失败");
+        }
+        
+        LogDebug("3. 检查是否有任何关卡状态");
+        LogDebug($"有关卡状态: {HasAnyLevelStates()}");
+        
+        LogDebug("4. 清空当前关卡状态");
+        ClearLevelState(currentSceneName);
+        
+        LogDebug("5. 再次检查是否有任何关卡状态");
+        LogDebug($"有关卡状态: {HasAnyLevelStates()}");
+        
+        LogDebug("=== 关卡状态功能测试完成 ===");
+    }
+    
+    /// <summary>
     /// 修复无效的存档数据
     /// </summary>
     [ContextMenu("修复存档数据")]
@@ -701,19 +985,24 @@ public class LevelProgressManager : MonoBehaviour
     {
         LogDebug("开始修复存档数据");
         
+        if (progressData == null)
+        {
+            progressData = new GameProgressData();
+        }
+        
         bool needsSave = false;
         
         // 检查并修复当前关卡
-        if (!string.IsNullOrEmpty(currentLevel) && !IsValidLevelName(currentLevel))
+        if (!string.IsNullOrEmpty(progressData.currentLevel) && !IsValidLevelName(progressData.currentLevel))
         {
-            LogDebug($"修复无效的当前关卡: '{currentLevel}' -> ''");
-            currentLevel = "";
+            LogDebug($"修复无效的当前关卡: '{progressData.currentLevel}' -> ''");
+            progressData.currentLevel = "";
             needsSave = true;
         }
         
         // 检查并修复已完成的关卡列表
-        var validCompletedLevels = new HashSet<string>();
-        foreach (string level in completedLevels)
+        var validCompletedLevels = new List<string>();
+        foreach (string level in progressData.completedLevels)
         {
             if (IsValidLevelName(level))
             {
@@ -725,7 +1014,7 @@ public class LevelProgressManager : MonoBehaviour
                 needsSave = true;
             }
         }
-        completedLevels = validCompletedLevels;
+        progressData.completedLevels = validCompletedLevels;
         
         if (needsSave)
         {
@@ -751,7 +1040,7 @@ public class LevelProgressManager : MonoBehaviour
     public void UpdateButtonStates()
     {
         LogDebug("=== 按钮状态更新开始 ===");
-        LogDebug($"PlayerPrefs可用性: {IsPlayerPrefsAvailable()}");
+        LogDebug($"JSON存储可用性: 正常");
         LogDebug($"游戏已开始: {HasGameStarted()}");
         
         // 检查关卡序列是否有效（使用动态获取）
@@ -771,7 +1060,15 @@ public class LevelProgressManager : MonoBehaviour
         bool shouldShowContinue = hasLevelProgress && !allLevelsCompleted;
         
         LogDebug($"已完成关卡数: {GetCompletedLevelsCount()}, 总关卡数: {GetTotalLevelsCount()}, 所有关卡完成: {allLevelsCompleted}, 显示继续游戏: {shouldShowContinue}");
-        LogDebug($"当前关卡: '{currentLevel}', 已完成关卡: [{string.Join(", ", completedLevels)}]");
+        
+        if (progressData != null)
+        {
+            LogDebug($"当前关卡: '{progressData.currentLevel}', 已完成关卡: [{string.Join(", ", progressData.completedLevels)}]");
+        }
+        else
+        {
+            LogDebug("当前关卡: '', 已完成关卡: []");
+        }
         LogDebug($"关卡序列: [{string.Join(", ", levelSequence)}]");
         
         // 检查按钮引用
@@ -1072,12 +1369,25 @@ public class LevelProgressManager : MonoBehaviour
     public void ShowCurrentProgress()
     {
         LogDebug("=== 当前进度信息 ===");
-        LogDebug($"当前关卡: '{currentLevel}'");
-        LogDebug($"已完成关卡: [{string.Join(", ", completedLevels)}]");
-        LogDebug($"已完成关卡数量: {GetCompletedLevelsCount()}/{GetTotalLevelsCount()}");
-        LogDebug($"进度百分比: {GetProgressPercentage():F1}%");
-        LogDebug($"游戏已开始: {HasGameStarted()}");
+        if (progressData != null)
+        {
+            LogDebug($"当前关卡: '{progressData.currentLevel}'");
+            LogDebug($"已完成关卡: [{string.Join(", ", progressData.completedLevels)}]");
+            LogDebug($"已完成关卡数量: {GetCompletedLevelsCount()}/{GetTotalLevelsCount()}");
+            LogDebug($"进度百分比: {GetProgressPercentage():F1}%");
+            LogDebug($"游戏已开始: {progressData.gameStarted}");
+            LogDebug($"创建时间: {progressData.createTime}");
+            LogDebug($"最后保存时间: {progressData.lastSaveTime}");
+            LogDebug($"版本: {progressData.version}");
+            LogDebug($"关卡状态数据: {progressData.GetLevelStatesSummary()}");
+        }
+        else
+        {
+            LogDebug("进度数据为空");
+        }
         LogDebug($"下一个关卡: '{GetNextLevelName()}'");
+        LogDebug($"是否有任何关卡状态: {HasAnyLevelStates()}");
+        LogDebug($"JSON存储信息:\n{JsonStorageManager.GetStorageInfo()}");
         LogDebug("==================");
     }
 }

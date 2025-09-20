@@ -63,6 +63,8 @@ public class PlayerController : MonoBehaviour
             {
                 UpdatePlayerColors();
             }
+            
+            GameLogger.LogDev($"PlayerController: 初始化完成，当前玩家索引: {currentPlayerIndex}, 玩家总数: {players.Count}");
         }
         else
         {
@@ -418,5 +420,43 @@ public class PlayerController : MonoBehaviour
                 GameLogger.LogDev($"PlayerController: 已重置玩家 {i + 1} 的携带字符为初始值 '{initialCarry}'");
             }
         }
+    }
+    
+    /// <summary>
+    /// 强制启用所有玩家的输入和交互功能（用于存档恢复后）
+    /// </summary>
+    public void ForceEnableAllPlayerInput()
+    {
+        GameLogger.LogDev("PlayerController: 强制启用所有玩家输入");
+        
+        // 启用所有玩家的输入和回车键
+        for (int i = 0; i < players.Count; i++)
+        {
+            Player player = players[i];
+            if (player != null)
+            {
+                player.SetInputEnabled(true);
+                player.SetEnterKeyEnabled(true);
+                GameLogger.LogDev($"PlayerController: 已启用玩家 {i + 1} 的输入和交互");
+            }
+        }
+        
+        // 确保当前玩家被正确设置
+        if (currentPlayer != null)
+        {
+            currentPlayer.SetInputEnabled(true);
+            GameLogger.LogDev($"PlayerController: 已确保当前玩家 {currentPlayerIndex + 1} 的输入启用");
+        }
+        
+        // 启用玩家切换功能
+        EnablePlayerSwitching();
+        
+        // 更新颜色状态
+        if (enableColorManagement)
+        {
+            UpdatePlayerColors();
+        }
+        
+        GameLogger.LogDev("PlayerController: 所有玩家输入已强制启用");
     }
 }

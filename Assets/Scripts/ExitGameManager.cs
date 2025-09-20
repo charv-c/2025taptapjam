@@ -229,16 +229,41 @@ public class ExitGameManager : MonoBehaviour
         
         // 创建按钮容器
         GameObject buttonContainer = CreateButtonContainer(canvas);
+        if (buttonContainer == null)
+        {
+            LogWarning("无法创建按钮容器");
+            return;
+        }
         
         // 创建确认按钮
         if (confirmButtonPrefab != null)
         {
-            GameObject confirmBtnObj = Instantiate(confirmButtonPrefab, buttonContainer.transform);
-            confirmExitButton = confirmBtnObj.GetComponent<Button>();
-            if (confirmExitButton != null)
+            try
             {
-                confirmExitButton.onClick.AddListener(OnConfirmExitClicked);
-                LogDebug("确认按钮已创建并设置事件");
+                GameObject confirmBtnObj = Instantiate(confirmButtonPrefab, buttonContainer.transform);
+                if (confirmBtnObj != null)
+                {
+                    confirmExitButton = confirmBtnObj.GetComponent<Button>();
+                    if (confirmExitButton != null)
+                    {
+                        // 移除旧的事件监听器，避免重复绑定
+                        confirmExitButton.onClick.RemoveAllListeners();
+                        confirmExitButton.onClick.AddListener(OnConfirmExitClicked);
+                        LogDebug("确认按钮已创建并设置事件");
+                    }
+                    else
+                    {
+                        LogWarning("确认按钮预制体没有Button组件");
+                    }
+                }
+                else
+                {
+                    LogWarning("确认按钮实例化失败");
+                }
+            }
+            catch (System.Exception e)
+            {
+                LogWarning($"创建确认按钮时发生错误: {e.Message}");
             }
         }
         else
@@ -249,12 +274,32 @@ public class ExitGameManager : MonoBehaviour
         // 创建取消按钮
         if (cancelButtonPrefab != null)
         {
-            GameObject cancelBtnObj = Instantiate(cancelButtonPrefab, buttonContainer.transform);
-            cancelExitButton = cancelBtnObj.GetComponent<Button>();
-            if (cancelExitButton != null)
+            try
             {
-                cancelExitButton.onClick.AddListener(OnCancelExitClicked);
-                LogDebug("取消按钮已创建并设置事件");
+                GameObject cancelBtnObj = Instantiate(cancelButtonPrefab, buttonContainer.transform);
+                if (cancelBtnObj != null)
+                {
+                    cancelExitButton = cancelBtnObj.GetComponent<Button>();
+                    if (cancelExitButton != null)
+                    {
+                        // 移除旧的事件监听器，避免重复绑定
+                        cancelExitButton.onClick.RemoveAllListeners();
+                        cancelExitButton.onClick.AddListener(OnCancelExitClicked);
+                        LogDebug("取消按钮已创建并设置事件");
+                    }
+                    else
+                    {
+                        LogWarning("取消按钮预制体没有Button组件");
+                    }
+                }
+                else
+                {
+                    LogWarning("取消按钮实例化失败");
+                }
+            }
+            catch (System.Exception e)
+            {
+                LogWarning($"创建取消按钮时发生错误: {e.Message}");
             }
         }
         else
@@ -266,6 +311,17 @@ public class ExitGameManager : MonoBehaviour
         if (autoLayoutButtons)
         {
             LayoutButtons(buttonContainer);
+        }
+        
+        // 验证按钮创建是否成功
+        if (confirmExitButton == null || cancelExitButton == null)
+        {
+            LogWarning("按钮创建失败，确认按钮或取消按钮为null");
+            LogDebug($"确认按钮: {confirmExitButton != null}, 取消按钮: {cancelExitButton != null}");
+        }
+        else
+        {
+            LogDebug("按钮创建成功，所有按钮引用都已设置");
         }
     }
     
@@ -468,7 +524,14 @@ public class ExitGameManager : MonoBehaviour
     private void ShowConfirmationDialog()
     {
         EnsureConfirmationDialogInstance();
-        if (confirmationDialogInstance == null) return;
+        if (confirmationDialogInstance == null) 
+        {
+            LogWarning("确认对话框实例不存在，无法显示");
+            return;
+        }
+        
+        // 确保按钮存在且正确设置
+        EnsureButtonsExist();
         
         confirmationDialogInstance.SetActive(true);
         
@@ -476,6 +539,43 @@ public class ExitGameManager : MonoBehaviour
         Time.timeScale = 0f;
         
         LogDebug("显示退出确认对话框");
+    }
+    
+    /// <summary>
+    /// 确保按钮存在且正确设置
+    /// </summary>
+    private void EnsureButtonsExist()
+    {
+        if (confirmationDialogInstance == null) return;
+        
+        // 检查按钮是否存在
+        bool needsRecreation = false;
+        
+        if (confirmExitButton == null || cancelExitButton == null)
+        {
+            LogDebug("按钮引用丢失，需要重新创建");
+            needsRecreation = true;
+        }
+        else
+        {
+            // 检查按钮是否仍然有效
+            if (confirmExitButton.gameObject == null || cancelExitButton.gameObject == null)
+            {
+                LogDebug("按钮GameObject已销毁，需要重新创建");
+                needsRecreation = true;
+            }
+            else if (!confirmExitButton.gameObject.activeInHierarchy || !cancelExitButton.gameObject.activeInHierarchy)
+            {
+                LogDebug("按钮未激活，需要重新创建");
+                needsRecreation = true;
+            }
+        }
+        
+        if (needsRecreation)
+        {
+            LogDebug("重新创建确认对话框按钮");
+            CreateConfirmationButtons();
+        }
     }
     
     /// <summary>
@@ -733,17 +833,36 @@ public class ExitGameManager : MonoBehaviour
     /// </summary>
     private void ClearExistingButtons()
     {
-        if (confirmationDialogInstance == null) return;
+        if (confirmationDialogInstance == null) 
+        {
+            confirmExitButton = null;
+            cancelExitButton = null;
+            return;
+        }
         
+        // 查找并销毁按钮容器
         Transform buttonContainer = confirmationDialogInstance.transform.Find("ButtonContainer");
         if (buttonContainer != null)
         {
+            // 先移除按钮的事件监听器
+            Button[] buttons = buttonContainer.GetComponentsInChildren<Button>();
+            foreach (Button button in buttons)
+            {
+                if (button != null)
+                {
+                    button.onClick.RemoveAllListeners();
+                }
+            }
+            
             DestroyImmediate(buttonContainer.gameObject);
             LogDebug("已清除现有按钮");
         }
         
+        // 清空按钮引用
         confirmExitButton = null;
         cancelExitButton = null;
+        
+        LogDebug("按钮引用已清空");
     }
     
     /// <summary>
@@ -784,5 +903,79 @@ public class ExitGameManager : MonoBehaviour
     public bool IsExitDialogDisabled()
     {
         return exitDialogDisabled;
+    }
+    
+    /// <summary>
+    /// 检查按钮状态（用于测试和调试）
+    /// </summary>
+    [ContextMenu("检查按钮状态")]
+    public void CheckButtonStatus()
+    {
+        LogDebug("=== 检查按钮状态 ===");
+        
+        // 检查确认对话框实例
+        if (confirmationDialogInstance == null)
+        {
+            LogDebug("确认对话框实例: null");
+        }
+        else
+        {
+            LogDebug($"确认对话框实例: 存在，激活状态: {confirmationDialogInstance.activeSelf}");
+        }
+        
+        // 检查确认按钮
+        if (confirmExitButton == null)
+        {
+            LogDebug("确认按钮: null");
+        }
+        else
+        {
+            LogDebug($"确认按钮: 存在，GameObject: {confirmExitButton.gameObject != null}, 激活状态: {confirmExitButton.gameObject != null && confirmExitButton.gameObject.activeInHierarchy}");
+        }
+        
+        // 检查取消按钮
+        if (cancelExitButton == null)
+        {
+            LogDebug("取消按钮: null");
+        }
+        else
+        {
+            LogDebug($"取消按钮: 存在，GameObject: {cancelExitButton.gameObject != null}, 激活状态: {cancelExitButton.gameObject != null && cancelExitButton.gameObject.activeInHierarchy}");
+        }
+        
+        // 检查按钮预制体
+        LogDebug($"确认按钮预制体: {(confirmButtonPrefab != null ? "已设置" : "未设置")}");
+        LogDebug($"取消按钮预制体: {(cancelButtonPrefab != null ? "已设置" : "未设置")}");
+        
+        // 检查Canvas
+        Canvas canvas = FindObjectOfType<Canvas>();
+        LogDebug($"场景中的Canvas: {(canvas != null ? "存在" : "不存在")}");
+        
+        LogDebug("=== 按钮状态检查完成 ===");
+    }
+    
+    /// <summary>
+    /// 强制重新初始化UI（用于测试和调试）
+    /// </summary>
+    [ContextMenu("强制重新初始化UI")]
+    public void ForceReinitializeUI()
+    {
+        LogDebug("=== 强制重新初始化UI ===");
+        
+        // 清理现有UI
+        if (confirmationDialogInstance != null)
+        {
+            DestroyImmediate(confirmationDialogInstance);
+            confirmationDialogInstance = null;
+        }
+        
+        // 清空按钮引用
+        confirmExitButton = null;
+        cancelExitButton = null;
+        
+        // 重新设置UI
+        SetupUI();
+        
+        LogDebug("=== UI重新初始化完成 ===");
     }
 }

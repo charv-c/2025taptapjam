@@ -557,6 +557,11 @@ public class GameStateManager : MonoBehaviour
         {
             StartCoroutine(CheckLevel3PlayerMovementAfterRestore());
         }
+        else
+        {
+            // 其他场景：确保PlayerController正确设置当前玩家的输入状态
+            StartCoroutine(EnsurePlayerControllerStateAfterRestore());
+        }
     }
 
     /// <summary>
@@ -612,6 +617,50 @@ public class GameStateManager : MonoBehaviour
                     LogDebug("Level3存档恢复后已重新启用玩家移动");
                 }
             }
+        }
+    }
+    
+    /// <summary>
+    /// 确保PlayerController在存档恢复后正确设置当前玩家的输入状态
+    /// </summary>
+    private System.Collections.IEnumerator EnsurePlayerControllerStateAfterRestore()
+    {
+        // 等待一帧确保所有系统初始化完成
+        yield return null;
+        
+        // 查找PlayerController
+        PlayerController playerController = FindObjectOfType<PlayerController>();
+        if (playerController == null)
+        {
+            LogDebug("未找到PlayerController，跳过状态检查");
+            yield break;
+        }
+        
+        // 检查是否有任何玩家输入被禁用
+        bool hasDisabledPlayers = false;
+        for (int i = 0; i < playerController.GetPlayerCount(); i++)
+        {
+            Player player = playerController.GetPlayerByIndex(i);
+            if (player != null && !player.IsInputEnabled())
+            {
+                hasDisabledPlayers = true;
+                break;
+            }
+        }
+        
+        // 如果有玩家输入被禁用，说明这是存档恢复后的状态，需要重新启用
+        if (hasDisabledPlayers)
+        {
+            LogDebug("检测到存档恢复后玩家输入被禁用，重新启用所有玩家移动");
+            
+            // 强制启用所有玩家输入
+            playerController.ForceEnableAllPlayerInput();
+            
+            LogDebug("存档恢复后已重新启用所有玩家移动");
+        }
+        else
+        {
+            LogDebug("所有玩家输入已启用，无需额外处理");
         }
     }
     
