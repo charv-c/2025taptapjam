@@ -400,6 +400,26 @@ public class ExitGameManager : MonoBehaviour
         // 实例化对话框到Canvas
         confirmationDialogInstance = Instantiate(confirmationDialogPrefab, canvas.transform);
         confirmationDialogInstance.name = "ConfirmationDialog";
+        
+        // --- 开始修改：强制置顶显示 ---
+        // 为对话框添加或获取Canvas组件，并设置其排序顺序，确保它在最顶层渲染
+        Canvas dialogCanvas = confirmationDialogInstance.GetComponent<Canvas>();
+        if (dialogCanvas == null)
+        {
+            dialogCanvas = confirmationDialogInstance.AddComponent<Canvas>();
+        }
+        // 开启覆盖排序，使其独立于父Canvas的排序
+        dialogCanvas.overrideSorting = true;
+        // 设置一个非常高的排序值，确保它在所有UI之上
+        dialogCanvas.sortingOrder = 30000;
+
+        // 确保有GraphicRaycaster组件，否则UI按钮等无法接收点击事件
+        if (confirmationDialogInstance.GetComponent<GraphicRaycaster>() == null)
+        {
+            confirmationDialogInstance.AddComponent<GraphicRaycaster>();
+        }
+        // --- 结束修改 ---
+        
         confirmationDialogInstance.SetActive(false);
         
         LogDebug("已实例化确认对话框预制体");

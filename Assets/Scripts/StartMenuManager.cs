@@ -40,50 +40,13 @@ public class StartMenuManager : MonoBehaviour
     {
         if (LevelProgressManager.Instance != null)
         {
-            // 优先使用Inspector中设置的按钮引用
-            // 如果提供了“从头开始”按钮，则优先使用它
-            Button startBtn = startNewGameButton != null ? startNewGameButton : startGameButton;
-            Button continueBtn = continueGameButton;
-            
-            // 如果Inspector中没有设置，尝试通过名称查找
-            if (startBtn == null)
+            // 将所有按钮引用统一传递给 LevelProgressManager
+            LevelProgressManager.Instance.SetButtonReferences(startGameButton, continueGameButton);
+            if (startNewGameButton != null)
             {
-                // 多重查找策略
-                startBtn = FindButtonByMultipleNames(new string[] {
-                    "StartNewGameButton", "StartGameButton", "开始游戏", "NewGameButton"
-                });
+                LevelProgressManager.Instance.SetStartNewGameButton(startNewGameButton);
             }
-            if (continueBtn == null)
-            {
-                continueBtn = FindButtonByMultipleNames(new string[] {
-                    "ContinueGameButton", "继续游戏", "ContinueButton", "ResumeButton"
-                });
-            }
-            
-            if (startBtn != null || continueBtn != null)
-            {
-                LevelProgressManager.Instance.SetButtonReferences(startBtn, continueBtn);
-                LogDebug($"按钮设置成功 - Start: {startBtn?.name ?? "null"}, Continue: {continueBtn?.name ?? "null"}");
-
-                // 覆盖“从头开始”按钮事件为本地清档逻辑
-                if (startBtn != null)
-                {
-                    startBtn.onClick.RemoveAllListeners();
-                    startBtn.onClick.AddListener(OnStartNewGameClicked);
-                    LogDebug("已绑定从头开始按钮事件到 StartMenuManager.OnStartNewGameClicked");
-                }
-
-                // 传递“从头开始”按钮引用，便于显示逻辑隐藏/显示
-                if (startNewGameButton != null)
-                {
-                    LevelProgressManager.Instance.SetStartNewGameButton(startNewGameButton);
-                    LogDebug("已传递从头开始按钮引用到LevelProgressManager");
-                }
-            }
-            else
-            {
-                LogDebug("未找到开始游戏或继续游戏按钮，请确保按钮名称正确或在Inspector中设置引用");
-            }
+            LogDebug($"已将按钮引用传递给 LevelProgressManager");
         }
     }
     
@@ -136,31 +99,18 @@ public class StartMenuManager : MonoBehaviour
     /// </summary>
     public void OnStartNewGameClicked()
     {
-        LogDebug("开始新游戏");
-        
-        // 确保GameBootstrap已初始化
-        GameBootstrap.EnsureInitialized();
-        
-        // 清空所有本地存档（包括关卡进度与关卡内状态）
-        GameStateManager.ClearAllGameStates();
-        LevelProgressManager.Instance?.ClearAllProgress();
-        PlayerPrefs.SetInt("GameStarted", 0); // 显式清零开关
-        PlayerPrefs.Save();
-        LogDebug("已清空所有关卡状态与进度，并将GameStarted=0");
+        LogDebug("开始新游戏（通过LevelProgressManager）");
 
-        // 调用测试清空器（若场景中挂载）以保持一致的清理逻辑
-        ClearAllLocalDataTester tester = FindObjectOfType<ClearAllLocalDataTester>();
-        if (tester != null)
+        // 统一调用 LevelProgressManager 处理
+        if (LevelProgressManager.Instance != null)
         {
-            tester.ClearAllLocalData();
-            LogDebug("已调用 ClearAllLocalDataTester.ClearAllLocalData()");
+            // LevelProgressManager 的 OnStartGameButtonClicked 已包含清档和加载首关的逻辑
+            LevelProgressManager.Instance.OnStartGameButtonClicked();
         }
-
-        // 重置游戏进度（内存态）
-        LevelProgressManager.Instance?.StartNewGame(); // 会清空GameStarted与完成列表
-
-        // 安全地获取关卡序列并加载场景
-        StartCoroutine(LoadFirstLevelSafely());
+        else
+        {
+            LogError("LevelProgressManager 未找到，无法开始新游戏！");
+        }
     }
     
     /// <summary>
@@ -255,15 +205,15 @@ public class StartMenuManager : MonoBehaviour
     {
         LogDebug("继续游戏");
         
-        // 从上次进度继续
+        // 统一调用 LevelProgressManager 处理
         if (LevelProgressManager.Instance != null)
         {
             LevelProgressManager.Instance.ContinueGame();
         }
         else
         {
-            LogDebug("LevelProgressManager未找到，使用默认场景");
-            StartCoroutine(LoadSceneAfterSound());
+            LogError("LevelProgressManager未找到，无法继续游戏！");
+            StartCoroutine(LoadSceneAfterSound()); // Fallback
         }
     }
 
@@ -374,7 +324,12 @@ public class StartMenuManager : MonoBehaviour
     {
         if (enableDebugLog)
         {
-            Debug.Log($"[StartMenuManager] {message}");
+            GameLogger.LogDev($"[StartMenuManager] {message}");
         }
+    }
+
+    private void LogError(string message)
+    {
+        GameLogger.LogError($"[StartMenuManager] {message}");
     }
 }

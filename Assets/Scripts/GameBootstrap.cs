@@ -19,6 +19,10 @@ public class GameBootstrap : MonoBehaviour
     [SerializeField] private GameObject gameFlowManagerPrefab;
     [Tooltip("MouseCursorManager预制体路径")]
     [SerializeField] private GameObject mouseCursorManagerPrefab;
+    [Tooltip("GameStateManager预制体路径")]
+    [SerializeField] private GameObject gameStateManagerPrefab;
+    [Tooltip("LevelProgressManager预制体路径")]
+    [SerializeField] private GameObject levelProgressManagerPrefab;
     
     [Header("调试设置")]
     [SerializeField] private bool enableDebugLogs = true;
@@ -92,6 +96,16 @@ public class GameBootstrap : MonoBehaviour
             mouseCursorManagerPrefab = Resources.Load<GameObject>("Prefabs/MouseCursorManager");
         }
         
+        if (gameStateManagerPrefab == null)
+        {
+            gameStateManagerPrefab = Resources.Load<GameObject>("Prefabs/GameStateManager");
+        }
+        
+        if (levelProgressManagerPrefab == null)
+        {
+            levelProgressManagerPrefab = Resources.Load<GameObject>("Prefabs/LevelProgressManager");
+        }
+        
         StartCoroutine(InitializeGameSystems());
     }
     
@@ -124,7 +138,15 @@ public class GameBootstrap : MonoBehaviour
         EnsureMouseCursorManager();
         yield return null;
         
-        // 5. 标记初始化完成
+        // 5. 确保LevelProgressManager存在（必须在GameStateManager之前）
+        EnsureLevelProgressManager();
+        yield return null;
+        
+        // 6. 确保GameStateManager存在
+        EnsureGameStateManager();
+        yield return null;
+        
+        // 7. 标记初始化完成
         IsInitialized = true;
         
         if (enableDebugLogs)
@@ -367,6 +389,112 @@ public class GameBootstrap : MonoBehaviour
     }
     
     /// <summary>
+    /// 确保GameStateManager存在并正常工作
+    /// </summary>
+    private void EnsureGameStateManager()
+    {
+        if (GameStateManager.Instance == null)
+        {
+            if (enableDebugLogs)
+            {
+                GameLogger.LogSystem("GameBootstrap: 创建GameStateManager");
+            }
+            
+            GameObject gameStateManagerObj = null;
+            
+            if (gameStateManagerPrefab != null)
+            {
+                // 使用预制体创建
+                gameStateManagerObj = Instantiate(gameStateManagerPrefab);
+            }
+            else
+            {
+                // 创建空对象并添加组件
+                gameStateManagerObj = new GameObject("GameStateManager");
+                gameStateManagerObj.AddComponent<GameStateManager>();
+                
+                if (enableDebugLogs)
+                {
+                    GameLogger.LogSystem("GameBootstrap: 通过代码创建GameStateManager");
+                }
+            }
+            
+            // 额外验证
+            if (GameStateManager.Instance != null)
+            {
+                if (enableDebugLogs)
+                {
+                    GameLogger.LogSystem("GameBootstrap: GameStateManager创建成功，Instance已设置");
+                }
+            }
+            else
+            {
+                GameLogger.LogError("GameBootstrap: GameStateManager创建失败！Instance仍为null");
+            }
+        }
+        else
+        {
+            if (enableDebugLogs)
+            {
+                GameLogger.LogSystem("GameBootstrap: GameStateManager已存在");
+            }
+        }
+    }
+    
+    /// <summary>
+    /// 确保LevelProgressManager存在并正常工作
+    /// </summary>
+    private void EnsureLevelProgressManager()
+    {
+        if (LevelProgressManager.Instance == null)
+        {
+            if (enableDebugLogs)
+            {
+                GameLogger.LogSystem("GameBootstrap: 创建LevelProgressManager");
+            }
+            
+            GameObject levelProgressManagerObj = null;
+            
+            if (levelProgressManagerPrefab != null)
+            {
+                // 使用预制体创建
+                levelProgressManagerObj = Instantiate(levelProgressManagerPrefab);
+            }
+            else
+            {
+                // 创建空对象并添加组件
+                levelProgressManagerObj = new GameObject("LevelProgressManager");
+                levelProgressManagerObj.AddComponent<LevelProgressManager>();
+                
+                if (enableDebugLogs)
+                {
+                    GameLogger.LogSystem("GameBootstrap: 通过代码创建LevelProgressManager");
+                }
+            }
+            
+            // 额外验证
+            if (LevelProgressManager.Instance != null)
+            {
+                if (enableDebugLogs)
+                {
+                    GameLogger.LogSystem("GameBootstrap: LevelProgressManager创建成功，Instance已设置");
+                }
+            }
+            else
+            {
+                GameLogger.LogError("GameBootstrap: LevelProgressManager创建失败！Instance仍为null");
+            }
+        }
+        else
+        {
+            if (enableDebugLogs)
+            {
+                GameLogger.LogSystem("GameBootstrap: LevelProgressManager已存在");
+            }
+        }
+    }
+    
+    /// <summary>
     /// 通知其他系统初始化完成
     /// </summary>
     private void NotifySystemsReady()
@@ -425,6 +553,18 @@ public class GameBootstrap : MonoBehaviour
         if (MouseCursorManager.Instance == null)
         {
             GameLogger.LogError("GameBootstrap: MouseCursorManager.Instance 为空");
+            isValid = false;
+        }
+        
+        if (LevelProgressManager.Instance == null)
+        {
+            GameLogger.LogError("GameBootstrap: LevelProgressManager.Instance 为空");
+            isValid = false;
+        }
+        
+        if (GameStateManager.Instance == null)
+        {
+            GameLogger.LogError("GameBootstrap: GameStateManager.Instance 为空");
             isValid = false;
         }
         
