@@ -52,6 +52,9 @@ public class ExitGameManager : MonoBehaviour
     private Button confirmExitButton;
     private Button cancelExitButton;
     
+    // 缓存StringSelector引用，用于在弹窗显示时禁用字符选择
+    private StringSelector stringSelector;
+    
     private void Awake()
     {
         // 单例与跨场景持久化
@@ -440,8 +443,17 @@ public class ExitGameManager : MonoBehaviour
                 Image img = overlay.AddComponent<Image>();
                 img.color = new Color(0f, 0f, 0f, 0.3f); // 30% 透明黑
                 img.raycastTarget = true; // 阻挡背景点击
-                // 确保蒙层在最底层
+                
+                // 确保蒙层在最底层 - 先设置为第一个子对象
                 overlay.transform.SetAsFirstSibling();
+                
+                // 为overlay添加Canvas组件，设置较低的排序顺序，确保它在对话框内容下方
+                Canvas overlayCanvas = overlay.AddComponent<Canvas>();
+                overlayCanvas.overrideSorting = true;
+                overlayCanvas.sortingOrder = -1; // 设置为负值，确保在对话框内容下方
+                
+                // 添加GraphicRaycaster以确保能接收点击事件
+                overlay.AddComponent<GraphicRaycaster>();
             }
         }
         catch { }
@@ -584,6 +596,22 @@ public class ExitGameManager : MonoBehaviour
         // 暂停游戏（可选）
         Time.timeScale = 0f;
         
+        // 禁用字符串选择（通过StringSelector）
+        if (stringSelector == null)
+        {
+            stringSelector = FindObjectOfType<StringSelector>();
+        }
+        if (stringSelector != null)
+        {
+            stringSelector.DisableAllCharacterButtons();
+        }
+
+        // 禁用拆/拼按钮（通过ButtonController）
+        if (ButtonController.Instance != null)
+        {
+            ButtonController.Instance.SetAllButtonsInteractable(false);
+        }
+        
         LogDebug("显示退出确认对话框");
     }
     
@@ -635,6 +663,24 @@ public class ExitGameManager : MonoBehaviour
         
         // 恢复游戏（可选）
         Time.timeScale = 1f;
+        
+        // 恢复字符串选择（通过StringSelector）
+        if (stringSelector == null)
+        {
+            stringSelector = FindObjectOfType<StringSelector>();
+        }
+        if (stringSelector != null)
+        {
+            stringSelector.EnableAllCharacterButtons();
+        }
+
+        // 恢复拆/拼按钮交互状态（根据当前选择数量，由ButtonController负责）
+        if (ButtonController.Instance != null)
+        {
+            var selector = ButtonController.Instance.GetStringSelector();
+            int count = selector != null ? selector.GetSelectionCount() : 0;
+            ButtonController.Instance.UpdateButtonStates(count);
+        }
         
         LogDebug("隐藏退出确认对话框");
     }
