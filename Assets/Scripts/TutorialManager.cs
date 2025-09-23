@@ -1767,6 +1767,16 @@ public class TutorialManager : MonoBehaviour
 
     #region Arrow Positioning Helper Methods
     /// <summary>
+    /// 将以 1080 高度为基准的偏移量按当前屏幕高度进行缩放
+    /// </summary>
+    /// <param name="referenceOffset">在 1920x1080 下的参考偏移量</param>
+    /// <returns>按当前分辨率缩放后的偏移量</returns>
+    private float GetScaledOffset(float referenceOffset)
+    {
+        float scale = Screen.height > 0 ? (float)Screen.height / 1080f : 1f;
+        return referenceOffset * scale;
+    }
+    /// <summary>
     /// 将屏幕像素坐标转换为箭头所在 Canvas 的局部坐标并落位
     /// </summary>
     /// <param name="screenPos">屏幕像素坐标</param>
@@ -2134,7 +2144,7 @@ public class TutorialManager : MonoBehaviour
 
         // 将箭头放置在目标附近，紧挨着高亮圈
         // 根据方向计算箭头的偏移位置，指向高亮圈的边缘
-        float arrowOffset = 160f; // 箭头距离目标的偏移距离（更贴近目标）
+        float arrowOffset = GetScaledOffset(160f); // 按分辨率缩放的偏移
         Vector3 arrowScreenPos = targetScreenPos - direction * arrowOffset; // 箭头位置在目标外围
 
         // 计算箭头应该指向的角度（从箭头位置指向目标）
@@ -2269,7 +2279,7 @@ public class TutorialManager : MonoBehaviour
         // 3. 基于统一坐标系的计算
         Vector2 direction = (targetPos - guidePos).normalized;
 
-        float arrowOffset = 80f; // 在统一坐标系下的偏移距离
+        float arrowOffset = GetScaledOffset(80f); // 在统一坐标系下的偏移距离（缩放）
         Vector2 arrowPos = targetPos - direction * arrowOffset;
 
         // 设置箭头位置
@@ -2319,7 +2329,7 @@ public class TutorialManager : MonoBehaviour
         Vector3 direction = (targetScreenPos - guideScreenPos).normalized;
         
         // 将箭头放置在目标附近，紧挨着高亮圈
-        float arrowOffset = 80f; // 箭头距离目标的偏移距离（UI=30）
+        float arrowOffset = GetScaledOffset(80f); // 箭头距离目标的偏移距离（缩放）
         Vector3 arrowScreenPos = targetScreenPos - direction * arrowOffset; // 箭头位置在目标外围
 
         // 计算箭头应该指向的角度（从箭头位置指向目标）
@@ -2362,7 +2372,7 @@ public class TutorialManager : MonoBehaviour
         Vector3 direction = (targetScreenPos - guideScreenPos).normalized;
         
         // 将箭头放置在目标附近，紧挨着高亮圈
-        float arrowOffset = 160f; // 箭头距离目标的偏移距离（世界物体=60）
+        float arrowOffset = GetScaledOffset(160f); // 箭头距离目标的偏移距离（缩放）
         Vector3 arrowScreenPos = targetScreenPos - direction * arrowOffset; // 箭头位置在目标外围
 
         // 计算箭头应该指向的角度（从箭头位置指向目标）

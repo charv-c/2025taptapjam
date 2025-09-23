@@ -31,6 +31,9 @@ public class InfoPopupManager : MonoBehaviour
     
     // E键监听协程
     private Coroutine eKeyListenerCoroutine;
+    
+    // 操作禁用状态记录
+    private bool operationsDisabledByPopup = false;
 
     private void Awake()
     {
@@ -86,6 +89,18 @@ public class InfoPopupManager : MonoBehaviour
         currentPopupInstance.SetActive(true);
         GameLogger.LogSystem("InfoPopupManager: 弹窗预制体已激活");
         
+        // 确保弹窗置顶显示 - 添加Canvas组件并设置最高排序顺序
+        Canvas popupCanvas = currentPopupInstance.GetComponent<Canvas>();
+        if (popupCanvas == null)
+        {
+            popupCanvas = currentPopupInstance.AddComponent<Canvas>();
+        }
+        // 开启覆盖排序，使其独立于父Canvas的排序
+        popupCanvas.overrideSorting = true;
+        // 设置一个非常高的排序值，确保它在所有UI之上
+        popupCanvas.sortingOrder = 30000;
+        GameLogger.LogSystem("InfoPopupManager: 已设置弹窗Canvas为置顶显示");
+        
         // 保持预制体的原始位置配置，不做强制调整
         RectTransform panelRect = currentPopupInstance.GetComponent<RectTransform>();
         if (panelRect != null)
@@ -119,6 +134,9 @@ public class InfoPopupManager : MonoBehaviour
 
         // 添加按钮点击事件监听
         continueButton.onClick.AddListener(OnContinueClicked);
+
+        // 禁用所有玩家操作
+        DisableAllPlayerOperations();
 
         // 开始E键监听协程
         eKeyListenerCoroutine = StartCoroutine(EKeyListenerCoroutine());
@@ -237,6 +255,9 @@ public class InfoPopupManager : MonoBehaviour
             Destroy(currentPopupInstance);
         }
 
+        // 恢复所有玩家操作
+        EnableAllPlayerOperations();
+
         // 执行完成回调
         onCompleteCallback?.Invoke();
 
@@ -270,5 +291,92 @@ public class InfoPopupManager : MonoBehaviour
         }
         
         GameLogger.LogSystem("InfoPopupManager: E键监听协程结束");
+    }
+
+    /// <summary>
+    /// 禁用所有玩家操作
+    /// </summary>
+    private void DisableAllPlayerOperations()
+    {
+        if (operationsDisabledByPopup)
+        {
+            GameLogger.LogSystem("InfoPopupManager: 操作已被禁用，跳过重复禁用");
+            return;
+        }
+
+        GameLogger.LogSystem("InfoPopupManager: 禁用所有玩家操作");
+        
+        // 查找PlayerController并禁用所有操作
+        PlayerController playerController = FindObjectOfType<PlayerController>();
+        if (playerController != null)
+        {
+            for (int i = 0; i < playerController.GetPlayerCount(); i++)
+            {
+                Player player = playerController.GetPlayerByIndex(i);
+                if (player != null)
+                {
+                    player.SetInputEnabled(false);
+                    player.SetEnterKeyEnabled(false);
+                }
+            }
+            playerController.DisablePlayerSwitching();
+            GameLogger.LogSystem("InfoPopupManager: 已禁用PlayerController操作");
+        }
+        else
+        {
+            GameLogger.LogWarning("InfoPopupManager: 未找到PlayerController，无法禁用玩家操作");
+        }
+
+        operationsDisabledByPopup = true;
+    }
+
+    /// <summary>
+    /// 恢复所有玩家操作
+    /// </summary>
+    private void EnableAllPlayerOperations()
+    {
+        if (!operationsDisabledByPopup)
+        {
+            GameLogger.LogSystem("InfoPopupManager: 操作未被弹窗禁用，跳过恢复");
+            return;
+        }
+
+        GameLogger.LogSystem("InfoPopupManager: 恢复所有玩家操作");
+        
+        // 查找PlayerController并恢复所有操作
+        PlayerController playerController = FindObjectOfType<PlayerController>();
+        if (playerController != null)
+        {
+            // 启用所有玩家的移动和回车键响应
+            for (int i = 0; i < playerController.GetPlayerCount(); i++)
+            {
+                Player player = playerController.GetPlayerByIndex(i);
+                if (player != null)
+                {
+                    player.SetInputEnabled(true);
+                    player.SetEnterKeyEnabled(true);
+                }
+            }
+            
+            // 设置第一个玩家为当前玩家（如果没有设置的话）
+            if (playerController.GetPlayerCount() > 0 && playerController.GetCurrentPlayerIndex() < 0)
+            {
+                playerController.SetCurrentPlayerIndex(0);
+            }
+            
+            // 启用玩家切换功能
+            playerController.EnablePlayerSwitching();
+            
+            // 更新玩家颜色状态
+            playerController.UpdatePlayerColors();
+            
+            GameLogger.LogSystem("InfoPopupManager: 已恢复PlayerController操作");
+        }
+        else
+        {
+            GameLogger.LogWarning("InfoPopupManager: 未找到PlayerController，无法恢复玩家操作");
+        }
+
+        operationsDisabledByPopup = false;
     }
 }
