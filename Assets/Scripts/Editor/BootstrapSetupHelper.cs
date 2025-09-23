@@ -10,7 +10,10 @@ using System.IO;
 /// </summary>
 public class BootstrapSetupHelper : EditorWindow
 {
-    [MenuItem("游戏工具/Bootstrap设置助手")]
+    /// <summary>
+    /// 设置完整的Bootstrap系统
+    /// </summary>
+    [MenuItem("工具/Bootstrap设置助手")]
     public static void ShowWindow()
     {
         GetWindow<BootstrapSetupHelper>("Bootstrap设置助手");

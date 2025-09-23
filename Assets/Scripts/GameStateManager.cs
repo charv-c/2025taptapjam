@@ -17,24 +17,27 @@ public class GameStateManager : MonoBehaviour
     [SerializeField] private bool enableDebugLog = true;
     [SerializeField] private bool autoSaveOnExit = true;
     
-    // PlayerPrefs键名常量
+    // PlayerPrefs键名常量 (将被废弃)
+    /*
     private const string GAME_STATE_KEY = "GameState_";
     private const string BROADCAST_HISTORY_KEY = "BroadcastHistory_";
     private const string AVAILABLE_STRINGS_KEY = "AvailableStrings_";
     private const string CURRENT_SEASON_KEY = "CurrentSeason_";
     private const string COLLECTED_STRINGS_KEY = "CollectedStrings_";
+    */
     
     // 当前关卡名称
     private string currentLevelName;
     
-    // 游戏状态数据类
+    // 游戏状态数据类 (已迁移到 GameProgressData.cs, 此处定义将被移除)
+    /*
     [System.Serializable]
     public class GameObjectState
     {
         public string objectName;
         public string objectPath;
-        public bool isActive; // 兼容旧字段：表示activeInHierarchy（已弃用）
-        public bool isActiveSelf; // 新字段：表示activeSelf（用于正确恢复）
+        public bool isActive;
+        public bool isActiveSelf;
         public bool hasHighlight;
         public bool highlightEnabled;
         public string highlightLetter;
@@ -49,8 +52,8 @@ public class GameStateManager : MonoBehaviour
         public bool light2DEnabled;
         public bool hasPlayer;
         public string playerCarryCharacter;
-        public bool playerInputEnabled; // 玩家输入状态
-        public bool playerEnterKeyEnabled; // 玩家回车键状态
+        public bool playerInputEnabled;
+        public bool playerEnterKeyEnabled;
     }
     
     [System.Serializable]
@@ -59,13 +62,13 @@ public class GameStateManager : MonoBehaviour
         public string character;
         public string targetObjectName;
         public Vector3 targetPosition;
-        public float delay; // 延迟播放时间
+        public float delay;
     }
     
     [System.Serializable]
     public class BeachObjectState
     {
-        public bool hasYaBeenPlanted; // 芽是否已被种下
+        public bool hasYaBeenPlanted;
     }
     
     [System.Serializable]
@@ -77,12 +80,13 @@ public class GameStateManager : MonoBehaviour
         public List<string> availableStrings;
         public string currentSeason;
         public List<string> collectedStrings;
-        public List<FlyingCharacterData> flyingCharacters; // 飞字物体数据
-        public List<string> completedTargets; // 已完成的目标列表
-        public List<string> currentTargetList; // 当前目标列表（未完成的）
-        public BeachObjectState beachObjectState; // BeachObject状态
+        public List<FlyingCharacterData> flyingCharacters;
+        public List<string> completedTargets;
+        public List<string> currentTargetList;
+        public BeachObjectState beachObjectState;
         public float saveTime;
     }
+    */
     
     private void Awake()
     {
@@ -92,7 +96,7 @@ public class GameStateManager : MonoBehaviour
             Instance = this;
             DontDestroyOnLoad(gameObject);
             currentLevelName = SceneManager.GetActiveScene().name;
-            LogDebug("GameStateManager 初始化并设置为跨场景持久化");
+            GameLogger.LogSystem("GameStateManager 初始化并设置为跨场景持久化");
             // 订阅场景加载事件，确保每次进入场景后尝试恢复该场景的存档
             SceneManager.sceneLoaded += OnSceneLoaded;
         }
@@ -165,26 +169,46 @@ public class GameStateManager : MonoBehaviour
         {
             ExitGameManager.Instance.EnsureExitDialogHidden();
         }
-        GameStateData stateData = new GameStateData
+
+        // 检查 LevelProgressManager 是否存在
+        if (LevelProgressManager.Instance == null)
+        {
+            LogError("LevelProgressManager 不存在，无法保存关卡状态！");
+            return;
+        }
+
+        LogDebug($"开始收集关卡 {currentLevelName} 的状态数据");
+        
+        var objectStates = CollectObjectStates();
+        var broadcastHistory = GetBroadcastHistory();
+        var availableStrings = GetAvailableStrings();
+        var collectedStrings = GetCollectedStrings();
+        var flyingCharacters = CollectFlyingCharacters();
+        var completedTargets = GetCompletedTargets();
+        var currentTargetList = GetCurrentTargetList();
+        var beachObjectState = GetBeachObjectState();
+        
+        var stateData = new GameProgressData.LevelStateData
         {
             levelName = currentLevelName,
-            objectStates = CollectObjectStates(),
-            broadcastHistory = GetBroadcastHistory(),
-            availableStrings = GetAvailableStrings(),
+            objectStates = objectStates,
+            broadcastHistory = broadcastHistory,
+            availableStrings = availableStrings,
             currentSeason = GetCurrentSeason(),
-            collectedStrings = GetCollectedStrings(),
-            flyingCharacters = CollectFlyingCharacters(),
-            completedTargets = GetCompletedTargets(),
-            currentTargetList = GetCurrentTargetList(),
-            beachObjectState = GetBeachObjectState(),
+            collectedStrings = collectedStrings,
+            flyingCharacters = flyingCharacters,
+            completedTargets = completedTargets,
+            currentTargetList = currentTargetList,
+            beachObjectState = beachObjectState,
             saveTime = Time.time
         };
         
-        string jsonData = JsonUtility.ToJson(stateData, true);
-        PlayerPrefs.SetString(GAME_STATE_KEY + currentLevelName, jsonData);
-        PlayerPrefs.Save();
+        LogDebug($"状态数据收集完成: 物体{objectStates.Count}个, 广播{broadcastHistory.Count}条, 飞字{flyingCharacters.Count}个, 可用字符串{availableStrings.Count}个, 已收集字符串{collectedStrings.Count}个");
         
-        LogDebug($"游戏状态已保存 - 关卡: {currentLevelName}, 物体数量: {stateData.objectStates.Count}");
+        // **重构核心**：调用 LevelProgressManager 来保存关卡状态，而不是写入PlayerPrefs
+        LevelProgressManager.Instance.SaveLevelState(currentLevelName, stateData);
+        
+        LogDebug($"游戏状态已通过 LevelProgressManager 保存 - 关卡: {currentLevelName}, 物体数量: {stateData.objectStates.Count}");
     }
     
     /// <summary>
@@ -198,9 +222,17 @@ public class GameStateManager : MonoBehaviour
             LogDebug($"跳过恢复，场景不参与存档: {currentLevelName}");
             return;
         }
-        string jsonData = PlayerPrefs.GetString(GAME_STATE_KEY + currentLevelName, "");
         
-        if (string.IsNullOrEmpty(jsonData))
+        // **重构核心**: 从 LevelProgressManager 加载关卡状态数据
+        if (LevelProgressManager.Instance == null)
+        {
+            LogError("LevelProgressManager 不存在，无法恢复关卡状态！");
+            return;
+        }
+        
+        var stateData = LevelProgressManager.Instance.LoadLevelState(currentLevelName);
+
+        if (stateData == null)
         {
             LogDebug($"没有找到关卡 {currentLevelName} 的保存数据");
             return;
@@ -208,7 +240,6 @@ public class GameStateManager : MonoBehaviour
         
         try
         {
-            GameStateData stateData = JsonUtility.FromJson<GameStateData>(jsonData);
             ApplyGameState(stateData);
             LogDebug($"游戏状态已恢复 - 关卡: {currentLevelName}, 物体数量: {stateData.objectStates.Count}");
         }
@@ -229,14 +260,17 @@ public class GameStateManager : MonoBehaviour
             LogDebug($"跳过清理，场景不参与存档: {currentLevelName}");
             return;
         }
-        PlayerPrefs.DeleteKey(GAME_STATE_KEY + currentLevelName);
-        PlayerPrefs.DeleteKey(BROADCAST_HISTORY_KEY + currentLevelName);
-        PlayerPrefs.DeleteKey(AVAILABLE_STRINGS_KEY + currentLevelName);
-        PlayerPrefs.DeleteKey(CURRENT_SEASON_KEY + currentLevelName);
-        PlayerPrefs.DeleteKey(COLLECTED_STRINGS_KEY + currentLevelName);
-        PlayerPrefs.Save();
         
-        LogDebug($"关卡 {currentLevelName} 的保存数据已清除");
+        // **重构核心**: 调用 LevelProgressManager 来清除关卡状态
+        if (LevelProgressManager.Instance != null)
+        {
+            LevelProgressManager.Instance.ClearLevelState(currentLevelName);
+            LogDebug($"关卡 {currentLevelName} 的保存数据已通过 LevelProgressManager 清除");
+        }
+        else
+        {
+            LogError($"LevelProgressManager 不存在，无法清除关卡 {currentLevelName} 的保存数据");
+        }
     }
     
     /// <summary>
@@ -244,11 +278,16 @@ public class GameStateManager : MonoBehaviour
     /// </summary>
     private bool ShouldRestoreGameState()
     {
-        // 检查是否有保存数据
+        // **重构核心**: 从 LevelProgressManager 检查是否存在存档
         currentLevelName = SceneManager.GetActiveScene().name;
         if (IsStartupScene(currentLevelName) || IsLevel1Scene(currentLevelName)) return false;
-        string jsonData = PlayerPrefs.GetString(GAME_STATE_KEY + currentLevelName, "");
-        return !string.IsNullOrEmpty(jsonData);
+
+        if (LevelProgressManager.Instance != null)
+        {
+            return LevelProgressManager.Instance.LoadLevelState(currentLevelName) != null;
+        }
+        
+        return false;
     }
     
     /// <summary>
@@ -263,33 +302,44 @@ public class GameStateManager : MonoBehaviour
     /// <summary>
     /// 收集所有物体的状态
     /// </summary>
-    private List<GameObjectState> CollectObjectStates()
+    private List<GameProgressData.GameObjectState> CollectObjectStates()
     {
-        List<GameObjectState> objectStates = new List<GameObjectState>();
+        var objectStates = new List<GameProgressData.GameObjectState>();
 
         var activeScene = SceneManager.GetActiveScene();
+        LogDebug($"开始收集物体状态 - 场景: {activeScene.name}");
 
         // 遍历场景的所有根对象（包含未激活），并递归收集（包含未激活的子物体）
         var roots = activeScene.GetRootGameObjects();
+        LogDebug($"场景根对象数量: {roots.Length}");
+        
         foreach (var root in roots)
         {
+            int countBefore = objectStates.Count;
             CollectFromHierarchyRecursive(root, objectStates);
+            int countAfter = objectStates.Count;
+            LogDebug($"从根对象 {root.name} 收集到 {countAfter - countBefore} 个物体状态");
         }
 
+        LogDebug($"收集完成 - 总计收集到 {objectStates.Count} 个物体状态");
         return objectStates;
     }
 
     /// <summary>
     /// 递归收集层级内所有对象（包含未激活对象）
     /// </summary>
-    private void CollectFromHierarchyRecursive(GameObject obj, List<GameObjectState> collector)
+    private void CollectFromHierarchyRecursive(GameObject obj, List<GameProgressData.GameObjectState> collector)
     {
         if (obj == null) return;
 
-        GameObjectState state = new GameObjectState
+        // 获取UniqueID（如果存在）
+        UniqueID uniqueIDComponent = obj.GetComponent<UniqueID>();
+        
+        var state = new GameProgressData.GameObjectState
         {
             objectName = obj.name,
-            objectPath = GetGameObjectPath(obj),
+            objectPath = GetGameObjectPath(obj), // 保留作为后备
+            uniqueId = uniqueIDComponent?.ID ?? "", // 优先使用UniqueID
             // 兼容：保留旧字段，同时新增activeSelf
             isActive = obj.activeInHierarchy,
             isActiveSelf = obj.activeSelf,
@@ -414,6 +464,71 @@ public class GameStateManager : MonoBehaviour
     }
     
     /// <summary>
+    /// 根据状态数据查找GameObject（优先使用UniqueID，后备使用路径）
+    /// </summary>
+    private GameObject FindGameObjectByStateData(GameProgressData.GameObjectState stateData)
+    {
+        GameObject obj = null;
+        
+        // 1. 优先尝试使用UniqueID查找
+        if (!string.IsNullOrEmpty(stateData.uniqueId))
+        {
+            obj = UniqueIDManager.FindGameObjectByID(stateData.uniqueId);
+            if (obj != null)
+            {
+                LogDebug($"通过UniqueID找到对象: {stateData.objectName} ({stateData.uniqueId})");
+                return obj;
+            }
+            else
+            {
+                LogDebug($"UniqueID未找到对象: {stateData.objectName} ({stateData.uniqueId})，尝试路径查找");
+            }
+        }
+        
+        // 2. 后备：使用路径查找
+        if (!string.IsNullOrEmpty(stateData.objectPath))
+        {
+            obj = FindGameObjectByPath(stateData.objectPath);
+            if (obj != null)
+            {
+                LogDebug($"通过路径找到对象: {stateData.objectName} ({stateData.objectPath})");
+                
+                // 如果对象没有UniqueID组件，考虑为其添加
+                UniqueID uniqueIDComponent = obj.GetComponent<UniqueID>();
+                if (uniqueIDComponent == null)
+                {
+                    LogDebug($"为对象 {obj.name} 添加UniqueID组件");
+                    uniqueIDComponent = obj.AddComponent<UniqueID>();
+                }
+                
+                return obj;
+            }
+        }
+        
+        // 3. 最后尝试：按名称在场景中查找（最不可靠）
+        if (!string.IsNullOrEmpty(stateData.objectName))
+        {
+            obj = GameObject.Find(stateData.objectName);
+            if (obj != null)
+            {
+                LogDebug($"通过名称找到对象: {stateData.objectName}（警告：这种方式不可靠）");
+                
+                // 为找到的对象添加UniqueID
+                UniqueID uniqueIDComponent = obj.GetComponent<UniqueID>();
+                if (uniqueIDComponent == null)
+                {
+                    LogDebug($"为对象 {obj.name} 添加UniqueID组件");
+                    uniqueIDComponent = obj.AddComponent<UniqueID>();
+                }
+                
+                return obj;
+            }
+        }
+        
+        return null; // 所有方法都失败
+    }
+    
+    /// <summary>
     /// 通过遍历所有子物体来查找指定名称的子物体
     /// </summary>
     private Transform FindChildByName(Transform parent, string childName)
@@ -432,20 +547,24 @@ public class GameStateManager : MonoBehaviour
     /// <summary>
     /// 应用游戏状态
     /// </summary>
-    private void ApplyGameState(GameStateData stateData)
+    private void ApplyGameState(GameProgressData.LevelStateData stateData)
     {
         // 先建立存档中的路径集合
-        HashSet<string> savedPaths = new HashSet<string>();
+        var savedPaths = new HashSet<string>();
         foreach (var s in stateData.objectStates)
         {
             if (!string.IsNullOrEmpty(s.objectPath)) savedPaths.Add(s.objectPath);
         }
 
         // 恢复物体状态
-        foreach (GameObjectState objState in stateData.objectStates)
+        foreach (var objState in stateData.objectStates)
         {
-            GameObject obj = FindGameObjectByPath(objState.objectPath);
-            if (obj == null) continue;
+            GameObject obj = FindGameObjectByStateData(objState);
+            if (obj == null) 
+            {
+                LogDebug($"未找到对象: UniqueID={objState.uniqueId}, Path={objState.objectPath}, Name={objState.objectName}");
+                continue;
+            }
             
             // 恢复GameObject激活状态：兼容新旧存档
             // 新版使用 activeSelf；旧版只有 isActive（activeInHierarchy）。
@@ -453,8 +572,11 @@ public class GameStateManager : MonoBehaviour
             bool targetActive = objState.isActiveSelf || objState.isActive;
             obj.SetActive(targetActive);
             
-            // 恢复位置
-            obj.transform.position = objState.position;
+            // 恢复位置：跳过UI元素（RectTransform），避免破坏解字台等UI的布局
+            if (obj.GetComponent<RectTransform>() == null)
+            {
+                obj.transform.position = objState.position;
+            }
             
             // 恢复Highlight组件状态
             if (objState.hasHighlight)
@@ -811,12 +933,14 @@ public class GameStateManager : MonoBehaviour
     /// <summary>
     /// 收集当前场景中的飞字物体信息
     /// </summary>
-    private List<FlyingCharacterData> CollectFlyingCharacters()
+    private List<GameProgressData.FlyingCharacterData> CollectFlyingCharacters()
     {
-        List<FlyingCharacterData> flyingCharacters = new List<FlyingCharacterData>();
+        var flyingCharacters = new List<GameProgressData.FlyingCharacterData>();
         
         // 查找所有以"Flying_"开头的GameObject
         GameObject[] allObjects = FindObjectsOfType<GameObject>();
+        LogDebug($"开始收集飞字动画 - 场景总物体数: {allObjects.Length}");
+        
         foreach (GameObject obj in allObjects)
         {
             if (obj.name.StartsWith("Flying_"))
@@ -846,7 +970,7 @@ public class GameStateManager : MonoBehaviour
                     targetObjectName = $"UnknownTarget_{character}";
                 }
                 
-                FlyingCharacterData flyingData = new FlyingCharacterData
+                var flyingData = new GameProgressData.FlyingCharacterData
                 {
                     character = character,
                     targetObjectName = targetObjectName,
@@ -859,6 +983,7 @@ public class GameStateManager : MonoBehaviour
             }
         }
         
+        LogDebug($"飞字动画收集完成 - 总计: {flyingCharacters.Count} 个");
         return flyingCharacters;
     }
     
@@ -881,17 +1006,17 @@ public class GameStateManager : MonoBehaviour
     /// <summary>
     /// 获取BeachObject状态
     /// </summary>
-    private BeachObjectState GetBeachObjectState()
+    private GameProgressData.BeachObjectState GetBeachObjectState()
     {
         BeachObject beachObject = FindObjectOfType<BeachObject>();
         if (beachObject != null)
         {
-            return new BeachObjectState
+            return new GameProgressData.BeachObjectState
             {
                 hasYaBeenPlanted = beachObject.GetHasYaBeenPlanted()
             };
         }
-        return new BeachObjectState { hasYaBeenPlanted = false };
+        return new GameProgressData.BeachObjectState { hasYaBeenPlanted = false };
     }
     
     /// <summary>
@@ -959,7 +1084,7 @@ public class GameStateManager : MonoBehaviour
     /// <summary>
     /// 恢复飞字物体并依次播放动画
     /// </summary>
-    private void RestoreFlyingCharacters(List<FlyingCharacterData> flyingCharacters)
+    private void RestoreFlyingCharacters(List<GameProgressData.FlyingCharacterData> flyingCharacters)
     {
         if (flyingCharacters == null || flyingCharacters.Count == 0) return;
         
@@ -972,7 +1097,7 @@ public class GameStateManager : MonoBehaviour
     /// <summary>
     /// 恢复飞字物体的协程
     /// </summary>
-    private System.Collections.IEnumerator RestoreFlyingCharactersCoroutine(List<FlyingCharacterData> flyingCharacters)
+    private System.Collections.IEnumerator RestoreFlyingCharactersCoroutine(List<GameProgressData.FlyingCharacterData> flyingCharacters)
     {
         // 等待一帧确保所有系统初始化完成
         yield return null;
@@ -987,7 +1112,7 @@ public class GameStateManager : MonoBehaviour
         // 依次播放每个飞字动画
         for (int i = 0; i < flyingCharacters.Count; i++)
         {
-            FlyingCharacterData flyingData = flyingCharacters[i];
+            var flyingData = flyingCharacters[i];
             
             // 查找目标位置
             Transform targetTransform = null;
@@ -1049,7 +1174,7 @@ public class GameStateManager : MonoBehaviour
     /// <summary>
     /// 恢复BeachObject状态
     /// </summary>
-    private void RestoreBeachObjectState(BeachObjectState beachState)
+    private void RestoreBeachObjectState(GameProgressData.BeachObjectState beachState)
     {
         if (beachState == null) return;
         
@@ -1112,7 +1237,7 @@ public class GameStateManager : MonoBehaviour
     {
         if (enableDebugLog)
         {
-            Debug.Log($"[GameStateManager] {message}");
+            GameLogger.LogDev($"[GameStateManager] {message}");
         }
     }
     
@@ -1121,7 +1246,7 @@ public class GameStateManager : MonoBehaviour
     /// </summary>
     private void LogError(string message)
     {
-        Debug.LogError($"[GameStateManager] {message}");
+        GameLogger.LogError($"[{GetType().Name}] {message}");
     }
     
     /// <summary>
@@ -1172,8 +1297,14 @@ public class GameStateManager : MonoBehaviour
     {
         string sceneName = SceneManager.GetActiveScene().name;
         if (IsStartupScene(sceneName) || IsLevel1Scene(sceneName)) return false;
-        string jsonData = PlayerPrefs.GetString(GAME_STATE_KEY + sceneName, "");
-        return !string.IsNullOrEmpty(jsonData);
+        
+        // **重构核心**: 从 LevelProgressManager 检查
+        if (LevelProgressManager.Instance != null)
+        {
+            return LevelProgressManager.Instance.LoadLevelState(sceneName) != null;
+        }
+        
+        return false;
     }
 
     /// <summary>
@@ -1181,17 +1312,11 @@ public class GameStateManager : MonoBehaviour
     /// </summary>
     public static void ClearAllSavedStatesForAllLevels()
     {
-        if (PublicData.LevelSequence == null) return;
-        foreach (var level in PublicData.LevelSequence)
+        // **重构核心**: 调用 LevelProgressManager 来完成
+        if (LevelProgressManager.Instance != null)
         {
-            if (string.IsNullOrEmpty(level)) continue;
-            PlayerPrefs.DeleteKey(GAME_STATE_KEY + level);
-            PlayerPrefs.DeleteKey(BROADCAST_HISTORY_KEY + level);
-            PlayerPrefs.DeleteKey(AVAILABLE_STRINGS_KEY + level);
-            PlayerPrefs.DeleteKey(CURRENT_SEASON_KEY + level);
-            PlayerPrefs.DeleteKey(COLLECTED_STRINGS_KEY + level);
+            LevelProgressManager.Instance.ClearAllLevelStates();
         }
-        PlayerPrefs.Save();
     }
 
     /// <summary>
@@ -1199,14 +1324,10 @@ public class GameStateManager : MonoBehaviour
     /// </summary>
     public static bool HasAnySavedLevelState()
     {
-        if (PublicData.LevelSequence == null || PublicData.LevelSequence.Length == 0) return false;
-        foreach (var level in PublicData.LevelSequence)
+        // **重构核心**: 调用 LevelProgressManager 来完成
+        if (LevelProgressManager.Instance != null)
         {
-            if (string.IsNullOrEmpty(level)) continue;
-            // 跳过 level1
-            if (IsLevel1Scene(level)) continue;
-            string json = PlayerPrefs.GetString(GAME_STATE_KEY + level, "");
-            if (!string.IsNullOrEmpty(json)) return true;
+            return LevelProgressManager.Instance.HasAnyLevelStates();
         }
         return false;
     }
@@ -1216,32 +1337,11 @@ public class GameStateManager : MonoBehaviour
     /// </summary>
     public static void ClearAllGameStates()
     {
-        // 清理已知关卡序列
-        foreach (var level in PublicData.LevelSequence)
+        // **重构核心**: 这个逻辑现在应该由 LevelProgressManager.ClearAllProgress() 完全处理
+        if (LevelProgressManager.Instance != null)
         {
-            if (string.IsNullOrEmpty(level)) continue;
-            PlayerPrefs.DeleteKey(GAME_STATE_KEY + level);
-            PlayerPrefs.DeleteKey(BROADCAST_HISTORY_KEY + level);
-            PlayerPrefs.DeleteKey(AVAILABLE_STRINGS_KEY + level);
-            PlayerPrefs.DeleteKey(CURRENT_SEASON_KEY + level);
-            PlayerPrefs.DeleteKey(COLLECTED_STRINGS_KEY + level);
+            LevelProgressManager.Instance.ClearAllProgress();
         }
-
-        // 也尝试清理当前激活场景一次（若不在序列中但有保存）
-        string current = SceneManager.GetActiveScene().name;
-        if (!string.IsNullOrEmpty(current) && !IsStartupScene(current) && !IsLevel1Scene(current))
-        {
-            PlayerPrefs.DeleteKey(GAME_STATE_KEY + current);
-            PlayerPrefs.DeleteKey(BROADCAST_HISTORY_KEY + current);
-            PlayerPrefs.DeleteKey(AVAILABLE_STRINGS_KEY + current);
-            PlayerPrefs.DeleteKey(CURRENT_SEASON_KEY + current);
-            PlayerPrefs.DeleteKey(COLLECTED_STRINGS_KEY + current);
-        }
-
-        // 最后显式将GameStarted清零，确保开始菜单只显示“开始游戏”
-        PlayerPrefs.SetInt("GameStarted", 0);
-
-        PlayerPrefs.Save();
     }
 
     
@@ -1277,11 +1377,10 @@ public class GameStateManager : MonoBehaviour
     /// </summary>
     public static bool HasAnySavedStatesForLevels()
     {
-        if (PublicData.LevelSequence == null) return false;
-        foreach (var level in PublicData.LevelSequence)
+        // **重构核心**: 调用 LevelProgressManager
+        if (LevelProgressManager.Instance != null)
         {
-            if (string.IsNullOrEmpty(level)) continue;
-            if (PlayerPrefs.HasKey(GAME_STATE_KEY + level)) return true;
+            return LevelProgressManager.Instance.HasAnyLevelStates();
         }
         return false;
     }

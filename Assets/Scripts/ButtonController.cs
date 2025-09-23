@@ -640,34 +640,57 @@ public class ButtonController : MonoBehaviour
     
     private void CreateFlyingCharacter(string character, Transform targetPosition)
     {
-        // 从可用字符串列表中移除该字符
+        // 使用协程等待解字台按钮生成完成，避免起点回退到屏幕中心
+        StartCoroutine(CreateFlyingCharacterCoroutine(character, targetPosition));
+    }
+
+    /// <summary>
+    /// 协程：等待按钮容器与对应按钮就绪后，再创建飞字并启动动画
+    /// </summary>
+    private System.Collections.IEnumerator CreateFlyingCharacterCoroutine(string character, Transform targetPosition)
+    {
+        // 从可用字符串列表中移除该字符并刷新按钮（与原逻辑一致）
         if (stringSelector != null)
         {
             stringSelector.RemoveAvailableString(character);
             stringSelector.RecreateAllButtonsPublic();
         }
-        
+
+        // 最多等待0.5秒让 StringSelector 生成按钮
+        float timeout = 0.5f;
+        float elapsed = 0f;
+        Vector2 startPosition = Vector2.zero;
+        bool found = false;
+        while (elapsed < timeout)
+        {
+            // 仅检测是否已生成对应按钮，真正的Canvas坐标稍后由Canvas计算
+            RectTransform btnRect = FindCharacterButtonRect(character);
+            if (btnRect != null)
+            {
+                found = true;
+                break;
+            }
+            elapsed += Time.deltaTime;
+            yield return null;
+        }
+
         // 创建UI对象而不是GameObject
         GameObject flyingCharacter = new GameObject($"Flying_{character}");
-        
-        // 添加Canvas组件（如果还没有）
-        Canvas canvas = FindObjectOfType<Canvas>();
+
+        // 挂到Canvas
+        Canvas canvas = targetCanvas != null ? targetCanvas : FindObjectOfType<Canvas>();
         if (canvas != null)
         {
             flyingCharacter.transform.SetParent(canvas.transform, false);
         }
-        
-        // 添加RectTransform组件
+
+        // 添加RectTransform与TextMeshPro
         RectTransform rectTransform = flyingCharacter.AddComponent<RectTransform>();
-        
-        // 添加TextMeshPro组件
         TMPro.TextMeshProUGUI textMesh = flyingCharacter.AddComponent<TMPro.TextMeshProUGUI>();
         textMesh.text = character;
         textMesh.fontSize = Mathf.RoundToInt(flyingFontSize);
         textMesh.alignment = TMPro.TextAlignmentOptions.Center;
-        textMesh.color = Color.black; // 设置文字为黑色
-        
-        // 设置字体：优先使用本组件序列化字体，其次回退到 StringSelector 的字体
+        textMesh.color = Color.black;
         if (chineseFont != null)
         {
             textMesh.font = chineseFont;
@@ -676,14 +699,17 @@ public class ButtonController : MonoBehaviour
         {
             textMesh.font = stringSelector.GetChineseFont();
         }
-        
-        // 强制更新文本网格
         textMesh.ForceMeshUpdate();
-        
-        // 查找字符按钮的位置作为起点
-        Vector2 startPosition = FindCharacterButtonPosition(character);
+
+        // 计算起点：将按钮世界坐标转换为Canvas本地坐标
+        if (found && canvas != null)
+        {
+            startPosition = GetCharacterButtonPositionInCanvas(canvas, character);
+        }
+        // 设置起点：若未找到按钮，则保持为(0,0)作为兜底
         rectTransform.anchoredPosition = startPosition;
-        
+
+        // 启动动画
         StartCoroutine(FlyToTargetUI(flyingCharacter, targetPosition, character));
     }
     
@@ -713,9 +739,19 @@ public class ButtonController : MonoBehaviour
                                 RectTransform buttonRectTransform = buttonTransform as RectTransform;
                                 if (buttonRectTransform != null)
                                 {
-                                    Vector2 position = buttonRectTransform.anchoredPosition;
-                                    GameLogger.LogDev($"找到字符按钮: {character}, 位置: {position}");
-                                    return position;
+                                    // 返回Canvas坐标中的起点
+                                    Canvas canvas = FindObjectOfType<Canvas>();
+                                    if (canvas != null)
+                                    {
+                                        Vector2 screen = RectTransformUtility.WorldToScreenPoint(null, buttonRectTransform.position);
+                                        RectTransform canvasRect = canvas.transform as RectTransform;
+                                        Vector2 localPoint;
+                                        if (RectTransformUtility.ScreenPointToLocalPointInRectangle(canvasRect, screen, null, out localPoint))
+                                        {
+                                            GameLogger.LogDev($"找到字符按钮: {character}, Canvas起点: {localPoint}");
+                                            return localPoint;
+                                        }
+                                    }
                                 }
                             }
                         }
@@ -726,6 +762,41 @@ public class ButtonController : MonoBehaviour
         
         GameLogger.LogDev($"未找到字符按钮: {character}, 使用默认位置");
         // 如果找不到按钮位置，使用屏幕中央
+        return Vector2.zero;
+    }
+
+    // 返回字符按钮的RectTransform（若存在）
+    private RectTransform FindCharacterButtonRect(string character)
+    {
+        if (stringSelector == null) return null;
+        Transform buttonContainer = stringSelector.GetButtonContainer();
+        if (buttonContainer == null) return null;
+        for (int i = 0; i < buttonContainer.childCount; i++)
+        {
+            Transform buttonTransform = buttonContainer.GetChild(i);
+            if (buttonTransform == null) continue;
+            TMPro.TextMeshProUGUI buttonText = buttonTransform.GetComponentInChildren<TMPro.TextMeshProUGUI>();
+            if (buttonText != null && buttonText.text == character)
+            {
+                return buttonTransform as RectTransform;
+            }
+        }
+        return null;
+    }
+
+    // 将字符按钮位置转换为Canvas坐标
+    private Vector2 GetCharacterButtonPositionInCanvas(Canvas canvas, string character)
+    {
+        RectTransform rect = FindCharacterButtonRect(character);
+        if (rect == null) return Vector2.zero;
+        Camera cam = canvas.worldCamera; // Screen Space - Camera 需要使用该相机
+        Vector2 screen = RectTransformUtility.WorldToScreenPoint(cam, rect.position);
+        RectTransform canvasRect = canvas.transform as RectTransform;
+        Vector2 localPoint;
+        if (RectTransformUtility.ScreenPointToLocalPointInRectangle(canvasRect, screen, cam, out localPoint))
+        {
+            return localPoint;
+        }
         return Vector2.zero;
     }
 
@@ -988,11 +1059,12 @@ public class ButtonController : MonoBehaviour
         }
         else
         {
-            // 兜底：不在UI下的Transform，转换为Canvas本地坐标
-            Vector2 screen = RectTransformUtility.WorldToScreenPoint(null, endTransform.position);
+            // 兜底：不在UI下的Transform，转换为Canvas本地坐标（使用Canvas的worldCamera）
+            Camera cam = targetCanvas.worldCamera;
+            Vector2 screen = RectTransformUtility.WorldToScreenPoint(cam, endTransform.position);
             RectTransform canvasRect = targetCanvas.transform as RectTransform;
             Vector2 localPoint;
-            if (RectTransformUtility.ScreenPointToLocalPointInRectangle(canvasRect, screen, null, out localPoint))
+            if (RectTransformUtility.ScreenPointToLocalPointInRectangle(canvasRect, screen, cam, out localPoint))
             {
                 endAnchored = localPoint;
             }

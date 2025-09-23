@@ -265,6 +265,12 @@ public class StringSelector : MonoBehaviour
 
                 // 按文字自适应按钮尺寸（带内边距）
                 ResizeButtonToText(button, buttonText, new Vector2(24f, 16f));
+
+            // 立刻重建一次布局，避免本帧内位置异常（尤其是直接从关卡启动时）
+            if (buttonContainer is RectTransform bcRect)
+            {
+                LayoutRebuilder.ForceRebuildLayoutImmediate(bcRect);
+            }
             }
             else
             {
@@ -281,7 +287,9 @@ public class StringSelector : MonoBehaviour
     // 延迟更新按钮显示的协程
     private IEnumerator DelayedButtonUpdate(TextMeshProUGUI buttonText, string str)
     {
-        // 等待一帧
+        // 等待一帧，确保Text与LayoutGroup更新
+        yield return null;
+        // 再等待一帧，确保ContentSizeFitter/HorizontalLayoutGroup完成布局
         yield return null;
         
         // 再次强制更新文本显示
@@ -290,11 +298,17 @@ public class StringSelector : MonoBehaviour
             buttonText.ForceMeshUpdate();
             GameLogger.LogDev($"StringSelector: 延迟更新完成，字符串 '{str}' 的文本网格已重新更新");
 
-            // 延迟一帧后再根据最终排版结果收缩按钮点击区域
+            // 布局完成后根据最终排版结果收缩按钮点击区域
             Button parentButton = buttonText.GetComponentInParent<Button>();
             if (parentButton != null)
             {
                 ResizeButtonToText(parentButton, buttonText, new Vector2(24f, 16f));
+            }
+            // 再次强制重建容器布局，巩固最终位置
+            var bc = GetButtonContainer();
+            if (bc is RectTransform bcRect)
+            {
+                LayoutRebuilder.ForceRebuildLayoutImmediate(bcRect);
             }
         }
     }
