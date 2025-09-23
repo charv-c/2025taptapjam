@@ -235,43 +235,7 @@ public class ExitGameManager : MonoBehaviour
             return;
         }
         
-        // 创建确认按钮
-        if (confirmButtonPrefab != null)
-        {
-            try
-            {
-                GameObject confirmBtnObj = Instantiate(confirmButtonPrefab, buttonContainer.transform);
-                if (confirmBtnObj != null)
-                {
-                    confirmExitButton = confirmBtnObj.GetComponent<Button>();
-                    if (confirmExitButton != null)
-                    {
-                        // 移除旧的事件监听器，避免重复绑定
-                        confirmExitButton.onClick.RemoveAllListeners();
-                        confirmExitButton.onClick.AddListener(OnConfirmExitClicked);
-                        LogDebug("确认按钮已创建并设置事件");
-                    }
-                    else
-                    {
-                        LogWarning("确认按钮预制体没有Button组件");
-                    }
-                }
-                else
-                {
-                    LogWarning("确认按钮实例化失败");
-                }
-            }
-            catch (System.Exception e)
-            {
-                LogWarning($"创建确认按钮时发生错误: {e.Message}");
-            }
-        }
-        else
-        {
-            LogWarning("确认按钮预制体未设置");
-        }
-        
-        // 创建取消按钮
+        // 创建取消按钮（先创建以保证其在左侧）
         if (cancelButtonPrefab != null)
         {
             try
@@ -306,6 +270,46 @@ public class ExitGameManager : MonoBehaviour
         {
             LogWarning("取消按钮预制体未设置");
         }
+
+        // 创建确认按钮（后创建以保证其在右侧）
+        if (confirmButtonPrefab != null)
+        {
+            try
+            {
+                GameObject confirmBtnObj = Instantiate(confirmButtonPrefab, buttonContainer.transform);
+                if (confirmBtnObj != null)
+                {
+                    confirmExitButton = confirmBtnObj.GetComponent<Button>();
+                    if (confirmExitButton != null)
+                    {
+                        // 移除旧的事件监听器，避免重复绑定
+                        confirmExitButton.onClick.RemoveAllListeners();
+                        confirmExitButton.onClick.AddListener(OnConfirmExitClicked);
+                        LogDebug("确认按钮已创建并设置事件");
+                    }
+                    else
+                    {
+                        LogWarning("确认按钮预制体没有Button组件");
+                    }
+                }
+                else
+                {
+                    LogWarning("确认按钮实例化失败");
+                }
+            }
+            catch (System.Exception e)
+            {
+                LogWarning($"创建确认按钮时发生错误: {e.Message}");
+            }
+        }
+        else
+        {
+            LogWarning("确认按钮预制体未设置");
+        }
+
+        // 明确设置左右顺序：左=取消，右=确认
+        if (cancelExitButton != null) cancelExitButton.transform.SetSiblingIndex(0);
+        if (confirmExitButton != null) confirmExitButton.transform.SetSiblingIndex(1);
         
         // 自动布局按钮
         if (autoLayoutButtons)
@@ -419,6 +423,28 @@ public class ExitGameManager : MonoBehaviour
             confirmationDialogInstance.AddComponent<GraphicRaycaster>();
         }
         // --- 结束修改 ---
+
+        // 创建并插入半透明黑色蒙层，覆盖全屏，置于对话框内容下方
+        try
+        {
+            Transform existingOverlay = confirmationDialogInstance.transform.Find("Overlay");
+            if (existingOverlay == null)
+            {
+                GameObject overlay = new GameObject("Overlay");
+                overlay.transform.SetParent(confirmationDialogInstance.transform, false);
+                RectTransform rt = overlay.AddComponent<RectTransform>();
+                rt.anchorMin = new Vector2(0f, 0f);
+                rt.anchorMax = new Vector2(1f, 1f);
+                rt.offsetMin = Vector2.zero;
+                rt.offsetMax = Vector2.zero;
+                Image img = overlay.AddComponent<Image>();
+                img.color = new Color(0f, 0f, 0f, 0.3f); // 30% 透明黑
+                img.raycastTarget = true; // 阻挡背景点击
+                // 确保蒙层在最底层
+                overlay.transform.SetAsFirstSibling();
+            }
+        }
+        catch { }
         
         confirmationDialogInstance.SetActive(false);
         

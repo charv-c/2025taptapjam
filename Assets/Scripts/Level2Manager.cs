@@ -111,21 +111,10 @@ public class Level2Manager : MonoBehaviour, IBootstrapAware
         sceneInitialized = true;
         GameLogger.LogSystem("Level2Manager: 开始显示开场白");
         
-        // 若已经看过引导，则跳过
-        bool seenLevel2Intro = PlayerPrefs.GetInt("Seen_Level2_Intro", 0) == 1;
-        if (seenLevel2Intro)
-        {
-            GameLogger.LogSystem("Level2Manager: 已看过Level2引导，跳过开场白");
-            StartLevel();
-            return;
-        }
-        
         // 显示开场白，结束后再正式开始关卡
         if (InfoPopupManager.Instance != null)
         {
             InfoPopupManager.Instance.ShowPopup(openingMessages, () => {
-                PlayerPrefs.SetInt("Seen_Level2_Intro", 1);
-                PlayerPrefs.Save();
                 StartLevel();
             });
         }
