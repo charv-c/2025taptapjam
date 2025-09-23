@@ -369,8 +369,8 @@ public class Level3Manager : MonoBehaviour, IBootstrapAware
         // 计算方向向量
         Vector3 direction = (targetScreenPos - screenCenter).normalized;
         
-        // 箭头偏移距离（调整为更近）
-        float arrowOffset = 80f;
+        // 箭头偏移距离（按分辨率缩放，基于1080高度）
+        float arrowOffset = GetScaledOffset(80f);
         Vector3 arrowScreenPos = targetScreenPos - direction * arrowOffset;
         
         // 计算角度
@@ -434,6 +434,17 @@ public class Level3Manager : MonoBehaviour, IBootstrapAware
         }
         
         return false;
+    }
+
+    /// <summary>
+    /// 将以1080高度为基准的偏移按当前屏幕高度缩放
+    /// </summary>
+    /// <param name="referenceOffset">在1920x1080下的参考偏移量</param>
+    /// <returns>缩放后的偏移量</returns>
+    private float GetScaledOffset(float referenceOffset)
+    {
+        float scale = Screen.height > 0 ? (float)Screen.height / 1080f : 1f;
+        return referenceOffset * scale;
     }
 
     private System.Collections.IEnumerator EnsureEnableMovementNextFrame()
