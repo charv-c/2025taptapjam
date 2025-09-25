@@ -415,10 +415,20 @@ public class ExitGameManager : MonoBehaviour
         {
             dialogCanvas = confirmationDialogInstance.AddComponent<Canvas>();
         }
-        // 开启覆盖排序，使其独立于父Canvas的排序
+        // 使用 Overlay 渲染模式并开启覆盖排序
+        dialogCanvas.renderMode = RenderMode.ScreenSpaceOverlay;
         dialogCanvas.overrideSorting = true;
-        // 设置一个非常高的排序值，确保它在所有UI之上
-        dialogCanvas.sortingOrder = 30000;
+        // 使用接近上限的排序值，确保其高于其他UI（含提示框）
+        dialogCanvas.sortingOrder = 32760;
+
+        // 同步所有子Canvas为相同的高排序，避免预制体内部自带Canvas被盖住或盖不住
+        var childCanvases = confirmationDialogInstance.GetComponentsInChildren<Canvas>(true);
+        foreach (var c in childCanvases)
+        {
+            c.renderMode = RenderMode.ScreenSpaceOverlay;
+            c.overrideSorting = true;
+            c.sortingOrder = 32760;
+        }
 
         // 确保有GraphicRaycaster组件，否则UI按钮等无法接收点击事件
         if (confirmationDialogInstance.GetComponent<GraphicRaycaster>() == null)
@@ -427,7 +437,7 @@ public class ExitGameManager : MonoBehaviour
         }
         // --- 结束修改 ---
 
-        // 创建并插入半透明黑色蒙层，覆盖全屏，置于对话框内容下方
+        // 创建并插入半透明黑色蒙层，覆盖全屏，置于对话框内容下方（与对话框共用同一Canvas，避免被其他Canvas盖住）
         try
         {
             Transform existingOverlay = confirmationDialogInstance.transform.Find("Overlay");
@@ -446,14 +456,6 @@ public class ExitGameManager : MonoBehaviour
                 
                 // 确保蒙层在最底层 - 先设置为第一个子对象
                 overlay.transform.SetAsFirstSibling();
-                
-                // 为overlay添加Canvas组件，设置较低的排序顺序，确保它在对话框内容下方
-                Canvas overlayCanvas = overlay.AddComponent<Canvas>();
-                overlayCanvas.overrideSorting = true;
-                overlayCanvas.sortingOrder = -1; // 设置为负值，确保在对话框内容下方
-                
-                // 添加GraphicRaycaster以确保能接收点击事件
-                overlay.AddComponent<GraphicRaycaster>();
             }
         }
         catch { }
