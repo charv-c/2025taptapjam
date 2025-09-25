@@ -408,34 +408,34 @@ public class ExitGameManager : MonoBehaviour
         confirmationDialogInstance = Instantiate(confirmationDialogPrefab, canvas.transform);
         confirmationDialogInstance.name = "ConfirmationDialog";
         
-        // --- 开始修改：强制置顶显示 ---
-        // 为对话框添加或获取Canvas组件，并设置其排序顺序，确保它在最顶层渲染
+		// --- 开始修改：设置对话框Canvas排序 ---
+		// 为对话框添加或获取Canvas组件，并设置其排序顺序
         Canvas dialogCanvas = confirmationDialogInstance.GetComponent<Canvas>();
         if (dialogCanvas == null)
         {
             dialogCanvas = confirmationDialogInstance.AddComponent<Canvas>();
         }
-        // 使用 Overlay 渲染模式并开启覆盖排序
+		// 使用 Overlay 渲染模式并开启覆盖排序
         dialogCanvas.renderMode = RenderMode.ScreenSpaceOverlay;
         dialogCanvas.overrideSorting = true;
-        // 使用接近上限的排序值，确保其高于其他UI（含提示框）
-        dialogCanvas.sortingOrder = 32760;
+		// 弹窗层级：22
+		dialogCanvas.sortingOrder = 22;
 
-        // 同步所有子Canvas为相同的高排序，避免预制体内部自带Canvas被盖住或盖不住
+		// 同步所有子Canvas为相同排序（22），避免预制体内部自带Canvas错层
         var childCanvases = confirmationDialogInstance.GetComponentsInChildren<Canvas>(true);
         foreach (var c in childCanvases)
         {
-            c.renderMode = RenderMode.ScreenSpaceOverlay;
-            c.overrideSorting = true;
-            c.sortingOrder = 32760;
+			c.renderMode = RenderMode.ScreenSpaceOverlay;
+			c.overrideSorting = true;
+			c.sortingOrder = 22;
         }
 
-        // 确保有GraphicRaycaster组件，否则UI按钮等无法接收点击事件
+		// 确保有GraphicRaycaster组件，否则UI按钮等无法接收点击事件
         if (confirmationDialogInstance.GetComponent<GraphicRaycaster>() == null)
         {
             confirmationDialogInstance.AddComponent<GraphicRaycaster>();
         }
-        // --- 结束修改 ---
+		// --- 结束修改 ---
 
         // 创建并插入半透明黑色蒙层，覆盖全屏，置于对话框内容下方（与对话框共用同一Canvas，避免被其他Canvas盖住）
         try
@@ -450,11 +450,22 @@ public class ExitGameManager : MonoBehaviour
                 rt.anchorMax = new Vector2(1f, 1f);
                 rt.offsetMin = Vector2.zero;
                 rt.offsetMax = Vector2.zero;
-                Image img = overlay.AddComponent<Image>();
-                img.color = new Color(0f, 0f, 0f, 0.3f); // 30% 透明黑
+				Image img = overlay.AddComponent<Image>();
+                img.color = new Color(0f, 0f, 0f, 0.4f); // 30% 透明黑
                 img.raycastTarget = true; // 阻挡背景点击
                 
-                // 确保蒙层在最底层 - 先设置为第一个子对象
+				// 为蒙层添加独立Canvas以控制排序为20（低于弹窗22）
+				Canvas overlayCanvas = overlay.AddComponent<Canvas>();
+				overlayCanvas.renderMode = RenderMode.ScreenSpaceOverlay;
+				overlayCanvas.overrideSorting = true;
+				overlayCanvas.sortingOrder = 20; // 蒙层层级：20
+				// GraphicRaycaster 以便拦截点击
+				if (overlay.GetComponent<GraphicRaycaster>() == null)
+				{
+					overlay.AddComponent<GraphicRaycaster>();
+				}
+				
+				// 确保蒙层在其父层级的最底层（同一父下）
                 overlay.transform.SetAsFirstSibling();
             }
         }
