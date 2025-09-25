@@ -158,7 +158,7 @@ public class GameStateManager : MonoBehaviour
     public void SaveGameState()
     {
         currentLevelName = SceneManager.GetActiveScene().name;
-        if (IsStartupScene(currentLevelName) || IsLevel1Scene(currentLevelName))
+        if (IsStartupScene(currentLevelName) || IsLevel1Scene(currentLevelName) || IsEndLevelScene(currentLevelName))
         {
             LogDebug($"跳过保存，场景不参与存档: {currentLevelName}");
             return;
@@ -191,6 +191,7 @@ public class GameStateManager : MonoBehaviour
         var stateData = new GameProgressData.LevelStateData
         {
             levelName = currentLevelName,
+            guideCompleted = GetLevel3GuideCompletedIfAny(currentLevelName),
             objectStates = objectStates,
             broadcastHistory = broadcastHistory,
             availableStrings = availableStrings,
@@ -217,7 +218,7 @@ public class GameStateManager : MonoBehaviour
     public void RestoreGameState()
     {
         currentLevelName = SceneManager.GetActiveScene().name;
-        if (IsStartupScene(currentLevelName) || IsLevel1Scene(currentLevelName))
+        if (IsStartupScene(currentLevelName) || IsLevel1Scene(currentLevelName) || IsEndLevelScene(currentLevelName))
         {
             LogDebug($"跳过恢复，场景不参与存档: {currentLevelName}");
             return;
@@ -280,7 +281,7 @@ public class GameStateManager : MonoBehaviour
     {
         // **重构核心**: 从 LevelProgressManager 检查是否存在存档
         currentLevelName = SceneManager.GetActiveScene().name;
-        if (IsStartupScene(currentLevelName) || IsLevel1Scene(currentLevelName)) return false;
+        if (IsStartupScene(currentLevelName) || IsLevel1Scene(currentLevelName) || IsEndLevelScene(currentLevelName)) return false;
 
         if (LevelProgressManager.Instance != null)
         {
@@ -674,7 +675,17 @@ public class GameStateManager : MonoBehaviour
         // 清理存档中不存在的场景对象
         DestroyObjectsNotInSave(savedPaths);
         
-        // 特殊处理：Level3场景恢复后检查是否需要重新启用玩家移动
+        // 如果是Level3，先将引导完成标志同步到管理器
+        if ((stateData.levelName ?? "").Trim().ToLowerInvariant().Contains("level3"))
+        {
+            Level3Manager l3 = FindObjectOfType<Level3Manager>();
+            if (l3 != null)
+            {
+                l3.SetGuideCompleted(stateData.guideCompleted);
+            }
+        }
+
+        // 特殊处理：Level3场景恢复后按引导标志设置回车与玩家切换
         if (currentLevelName.ToLower().Contains("level3"))
         {
             StartCoroutine(CheckLevel3PlayerMovementAfterRestore());
@@ -698,46 +709,41 @@ public class GameStateManager : MonoBehaviour
         Level3Manager level3Manager = FindObjectOfType<Level3Manager>();
         if (level3Manager != null)
         {
-            // 检查是否有任何玩家输入被禁用
             PlayerController playerController = FindObjectOfType<PlayerController>();
             if (playerController != null)
             {
-                bool hasDisabledPlayers = false;
+                bool guideCompleted = level3Manager.IsGuideCompleted();
+
+                // 始终确保可移动
+                playerController.EnableCurrentPlayerMovement();
+
+                // 根据引导状态控制回车与切换
                 for (int i = 0; i < playerController.GetPlayerCount(); i++)
                 {
                     Player player = playerController.GetPlayerByIndex(i);
-                    if (player != null && !player.IsInputEnabled())
+                    if (player != null)
                     {
-                        hasDisabledPlayers = true;
-                        break;
+                        player.SetInputEnabled(true);
+                        player.SetEnterKeyEnabled(guideCompleted);
                     }
                 }
-                
-                // 如果有玩家输入被禁用，说明这是引导结束后的存档，需要重新启用移动
-                if (hasDisabledPlayers)
+
+                if (playerController.GetPlayerCount() > 0)
                 {
-                    LogDebug("检测到Level3引导结束后的存档，重新启用玩家移动");
-                    
-                    // 启用当前玩家移动
-                    playerController.EnableCurrentPlayerMovement();
-                    
-                    // 启用所有玩家的输入和回车键
-                    for (int i = 0; i < playerController.GetPlayerCount(); i++)
-                    {
-                        Player player = playerController.GetPlayerByIndex(i);
-                        if (player != null)
-                        {
-                            player.SetInputEnabled(true);
-                            player.SetEnterKeyEnabled(true);
-                        }
-                    }
-                    
-                    // 启用玩家切换和更新颜色
-                    playerController.EnablePlayerSwitching();
-                    playerController.UpdatePlayerColors();
-                    
-                    LogDebug("Level3存档恢复后已重新启用玩家移动");
+                    playerController.SetCurrentPlayerIndex(0);
                 }
+
+                if (guideCompleted)
+                {
+                    playerController.EnablePlayerSwitching();
+                }
+                else
+                {
+                    playerController.DisablePlayerSwitching();
+                }
+
+                playerController.UpdatePlayerColors();
+                LogDebug($"Level3恢复：guideCompleted={guideCompleted}，已应用回车/切换权限");
             }
         }
     }
@@ -910,6 +916,23 @@ public class GameStateManager : MonoBehaviour
         }
         
         return season;
+    }
+
+    /// <summary>
+    /// 读取Level3引导完成标志（仅当当前关卡为level3时有效）
+    /// </summary>
+    private bool GetLevel3GuideCompletedIfAny(string levelName)
+    {
+        if (string.IsNullOrEmpty(levelName)) return false;
+        string lower = levelName.Trim().ToLowerInvariant();
+        if (!lower.Contains("level3")) return false;
+
+        Level3Manager l3 = FindObjectOfType<Level3Manager>();
+        if (l3 != null)
+        {
+            return l3.IsGuideCompleted();
+        }
+        return false;
     }
     
     /// <summary>
@@ -1296,7 +1319,7 @@ public class GameStateManager : MonoBehaviour
     public bool HasSavedStateForActiveScene()
     {
         string sceneName = SceneManager.GetActiveScene().name;
-        if (IsStartupScene(sceneName) || IsLevel1Scene(sceneName)) return false;
+        if (IsStartupScene(sceneName) || IsLevel1Scene(sceneName) || IsEndLevelScene(sceneName)) return false;
         
         // **重构核心**: 从 LevelProgressManager 检查
         if (LevelProgressManager.Instance != null)
@@ -1370,6 +1393,15 @@ public class GameStateManager : MonoBehaviour
             if (!string.IsNullOrEmpty(first) && first == lower) return true;
         }
         return false;
+    }
+
+    /// <summary>
+    /// 是否为结算/谢幕场景 EndLevel（不参与存档）
+    /// </summary>
+    private static bool IsEndLevelScene(string sceneName)
+    {
+        if (string.IsNullOrEmpty(sceneName)) return false;
+        return sceneName.Trim().ToLowerInvariant() == "endlevel";
     }
 
     /// <summary>

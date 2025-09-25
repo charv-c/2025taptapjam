@@ -25,6 +25,10 @@ public class EndScreenManager : MonoBehaviour
     [SerializeField] private Button nextLevelButton;
     [Tooltip("场景背景图片")]
     [SerializeField] private Image backgroundImage;
+    
+    [Header("谢幕背景配置（本地序列化）")]
+    [Tooltip("谢幕界面背景（感谢游玩）")] 
+    [SerializeField] private Sprite creditsSprite;
 
 
     // 私有状态变量
@@ -49,7 +53,8 @@ public class EndScreenManager : MonoBehaviour
 
         // 判断是否最后关卡，设置初始状态
         bool isLastLevel = !GameFlowManager.Instance.HasNextLevel();
-        currentState = isLastLevel ? EndScreenState.FinalEnd : EndScreenState.NormalEnd;
+        // 最后一关：显示最终通关页面，但背景使用感谢游玩图，按钮保留
+        currentState = isLastLevel ? EndScreenState.Credits : EndScreenState.NormalEnd;
         
         GameLogger.LogSystem($"EndScreenManager: 初始化状态 - {currentState} (最后关卡: {isLastLevel})");
 
@@ -152,6 +157,11 @@ public class EndScreenManager : MonoBehaviour
     private void ReturnToMainMenu()
     {
         GameLogger.LogSystem("EndScreenManager: 返回主菜单");
+        // 切换到Startup前，清空存档
+        if (LevelProgressManager.Instance != null)
+        {
+            LevelProgressManager.Instance.ClearAllProgress();
+        }
         UnityEngine.SceneManagement.SceneManager.LoadScene("Startup");
     }
     
@@ -237,8 +247,8 @@ public class EndScreenManager : MonoBehaviour
             GameLogger.LogSystem("EndScreenManager: 已禁用最终关卡按钮的悬停效果。");
         }
         
-        // 设置背景图
-        SetBackgroundImage();
+        // 最后一关改为使用"感谢游玩"背景图
+        SetCreditsBackground();
     }
 
     /// <summary>
@@ -323,18 +333,20 @@ public class EndScreenManager : MonoBehaviour
     /// </summary>
     private void SetCreditsBackground()
     {
-        if (backgroundImage == null || GameFlowManager.Instance == null) return;
+        if (backgroundImage == null)
+        {
+            GameLogger.LogWarning("EndScreenManager: backgroundImage 未设置，无法显示谢幕背景");
+            return;
+        }
         
-        string lastLevel = GameFlowManager.LastCompletedLevelName;
-        if (!string.IsNullOrEmpty(lastLevel) && PublicData.CreditsBackgrounds.ContainsKey(lastLevel))
+        if (creditsSprite != null)
         {
-            backgroundImage.sprite = PublicData.CreditsBackgrounds[lastLevel];
-            GameLogger.LogDev($"已为关卡'{lastLevel}'设置谢幕背景图。");
+            backgroundImage.sprite = creditsSprite;
+            GameLogger.LogSystem("EndScreenManager: 使用序列化的谢幕背景（感谢游玩）");
+            return;
         }
-        else
-        {
-            GameLogger.LogWarning($"未找到为关卡'{lastLevel}'配置的谢幕背景图，保持当前背景。");
-        }
+        
+        GameLogger.LogWarning("EndScreenManager: creditsSprite 未设置，保持当前背景");
     }
     
 }

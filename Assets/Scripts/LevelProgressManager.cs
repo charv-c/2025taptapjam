@@ -635,9 +635,10 @@ public class LevelProgressManager : MonoBehaviour
             return;
         }
         // 启动场景不参与记录当前关卡与开启进度标记
-        if (levelName.Trim().ToLowerInvariant() == "startup")
+        string norm = levelName.Trim().ToLowerInvariant();
+        if (norm == "startup" || norm == "endlevel")
         {
-            LogDebug("忽略设置当前关卡为 startup（不标记进度、不存档）");
+            LogDebug("忽略设置当前关卡为 startup/endlevel（不标记进度、不存档）");
             return;
         }
         

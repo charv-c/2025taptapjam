@@ -65,6 +65,9 @@ public class Level3Manager : MonoBehaviour, IBootstrapAware
     // Bootstrap状态
     private bool bootstrapCompleted = false;
     private bool sceneInitialized = false;
+    
+    // 引导（开场流程）完成标志：用于控制回车互动与玩家切换
+    private bool guideCompleted = false;
 
     // 关卡开场白文案
     private readonly string[] openingMessages =
@@ -316,6 +319,8 @@ public class Level3Manager : MonoBehaviour, IBootstrapAware
         // 确保在开场白结束后隐藏箭头
         HideArrow();
         GameLogger.LogSystem("Level3Manager: 开场白结束，已隐藏箭头");
+        // 视为Level3引导完成
+        guideCompleted = true;
     }
     
     /// <summary>
@@ -454,7 +459,7 @@ public class Level3Manager : MonoBehaviour, IBootstrapAware
         if (playerController != null)
         {
             playerController.EnableCurrentPlayerMovement();
-            // 同时确保所有玩家的回车键与输入开启
+            // 始终开启移动/基础输入，但按引导完成与否控制回车键与切换
             int count = playerController.GetPlayerCount();
             for (int i = 0; i < count; i++)
             {
@@ -462,7 +467,7 @@ public class Level3Manager : MonoBehaviour, IBootstrapAware
                 if (p != null)
                 {
                     p.SetInputEnabled(true);
-                    p.SetEnterKeyEnabled(true);
+                    p.SetEnterKeyEnabled(guideCompleted);
                 }
             }
 
@@ -471,7 +476,14 @@ public class Level3Manager : MonoBehaviour, IBootstrapAware
             {
                 playerController.SetCurrentPlayerIndex(0);
             }
-            playerController.EnablePlayerSwitching();
+            if (guideCompleted)
+            {
+                playerController.EnablePlayerSwitching();
+            }
+            else
+            {
+                playerController.DisablePlayerSwitching();
+            }
             playerController.UpdatePlayerColors();
 
             if (showDebugInfo)
@@ -788,6 +800,22 @@ public class Level3Manager : MonoBehaviour, IBootstrapAware
     public bool IsSeason(SeasonType season)
     {
         return currentSeason == season;
+    }
+
+    /// <summary>
+    /// 是否已完成Level3引导
+    /// </summary>
+    public bool IsGuideCompleted()
+    {
+        return guideCompleted;
+    }
+
+    /// <summary>
+    /// 设置Level3引导完成标志（用于存档恢复）
+    /// </summary>
+    public void SetGuideCompleted(bool completed)
+    {
+        guideCompleted = completed;
     }
     
     /// <summary>

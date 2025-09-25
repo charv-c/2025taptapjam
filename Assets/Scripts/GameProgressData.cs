@@ -56,6 +56,8 @@ public class GameProgressData
     public class LevelStateData
     {
         public string levelName;
+        // Level内输入/引导等通用状态
+        public bool guideCompleted;
         public List<GameObjectState> objectStates;
         public List<string> broadcastHistory;
         public List<string> availableStrings;
