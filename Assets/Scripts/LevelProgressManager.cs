@@ -449,6 +449,18 @@ public class LevelProgressManager : MonoBehaviour
         // 确保GameBootstrap已初始化
         GameBootstrap.EnsureInitialized();
         
+        // 如果所有关卡都已完成，则直接进入结算页，展示谢幕逻辑
+        try
+        {
+            if (AreAllLevelsCompleted())
+            {
+                LogDebug("检测到所有关卡均已完成，直接进入 EndLevel 谢幕流程");
+                UnityEngine.SceneManagement.SceneManager.LoadScene("EndLevel");
+                return;
+            }
+        }
+        catch (System.Exception) { }
+
         string levelToLoad = GetCurrentLevelToLoad();
         LogDebug($"继续游戏，加载关卡: '{levelToLoad}'");
         
@@ -1166,25 +1178,85 @@ public class LevelProgressManager : MonoBehaviour
     {
         LogDebug("=== 按钮状态更新开始 ===");
         
-        // 核心判断条件：JsonStorageManager中是否存在有效的存档文件
-        bool hasSaveFile = JsonStorageManager.HasGameProgress();
-        
-        LogDebug($"存档文件存在: {hasSaveFile}");
+        // 新规则：只有当进度已进入 level2 及以后才显示“继续游戏”
+        bool showContinue = HasEnteredLevel2OrLater();
+        LogDebug($"是否已进入level2及以后: {showContinue}");
 
-        if (hasSaveFile)
+        if (showContinue)
         {
-            // 有存档文件，显示“继续游戏”和“从头开始”
+            // 进入了level2或更后关卡，显示“继续游戏”和“从头开始”
             LogDebug("决定显示：继续游戏 + 从头开始按钮");
             ShowContinueAndNewGame();
         }
         else
         {
-            // 无存档文件，仅显示“开始游戏”
+            // 尚未进入level2，仅显示“开始游戏”
             LogDebug("决定显示：仅开始游戏按钮");
             ShowStartGameOnly();
         }
         
         LogDebug("=== 按钮状态更新完成 ===");
+    }
+
+    /// <summary>
+    /// 是否已进入 level2 及以后（用于决定是否显示“继续游戏”）
+    /// 规则：当前关卡或任一已完成关卡/关卡状态在关卡序列中的索引 >= 1
+    /// </summary>
+    private bool HasEnteredLevel2OrLater()
+    {
+        try
+        {
+            if (progressData == null)
+            {
+                LoadProgress();
+            }
+
+            string[] sequence = PublicData.GetLevelSequence();
+            if (sequence == null || sequence.Length == 0) return false;
+
+            // 规范化比较函数
+            System.Func<string, int> getIndex = (string levelName) =>
+            {
+                if (string.IsNullOrEmpty(levelName)) return -1;
+                string norm = NormalizeLevelName(levelName);
+                for (int i = 0; i < sequence.Length; i++)
+                {
+                    if (NormalizeLevelName(sequence[i]) == norm)
+                    {
+                        return i;
+                    }
+                }
+                return -1;
+            };
+
+            // 1) 当前关卡
+            int currentIdx = getIndex(progressData.currentLevel);
+            if (currentIdx >= 1) return true;
+
+            // 2) 已完成关卡
+            if (progressData.completedLevels != null)
+            {
+                foreach (var lvl in progressData.completedLevels)
+                {
+                    if (getIndex(lvl) >= 1) return true;
+                }
+            }
+
+            // 3) 关卡内状态（曾经到达过并产生状态）
+            if (progressData.levelStates != null)
+            {
+                foreach (var entry in progressData.levelStates)
+                {
+                    if (getIndex(entry.levelName) >= 1) return true;
+                }
+            }
+        }
+        catch (System.Exception e)
+        {
+            LogDebug($"HasEnteredLevel2OrLater 检测异常: {e.Message}");
+        }
+
+        return false;
     }
     
     /// <summary>
@@ -1408,7 +1480,7 @@ public class LevelProgressManager : MonoBehaviour
     [ContextMenu("切换按钮状态")]
     public void ToggleButtonStates()
     {
-        bool showContinue = JsonStorageManager.HasGameProgress(); // 使用新的逻辑判断
+        bool showContinue = HasEnteredLevel2OrLater();
         if (showContinue)
         {
             ShowContinueAndNewGame();

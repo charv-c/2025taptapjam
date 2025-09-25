@@ -220,7 +220,38 @@ public static class JsonStorageManager
     /// <returns>是否存在进度文件</returns>
     public static bool HasGameProgress()
     {
-        return File.Exists(ProgressFilePath) || File.Exists(BackupFilePath);
+        try
+        {
+            // 没有任意文件则直接无存档
+            if (!File.Exists(ProgressFilePath) && !File.Exists(BackupFilePath))
+            {
+                return false;
+            }
+
+            // 优先读取主文件，其次备份文件
+            string pathToRead = File.Exists(ProgressFilePath) ? ProgressFilePath : BackupFilePath;
+            string json = File.ReadAllText(pathToRead);
+            var data = JsonUtility.FromJson<GameProgressData>(json);
+
+            if (data == null)
+            {
+                return false;
+            }
+
+            // 仅当存在“有效可继续的进度”时才认为有存档：
+            // 1) gameStarted 为 true，或
+            // 2) 至少有一个 completedLevels，或
+            // 3) 至少有一个关卡状态 levelStates
+            bool hasMeaningfulProgress = data.gameStarted
+                || (data.completedLevels != null && data.completedLevels.Count > 0)
+                || (data.levelStates != null && data.levelStates.Count > 0);
+
+            return hasMeaningfulProgress;
+        }
+        catch (System.Exception)
+        {
+            return false;
+        }
     }
     
     /// <summary>
