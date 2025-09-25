@@ -258,11 +258,13 @@ public class SeasonParticleManager : MonoBehaviour
         
         if (isPlayingParticles)
         {
+            // 若仍在播放，先停止当前效果，再按新季节播放
             if (showDebugInfo)
             {
-                GameLogger.LogDev("SeasonParticleManager: 粒子效果正在播放中，跳过新的播放请求");
+                GameLogger.LogDev("SeasonParticleManager: 前一效果未结束，先停止再切换播放");
             }
-            return;
+            StopAllParticles();
+            isPlayingParticles = false;
         }
         
         if (showDebugInfo)
@@ -337,7 +339,13 @@ public class SeasonParticleManager : MonoBehaviour
             springParticleSystem.Stop();
         }
 
-        // 直接播放，不修改任何已有设定
+        // 确保夏季粒子系统具备一次性爆发的配置与可见渲染
+        EnsureSummerConfigured();
+
+        // 清空旧粒子，避免历史残留影响观感
+        summerParticleSystem.Clear();
+
+        // 播放
         summerParticleSystem.Play();
         isPlayingParticles = true;
         
@@ -354,7 +362,8 @@ public class SeasonParticleManager : MonoBehaviour
     /// <param name="particleSystem">要停止的粒子系统</param>
     private System.Collections.IEnumerator StopParticlesAfterDelay(ParticleSystem particleSystem)
     {
-        yield return new WaitForSeconds(particleDuration);
+        // 使用真实时间，避免 Time.timeScale==0 时无法计时导致永不停止
+        yield return new WaitForSecondsRealtime(particleDuration);
         
         if (particleSystem != null && particleSystem.isPlaying)
         {
@@ -399,7 +408,7 @@ public class SeasonParticleManager : MonoBehaviour
     /// <param name="delay">延迟时间</param>
     private System.Collections.IEnumerator StopContinuousEmissionAfterDelay(ParticleSystem particleSystem, float delay)
     {
-        yield return new WaitForSeconds(delay);
+        yield return new WaitForSecondsRealtime(delay);
         
         if (particleSystem != null)
         {
@@ -774,7 +783,7 @@ public class SeasonParticleManager : MonoBehaviour
     /// <param name="delay">延迟时间</param>
     private System.Collections.IEnumerator DestroyTestParticleAfterDelay(GameObject testObj, float delay)
     {
-        yield return new WaitForSeconds(delay);
+        yield return new WaitForSecondsRealtime(delay);
         
         if (testObj != null)
         {
@@ -797,9 +806,38 @@ public class SeasonParticleManager : MonoBehaviour
         
         // 强制启用播放，但不重设任何参数
         enableParticleEffects = true;
+
+        // 强化配置，确保能看见粒子
+        EnsureSummerConfigured();
+        summerParticleSystem.Clear();
         summerParticleSystem.Play();
         
         GameLogger.LogDev("强制播放夏季粒子效果");
+    }
+
+    /// <summary>
+    /// 确保夏季粒子系统具备基础的可见配置（一次性爆发、材质、渲染器启用）
+    /// </summary>
+    private void EnsureSummerConfigured()
+    {
+        try
+        {
+            var renderer = summerParticleSystem.GetComponent<ParticleSystemRenderer>();
+            if (renderer != null)
+            {
+                renderer.enabled = true;
+                if (renderer.material == null)
+                {
+                    renderer.material = GetParticleMaterial();
+                }
+            }
+            // 确保对象激活
+            if (!summerParticleSystem.gameObject.activeInHierarchy)
+            {
+                summerParticleSystem.gameObject.SetActive(true);
+            }
+        }
+        catch { }
     }
     
     /// <summary>
