@@ -39,6 +39,38 @@ public class Highlight : MonoBehaviour
         cachedSpriteRenderer = GetComponent<SpriteRenderer>();
         cachedCollider2D = GetComponent<Collider2D>();
         light2d = GetComponentInChildren<Light2D>(true);
+        // 防御：确保缓存的Light2D属于当前对象层级，避免场景重载后出现错挂到其他同字对象上的情况
+        if (light2d != null && !light2d.transform.IsChildOf(transform))
+        {
+            light2d = null;
+        }
+        // 若未找到或被判定为外部对象，则在本对象下创建一个专属的灯光子物体，避免共享/错挂
+        if (light2d == null)
+        {
+            Transform lightChild = transform.Find("Light2D_Local");
+            if (lightChild == null)
+            {
+                GameObject g = new GameObject("Light2D_Local");
+                g.transform.SetParent(transform, false);
+                light2d = g.AddComponent<Light2D>();
+                // 基础参数：点光、较小半径，默认关闭，由后续高亮逻辑控制
+                light2d.lightType = Light2D.LightType.Point;
+                light2d.pointLightInnerRadius = 0.1f;
+                light2d.pointLightOuterRadius = 1.5f;
+                light2d.intensity = 1.0f;
+                light2d.enabled = false;
+                GameLogger.LogDev($"Highlight: 为 '{gameObject.name}' 创建专属Light2D子物体");
+            }
+            else
+            {
+                light2d = lightChild.GetComponent<Light2D>();
+                if (light2d == null)
+                {
+                    light2d = lightChild.gameObject.AddComponent<Light2D>();
+                }
+                light2d.enabled = false;
+            }
+        }
         
         // 如果没有找到Light2D，记录调试信息
         if (light2d == null)
