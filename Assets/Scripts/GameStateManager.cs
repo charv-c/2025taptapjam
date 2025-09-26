@@ -1141,10 +1141,8 @@ public class GameStateManager : MonoBehaviour
         StringSelector stringSelector = FindObjectOfType<StringSelector>();
         if (stringSelector != null)
         {
-            foreach (string str in availableStrings)
-            {
-                stringSelector.AddAvailableString(str);
-            }
+            // 直接设置可用字符串列表，避免逐个添加导致重复重建按钮
+            stringSelector.SetAvailableStrings(availableStrings);
         }
         
         LogDebug($"已恢复 {availableStrings.Count} 个可用字符串");

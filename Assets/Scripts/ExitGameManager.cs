@@ -347,9 +347,9 @@ public class ExitGameManager : MonoBehaviour
             RectTransform exRect = existingContainer.GetComponent<RectTransform>();
             if (exRect != null)
             {
-                exRect.anchorMin = new Vector2(0.5f, buttonAnchorY);
-                exRect.anchorMax = new Vector2(0.5f, buttonAnchorY);
-                exRect.anchoredPosition = new Vector2(0f, buttonYOffset);
+                exRect.anchorMin = new Vector2(0.5f, 0.5f);
+                exRect.anchorMax = new Vector2(0.5f, 0.5f);
+                exRect.anchoredPosition = new Vector2(0f, buttonYOffset); // 使用buttonYOffset参数
             }
             return existingContainer.gameObject;
         }
@@ -360,10 +360,10 @@ public class ExitGameManager : MonoBehaviour
         
         // 添加RectTransform组件
         RectTransform rectTransform = buttonContainer.AddComponent<RectTransform>();
-        rectTransform.anchorMin = new Vector2(0.5f, buttonAnchorY);
-        rectTransform.anchorMax = new Vector2(0.5f, buttonAnchorY);
+        rectTransform.anchorMin = new Vector2(0.5f, 0.5f);
+        rectTransform.anchorMax = new Vector2(0.5f, 0.5f);
         rectTransform.sizeDelta = new Vector2(300f, 60f);
-        rectTransform.anchoredPosition = new Vector2(0f, buttonYOffset);
+        rectTransform.anchoredPosition = new Vector2(0f, buttonYOffset); // 使用buttonYOffset参数
         
         // 添加HorizontalLayoutGroup组件用于自动布局
         UnityEngine.UI.HorizontalLayoutGroup layoutGroup = buttonContainer.AddComponent<UnityEngine.UI.HorizontalLayoutGroup>();
@@ -407,6 +407,17 @@ public class ExitGameManager : MonoBehaviour
         // 实例化对话框到Canvas
         confirmationDialogInstance = Instantiate(confirmationDialogPrefab, canvas.transform);
         confirmationDialogInstance.name = "ConfirmationDialog";
+        
+        // 强制设置对话框位置为屏幕中央
+        RectTransform dialogRect = confirmationDialogInstance.GetComponent<RectTransform>();
+        if (dialogRect != null)
+        {
+            dialogRect.anchorMin = new Vector2(0.5f, 0.5f);
+            dialogRect.anchorMax = new Vector2(0.5f, 0.5f);
+            dialogRect.anchoredPosition = Vector2.zero;
+            dialogRect.pivot = new Vector2(0.5f, 0.5f);
+            LogDebug("已设置退出对话框位置为屏幕中央");
+        }
         
 		// --- 开始修改：设置对话框Canvas排序 ---
 		// 为对话框添加或获取Canvas组件，并设置其排序顺序
@@ -584,6 +595,12 @@ public class ExitGameManager : MonoBehaviour
         
         // 播放取消音效
         PlayCancelSound();
+        
+        // 恢复InfoPopup的E键和Continue按钮功能
+        if (InfoPopupManager.Instance != null)
+        {
+            InfoPopupManager.Instance.RestoreEKeyAndContinueButton();
+        }
         
         // 隐藏确认对话框
         HideConfirmationDialog();

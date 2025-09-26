@@ -851,6 +851,42 @@ public class StringSelector : MonoBehaviour
     {
         return availableStrings.Count;
     }
+    
+    // 公共方法：设置可用字符串列表（用于读档恢复）
+    public void SetAvailableStrings(List<string> newAvailableStrings)
+    {
+        if (newAvailableStrings == null)
+        {
+            GameLogger.LogWarning("StringSelector: 尝试设置null的可用字符串列表，跳过");
+            return;
+        }
+        
+        GameLogger.LogDev($"StringSelector: 设置可用字符串列表，数量: {newAvailableStrings.Count}");
+        GameLogger.LogDev($"StringSelector: 新列表: [{string.Join(", ", newAvailableStrings)}]");
+        
+        // 清空当前选择
+        ClearSelection();
+        
+        // 确保所有字符串都在allStrings中
+        foreach (string str in newAvailableStrings)
+        {
+            if (!allStrings.Contains(str))
+            {
+                AddToAllStrings(str);
+            }
+        }
+        
+        // 直接设置可用字符串列表
+        availableStrings = new List<string>(newAvailableStrings);
+        
+        // 重新创建所有按钮
+        RecreateAllButtonsPublic();
+        
+        // 触发可用字符串变化事件
+        OnAvailableStringsChanged?.Invoke();
+        
+        GameLogger.LogDev($"StringSelector: 可用字符串列表设置完成，按钮数量: {stringButtons.Count}");
+    }
 
     // 就地拆分：将 original 在其当前位置替换为 part1 与 part2，保持其他元素位置不变
     public bool SplitInPlace(string original, string part1, string part2)

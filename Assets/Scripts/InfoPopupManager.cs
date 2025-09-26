@@ -29,11 +29,14 @@ public class InfoPopupManager : MonoBehaviour
     private string[] originalMessages;
     private string customButtonText;
     
-    // E键监听协程
-    private Coroutine eKeyListenerCoroutine;
+    // E键和ESC键监听协程
+    private Coroutine keyListenerCoroutine;
     
     // 操作禁用状态记录
     private bool operationsDisabledByPopup = false;
+    
+    // ESC键禁用状态记录
+    private bool escKeyDisabled = false;
 
     private void Awake()
     {
@@ -97,15 +100,29 @@ public class InfoPopupManager : MonoBehaviour
         }
         // 开启覆盖排序，使其独立于父Canvas的排序
         popupCanvas.overrideSorting = true;
-        // 设置一个非常高的排序值，确保它在所有UI之上
-        popupCanvas.sortingOrder = 30000;
-        GameLogger.LogSystem("InfoPopupManager: 已设置弹窗Canvas为置顶显示");
+        // 设置排序值，确保在退出窗格之下（退出窗格为22，InfoPopup为10）
+        popupCanvas.sortingOrder = 10;
         
-        // 保持预制体的原始位置配置，不做强制调整
+        // 添加GraphicRaycaster组件确保按钮能接收点击事件
+        GraphicRaycaster popupRaycaster = currentPopupInstance.GetComponent<GraphicRaycaster>();
+        if (popupRaycaster == null)
+        {
+            popupRaycaster = currentPopupInstance.AddComponent<GraphicRaycaster>();
+        }
+        
+        GameLogger.LogSystem("InfoPopupManager: 已设置弹窗Canvas为置顶显示，并添加GraphicRaycaster");
+        
+        // 设置弹窗位置为屏幕顶端
         RectTransform panelRect = currentPopupInstance.GetComponent<RectTransform>();
         if (panelRect != null)
         {
-            GameLogger.LogSystem($"InfoPopupManager: 使用预制体原始位置配置 - Anchors: {panelRect.anchorMin} to {panelRect.anchorMax}, Position: {panelRect.anchoredPosition}, 尺寸: {panelRect.sizeDelta}");
+            // 设置为屏幕顶端
+            panelRect.anchorMin = new Vector2(0.5f, 1f);
+            panelRect.anchorMax = new Vector2(0.5f, 1f);
+            panelRect.anchoredPosition = new Vector2(0f, -50f); // 距离顶部50像素
+            panelRect.pivot = new Vector2(0.5f, 1f);
+            
+            GameLogger.LogSystem($"InfoPopupManager: 已设置弹窗位置为屏幕顶端 - Anchors: {panelRect.anchorMin} to {panelRect.anchorMax}, Position: {panelRect.anchoredPosition}");
         }
 
         // 获取UI组件引用
@@ -138,6 +155,9 @@ public class InfoPopupManager : MonoBehaviour
         // 确保按钮的交互性不受其他管理器影响
         continueButton.interactable = true;
         
+        // 设置按钮名称为 "Continue"
+        continueButton.gameObject.name = "Continue";
+        
         // 确保按钮的Image组件raycastTarget为true，防止被TutorialManager禁用
         UnityEngine.UI.Image buttonImage = continueButton.GetComponent<UnityEngine.UI.Image>();
         if (buttonImage != null)
@@ -145,12 +165,38 @@ public class InfoPopupManager : MonoBehaviour
             buttonImage.raycastTarget = true;
             GameLogger.LogSystem("InfoPopupManager: 已确保按钮Image的raycastTarget为true");
         }
+        
+        // 确保按钮的Text组件raycastTarget为false，避免干扰点击检测
+        TextMeshProUGUI buttonText = continueButton.GetComponentInChildren<TextMeshProUGUI>();
+        if (buttonText != null)
+        {
+            buttonText.raycastTarget = false;
+            GameLogger.LogSystem("InfoPopupManager: 已设置按钮Text的raycastTarget为false");
+        }
+        
+        // 确保按钮的Transition设置正确，支持悬停效果
+        ColorBlock colors = continueButton.colors;
+        colors.normalColor = Color.white;
+        colors.highlightedColor = new Color(0.8f, 0.8f, 0.8f, 1f);
+        colors.pressedColor = new Color(0.6f, 0.6f, 0.6f, 1f);
+        colors.selectedColor = new Color(0.8f, 0.8f, 0.8f, 1f);
+        colors.disabledColor = new Color(0.5f, 0.5f, 0.5f, 1f);
+        continueButton.colors = colors;
+        
+        GameLogger.LogSystem("InfoPopupManager: 已设置按钮颜色和交互性");
 
         // 禁用所有玩家操作
         DisableAllPlayerOperations();
+        
+        // 禁用退出窗格（防止ESC键打开退出对话框）
+        if (ExitGameManager.Instance != null)
+        {
+            ExitGameManager.Instance.SetExitDialogDisabled(true);
+            GameLogger.LogSystem("InfoPopupManager: 已禁用退出窗格");
+        }
 
-        // 开始E键监听协程
-        eKeyListenerCoroutine = StartCoroutine(EKeyListenerCoroutine());
+        // 开始按键监听协程（E键和ESC键）
+        keyListenerCoroutine = StartCoroutine(KeyListenerCoroutine());
 
         // 显示第一条消息
         GameLogger.LogSystem("InfoPopupManager: 准备显示第一条消息");
@@ -238,10 +284,18 @@ public class InfoPopupManager : MonoBehaviour
             if (continueButton != null)
             {
                 continueButton.interactable = true;
+                continueButton.gameObject.name = "Continue";
+                
                 UnityEngine.UI.Image buttonImage = continueButton.GetComponent<UnityEngine.UI.Image>();
                 if (buttonImage != null)
                 {
                     buttonImage.raycastTarget = true;
+                }
+                
+                TextMeshProUGUI buttonText = continueButton.GetComponentInChildren<TextMeshProUGUI>();
+                if (buttonText != null)
+                {
+                    buttonText.raycastTarget = false;
                 }
             }
             
@@ -260,11 +314,11 @@ public class InfoPopupManager : MonoBehaviour
     /// </summary>
     private void ClosePopup()
     {
-        // 停止E键监听协程
-        if (eKeyListenerCoroutine != null)
+        // 停止按键监听协程
+        if (keyListenerCoroutine != null)
         {
-            StopCoroutine(eKeyListenerCoroutine);
-            eKeyListenerCoroutine = null;
+            StopCoroutine(keyListenerCoroutine);
+            keyListenerCoroutine = null;
         }
 
         // 移除监听，销毁实例
@@ -279,6 +333,13 @@ public class InfoPopupManager : MonoBehaviour
 
         // 恢复所有玩家操作
         EnableAllPlayerOperations();
+        
+        // 恢复退出窗格功能
+        if (ExitGameManager.Instance != null)
+        {
+            ExitGameManager.Instance.SetExitDialogDisabled(false);
+            GameLogger.LogSystem("InfoPopupManager: 已恢复退出窗格功能");
+        }
 
         // 执行完成回调
         onCompleteCallback?.Invoke();
@@ -292,16 +353,19 @@ public class InfoPopupManager : MonoBehaviour
         currentMessageIndex = 0;
         originalMessages = null;
         customButtonText = null;
+        
+        // 重置ESC键禁用状态
+        escKeyDisabled = false;
     }
     
     /// <summary>
-    /// E键监听协程
+    /// 按键监听协程（E键和ESC键）
     /// </summary>
-    private System.Collections.IEnumerator EKeyListenerCoroutine()
+    private System.Collections.IEnumerator KeyListenerCoroutine()
     {
         while (currentPopupInstance != null && currentPopupInstance.activeInHierarchy)
         {
-            if (Input.GetKeyDown(KeyCode.E))
+            if (Input.GetKeyDown(KeyCode.E) && !escKeyDisabled)
             {
                 GameLogger.LogSystem("InfoPopupManager: 检测到E键按下，触发继续");
                 OnContinueClicked();
@@ -309,10 +373,15 @@ public class InfoPopupManager : MonoBehaviour
                 // 等待一小段时间避免重复触发，然后继续监听下一次E键按下
                 yield return new WaitForSeconds(0.2f);
             }
+            else if (Input.GetKeyDown(KeyCode.Escape))
+            {
+                GameLogger.LogSystem("InfoPopupManager: 检测到ESC键按下，但不执行任何操作");
+                // 不关闭弹窗，不打开退出窗格，不禁用Continue按钮，不禁用E键
+            }
             yield return null;
         }
         
-        GameLogger.LogSystem("InfoPopupManager: E键监听协程结束");
+        GameLogger.LogSystem("InfoPopupManager: 按键监听协程结束");
     }
 
     /// <summary>
@@ -347,6 +416,17 @@ public class InfoPopupManager : MonoBehaviour
         else
         {
             GameLogger.LogWarning("InfoPopupManager: 未找到PlayerController，无法禁用玩家操作");
+        }
+        
+        // 禁用字符串按钮选择
+        if (ButtonController.Instance != null)
+        {
+            ButtonController.Instance.DisableCharacterSelection();
+            GameLogger.LogSystem("InfoPopupManager: 已禁用字符串按钮选择");
+        }
+        else
+        {
+            GameLogger.LogWarning("InfoPopupManager: 未找到ButtonController，无法禁用字符串选择");
         }
 
         operationsDisabledByPopup = true;
@@ -398,7 +478,27 @@ public class InfoPopupManager : MonoBehaviour
         {
             GameLogger.LogWarning("InfoPopupManager: 未找到PlayerController，无法恢复玩家操作");
         }
+        
+        // 恢复字符串按钮选择
+        if (ButtonController.Instance != null)
+        {
+            ButtonController.Instance.EnableCharacterSelection();
+            GameLogger.LogSystem("InfoPopupManager: 已恢复字符串按钮选择");
+        }
+        else
+        {
+            GameLogger.LogWarning("InfoPopupManager: 未找到ButtonController，无法恢复字符串选择");
+        }
 
         operationsDisabledByPopup = false;
+    }
+    
+    /// <summary>
+    /// 恢复功能（用于退出弹窗取消时调用，现在不需要恢复任何功能）
+    /// </summary>
+    public void RestoreEKeyAndContinueButton()
+    {
+        // 现在ESC键不执行任何操作，所以不需要恢复任何功能
+        GameLogger.LogSystem("InfoPopupManager: ESC键不执行任何操作，无需恢复功能");
     }
 }
