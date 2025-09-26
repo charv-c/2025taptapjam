@@ -101,6 +101,9 @@ public class ExitGameManager : MonoBehaviour
     
     private void Update()
     {
+        // 每帧评估是否允许ESC弹窗
+        EvaluateEscDialogEligibility();
+
         HandleKeyboardInput();
 
         // 在可控平台上强制保持全屏（例如Standalone）。
@@ -111,6 +114,27 @@ public class ExitGameManager : MonoBehaviour
             Screen.fullScreen = true;
         }
 #endif
+    }
+
+    /// <summary>
+    /// 按规则评估是否允许显示ESC退出弹窗：
+    /// - 禁止：EndLevel场景；InfoPopup显示；飞字动画进行
+    /// - 其他：允许
+    /// </summary>
+    private void EvaluateEscDialogEligibility()
+    {
+        string sceneName = UnityEngine.SceneManagement.SceneManager.GetActiveScene().name.Trim().ToLowerInvariant();
+        bool isEnd = sceneName == "endlevel";
+
+        bool guideActive = InfoPopupManager.Instance != null && InfoPopupManager.Instance.IsPopupActive;
+        bool flying = ButtonController.Instance != null && ButtonController.Instance.IsFlyingAnimationActive;
+
+        bool shouldDisable = isEnd || guideActive || flying;
+        if (exitDialogDisabled != shouldDisable)
+        {
+            exitDialogDisabled = shouldDisable;
+            LogDebug($"ESC弹窗禁用状态变更: {exitDialogDisabled} (End={isEnd}, Guide={guideActive}, Flying={flying})");
+        }
     }
     
     /// <summary>
@@ -169,6 +193,10 @@ public class ExitGameManager : MonoBehaviour
     /// </summary>
     private IEnumerator RebuildUIAfterSceneLoaded()
     {
+        // 场景重载时先临时禁用ESC弹窗，待确认条件后再开启
+        exitDialogDisabled = true;
+        LogDebug("场景重载：临时禁用ESC弹窗");
+
         // 清理上一场景的对话框实例
         if (confirmationDialogInstance != null)
         {
@@ -205,6 +233,38 @@ public class ExitGameManager : MonoBehaviour
         if (confirmationDialogInstance != null)
         {
             confirmationDialogInstance.SetActive(false);
+        }
+
+        // 若不是EndLevel场景，且引导未显示，等待两帧后允许ESC弹窗
+        StartCoroutine(EnableEscIfGuideCompletedAfterDelay());
+    }
+
+    /// <summary>
+    /// 等待两帧后根据当前场景与引导显示状态，允许ESC弹窗
+    /// </summary>
+    private IEnumerator EnableEscIfGuideCompletedAfterDelay()
+    {
+        // 等待两帧
+        yield return null;
+        yield return null;
+
+        string sceneName = UnityEngine.SceneManagement.SceneManager.GetActiveScene().name.Trim().ToLowerInvariant();
+        if (sceneName == "endlevel")
+        {
+            LogDebug("当前为EndLevel场景，保持ESC弹窗状态不变");
+            yield break;
+        }
+
+        // 如果引导未显示（或不存在），则允许ESC弹窗
+        bool popupActive = InfoPopupManager.Instance != null && InfoPopupManager.Instance.IsPopupActive;
+        if (!popupActive)
+        {
+            exitDialogDisabled = false;
+            LogDebug("两帧后检测：无引导弹窗，已允许ESC退出弹窗");
+        }
+        else
+        {
+            LogDebug("两帧后检测：引导弹窗仍在显示，保持禁用ESC退出弹窗");
         }
     }
     

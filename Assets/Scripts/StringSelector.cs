@@ -317,7 +317,7 @@ public class StringSelector : MonoBehaviour
     private void OnStringButtonClicked(int index, Button button)
     {
         // 飞行动画期间禁止选择
-        if (ButtonController.Instance != null && ButtonController.Instance.IsFlyingAnimationActive())
+        if (ButtonController.Instance != null && ButtonController.Instance.IsFlyingAnimationActive)
         {
             return;
         }

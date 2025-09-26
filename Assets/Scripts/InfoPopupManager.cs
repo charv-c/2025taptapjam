@@ -35,6 +35,12 @@ public class InfoPopupManager : MonoBehaviour
     // 操作禁用状态记录
     private bool operationsDisabledByPopup = false;
     
+    // 外部可读：当前是否有InfoPopup在显示
+    public bool IsPopupActive
+    {
+        get { return currentPopupInstance != null && currentPopupInstance.activeInHierarchy; }
+    }
+    
     // ESC键禁用状态记录
     private bool escKeyDisabled = false;
 
@@ -334,11 +340,11 @@ public class InfoPopupManager : MonoBehaviour
         // 恢复所有玩家操作
         EnableAllPlayerOperations();
         
-        // 恢复退出窗格功能
+        // 引导完成后允许退出弹窗
         if (ExitGameManager.Instance != null)
         {
             ExitGameManager.Instance.SetExitDialogDisabled(false);
-            GameLogger.LogSystem("InfoPopupManager: 已恢复退出窗格功能");
+            GameLogger.LogSystem("InfoPopupManager: 引导完成，已允许退出弹窗");
         }
 
         // 执行完成回调

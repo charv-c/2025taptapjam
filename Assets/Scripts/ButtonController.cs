@@ -44,6 +44,9 @@ public class ButtonController : MonoBehaviour
     
     // 教程模式控制
     private bool isTutorialMode = false;
+
+    // 对外只读：是否处于飞字动画中（用于ESC弹窗禁用逻辑）
+    public bool IsFlyingAnimationActive => isFlyingAnimationActive;
     
     private void Awake()
     {
@@ -523,11 +526,7 @@ public class ButtonController : MonoBehaviour
         return stringSelector;
     }
     
-    // 检查飞行动画是否激活
-    public bool IsFlyingAnimationActive()
-    {
-        return isFlyingAnimationActive;
-    }
+    // 原有的同名方法已移除，改用属性 IsFlyingAnimationActive
     
     // 设置飞行动画状态
     public void SetFlyingAnimationActive(bool active)
