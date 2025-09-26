@@ -134,6 +134,17 @@ public class InfoPopupManager : MonoBehaviour
 
         // 添加按钮点击事件监听
         continueButton.onClick.AddListener(OnContinueClicked);
+        
+        // 确保按钮的交互性不受其他管理器影响
+        continueButton.interactable = true;
+        
+        // 确保按钮的Image组件raycastTarget为true，防止被TutorialManager禁用
+        UnityEngine.UI.Image buttonImage = continueButton.GetComponent<UnityEngine.UI.Image>();
+        if (buttonImage != null)
+        {
+            buttonImage.raycastTarget = true;
+            GameLogger.LogSystem("InfoPopupManager: 已确保按钮Image的raycastTarget为true");
+        }
 
         // 禁用所有玩家操作
         DisableAllPlayerOperations();
@@ -221,6 +232,17 @@ public class InfoPopupManager : MonoBehaviour
             {
                 onMessageShownCallback.Invoke(currentMessageIndex, message);
                 GameLogger.LogSystem($"InfoPopupManager: 已调用消息显示回调，索引: {currentMessageIndex}");
+            }
+            
+            // 确保按钮始终可交互，防止被其他管理器影响
+            if (continueButton != null)
+            {
+                continueButton.interactable = true;
+                UnityEngine.UI.Image buttonImage = continueButton.GetComponent<UnityEngine.UI.Image>();
+                if (buttonImage != null)
+                {
+                    buttonImage.raycastTarget = true;
+                }
             }
             
             currentMessageIndex++;
