@@ -191,7 +191,7 @@ public class GameStateManager : MonoBehaviour
         var stateData = new GameProgressData.LevelStateData
         {
             levelName = currentLevelName,
-            guideCompleted = GetLevel3GuideCompletedIfAny(currentLevelName),
+            guideCompleted = GetLevel3GuideCompletedIfAny(currentLevelName) || GetLevel2GuideCompletedIfAny(currentLevelName),
             objectStates = objectStates,
             broadcastHistory = broadcastHistory,
             availableStrings = availableStrings,
@@ -684,11 +684,26 @@ public class GameStateManager : MonoBehaviour
                 l3.SetGuideCompleted(stateData.guideCompleted);
             }
         }
+        
+        // 如果是Level2，先将引导完成标志同步到管理器
+        if ((stateData.levelName ?? "").Trim().ToLowerInvariant().Contains("level2"))
+        {
+            Level2Manager l2 = FindObjectOfType<Level2Manager>();
+            if (l2 != null)
+            {
+                l2.SetGuideCompleted(stateData.guideCompleted);
+            }
+        }
 
         // 特殊处理：Level3场景恢复后按引导标志设置回车与玩家切换
         if (currentLevelName.ToLower().Contains("level3"))
         {
             StartCoroutine(CheckLevel3PlayerMovementAfterRestore());
+        }
+        else if (currentLevelName.ToLower().Contains("level2"))
+        {
+            // Level2场景恢复后按引导标志设置回车与玩家切换
+            StartCoroutine(CheckLevel2PlayerMovementAfterRestore());
         }
         else
         {
@@ -744,6 +759,57 @@ public class GameStateManager : MonoBehaviour
 
                 playerController.UpdatePlayerColors();
                 LogDebug($"Level3恢复：guideCompleted={guideCompleted}，已应用回车/切换权限");
+            }
+        }
+    }
+    
+    /// <summary>
+    /// 检查Level2场景恢复后是否需要重新启用玩家移动
+    /// </summary>
+    private System.Collections.IEnumerator CheckLevel2PlayerMovementAfterRestore()
+    {
+        // 等待一帧确保所有系统初始化完成
+        yield return null;
+        
+        // 检查Level2Manager是否存在且场景已初始化
+        Level2Manager level2Manager = FindObjectOfType<Level2Manager>();
+        if (level2Manager != null)
+        {
+            PlayerController playerController = FindObjectOfType<PlayerController>();
+            if (playerController != null)
+            {
+                bool guideCompleted = level2Manager.IsGuideCompleted();
+
+                // 始终确保可移动
+                playerController.EnableCurrentPlayerMovement();
+
+                // 根据引导状态控制回车与切换
+                for (int i = 0; i < playerController.GetPlayerCount(); i++)
+                {
+                    Player player = playerController.GetPlayerByIndex(i);
+                    if (player != null)
+                    {
+                        player.SetInputEnabled(true);
+                        player.SetEnterKeyEnabled(guideCompleted);
+                    }
+                }
+
+                if (playerController.GetPlayerCount() > 0)
+                {
+                    playerController.SetCurrentPlayerIndex(0);
+                }
+
+                if (guideCompleted)
+                {
+                    playerController.EnablePlayerSwitching();
+                }
+                else
+                {
+                    playerController.DisablePlayerSwitching();
+                }
+
+                playerController.UpdatePlayerColors();
+                LogDebug($"Level2恢复：guideCompleted={guideCompleted}，已应用回车/切换权限");
             }
         }
     }
@@ -931,6 +997,23 @@ public class GameStateManager : MonoBehaviour
         if (l3 != null)
         {
             return l3.IsGuideCompleted();
+        }
+        return false;
+    }
+    
+    /// <summary>
+    /// 读取Level2引导完成标志（仅当当前关卡为level2时有效）
+    /// </summary>
+    private bool GetLevel2GuideCompletedIfAny(string levelName)
+    {
+        if (string.IsNullOrEmpty(levelName)) return false;
+        string lower = levelName.Trim().ToLowerInvariant();
+        if (!lower.Contains("level2")) return false;
+
+        Level2Manager l2 = FindObjectOfType<Level2Manager>();
+        if (l2 != null)
+        {
+            return l2.IsGuideCompleted();
         }
         return false;
     }

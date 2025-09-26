@@ -15,6 +15,9 @@ public class Level2Manager : MonoBehaviour, IBootstrapAware
     // Bootstrap状态
     private bool bootstrapCompleted = false;
     private bool sceneInitialized = false;
+    
+    // 引导（开场流程）完成标志：用于控制回车互动与玩家切换
+    private bool guideCompleted = false;
 
     // 关卡开场白文案
     private readonly string[] openingMessages = 
@@ -140,6 +143,8 @@ public class Level2Manager : MonoBehaviour, IBootstrapAware
     private void StartLevel()
     {
         GameLogger.LogSystem("Level2Manager: 开场白结束，正式开始关卡。");
+        // 视为Level2引导完成
+        guideCompleted = true;
         EnableAllOperations();
     }
 
@@ -299,5 +304,22 @@ public class Level2Manager : MonoBehaviour, IBootstrapAware
         {
             GameLogger.LogWarning("Level2Manager: PlayerController为null，无法启用操作");
         }
+    }
+    
+    /// <summary>
+    /// 获取引导完成状态
+    /// </summary>
+    public bool IsGuideCompleted()
+    {
+        return guideCompleted;
+    }
+    
+    /// <summary>
+    /// 设置引导完成状态（用于读档恢复）
+    /// </summary>
+    public void SetGuideCompleted(bool completed)
+    {
+        guideCompleted = completed;
+        GameLogger.LogSystem($"Level2Manager: 引导完成状态设置为 {completed}");
     }
 }
