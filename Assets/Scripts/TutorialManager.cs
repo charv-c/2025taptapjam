@@ -67,6 +67,7 @@ public class TutorialManager : MonoBehaviour
     // 状态标志
     private bool chongShown = false;
     private bool dieShown = false;
+    private bool waitingForWASD = false; // 是否正在等待WASD键输入
     #endregion
 
     #region Unity Lifecycle
@@ -133,11 +134,24 @@ public class TutorialManager : MonoBehaviour
 
     private void Update()
     {
+        // 检测WASD键输入（仅在等待WASD输入时）
+        if (waitingForWASD)
+        {
+            if (Input.GetKeyDown(KeyCode.W) || Input.GetKeyDown(KeyCode.A) || 
+                Input.GetKeyDown(KeyCode.S) || Input.GetKeyDown(KeyCode.D))
+            {
+                GameLogger.LogDev("TutorialManager: 检测到WASD键按下，继续教程");
+                waitingForWASD = false;
+                GoToNextStep();
+                return;
+            }
+        }
+        
         // 检测 E 键按下继续教程，但禁用回车键继续
         if (Input.GetKeyDown(KeyCode.E))
         {
-            // 只有当继续按钮可见时才允许 E 键继续
-            if (continueButton != null && continueButton.gameObject.activeInHierarchy)
+            // 只有当继续按钮可见且不在等待WASD输入时才允许 E 键继续
+            if (continueButton != null && continueButton.gameObject.activeInHierarchy && !waitingForWASD)
             {
                 GameLogger.LogDev("TutorialManager: 检测到 E 键按下，继续教程");
                 GoToNextStep();
@@ -378,7 +392,13 @@ public class TutorialManager : MonoBehaviour
     {
         SetGuideExpression(exprHappy);
         hintText.text = "请使用【WASD】键，在书院中自由走动，熟悉一下环境吧。";
-        continueButton.gameObject.SetActive(true);
+        
+        // 隐藏继续按钮，不允许点击或按E键继续
+        continueButton.gameObject.SetActive(false);
+        
+        // 设置等待WASD输入状态
+        waitingForWASD = true;
+        
         EnablePlayerMovement();
         
         // 禁用字符选择
@@ -387,7 +407,7 @@ public class TutorialManager : MonoBehaviour
             ButtonController.Instance.DisableCharacterSelection();
         }
         
-        // EnableUIInteraction();
+        GameLogger.LogDev("TutorialManager: 等待WASD键输入，继续按钮已隐藏");
     }
 
     private void HandleMoveToDog()

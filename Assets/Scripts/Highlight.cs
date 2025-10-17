@@ -23,6 +23,20 @@ public class Highlight : MonoBehaviour
     
     [Header("收集设置")]
     [SerializeField] private bool collectable = true;
+    
+    [Header("Level4收集类型设置")]
+    [SerializeField] private CollectType collectType = CollectType.Unconditional;
+    
+    /// <summary>
+    /// 收集类型枚举
+    /// </summary>
+    public enum CollectType
+    {
+        [Tooltip("无条件收集：无论carryletter是什么都可以收集")]
+        Unconditional,
+        [Tooltip("条件收集：只有carryletter为'蛇'时才能收集")]
+        SnakeOnly
+    }
 
     [Header("显示/隐藏设置")]
     [Tooltip("是否在开始时隐藏（仅禁用渲染/碰撞/光照，不会禁用GameObject或组件）")]
@@ -45,7 +59,8 @@ public class Highlight : MonoBehaviour
             light2d = null;
         }
         // 若未找到或被判定为外部对象，则在本对象下创建一个专属的灯光子物体，避免共享/错挂
-        if (light2d == null)
+        // 但是某些对象不需要Light2D（如酒对象）
+        if (light2d == null && !ShouldSkipLight2D())
         {
             Transform lightChild = transform.Find("Light2D_Local");
             if (lightChild == null)
@@ -76,6 +91,143 @@ public class Highlight : MonoBehaviour
         if (light2d == null)
         {
             GameLogger.LogDev($"Highlight: 对象 '{gameObject.name}' 没有Light2D组件，将跳过光照相关操作");
+        }
+    }
+    
+    /// <summary>
+    /// 判断是否应该跳过Light2D的创建
+    /// </summary>
+    /// <returns>如果应该跳过Light2D创建则返回true</returns>
+    private bool ShouldSkipLight2D()
+    {
+        // 酒对象不需要Light2D
+        if (letter == "酒")
+        {
+            GameLogger.LogDev($"Highlight: 酒对象 '{gameObject.name}' 跳过Light2D创建");
+            return true;
+        }
+        
+        // 可以在这里添加其他不需要Light2D的对象类型
+        // if (letter == "其他对象类型")
+        // {
+        //     return true;
+        // }
+        
+        return false;
+    }
+    
+    /// <summary>
+    /// 根据收集类型判断是否可以收集（仅限Level4）
+    /// </summary>
+    /// <returns>如果可以收集则返回true</returns>
+    private bool CanCollectBasedOnType()
+    {
+        // 检查是否在Level4场景
+        if (!IsInLevel4())
+        {
+            // 不在Level4场景，使用默认的无条件收集逻辑
+            return true;
+        }
+        
+        // 在Level4场景中，根据收集类型判断
+        switch (collectType)
+        {
+            case CollectType.Unconditional:
+                GameLogger.LogDev($"Highlight: 对象 '{letter}' 为无条件收集类型，可以收集");
+                return true;
+                
+            case CollectType.SnakeOnly:
+                if (player != null && player.CarryCharacter == "蛇")
+                {
+                    GameLogger.LogDev($"Highlight: 对象 '{letter}' 为蛇条件收集类型，玩家携带'蛇'，可以收集");
+                    return true;
+                }
+                else
+                {
+                    GameLogger.LogDev($"Highlight: 对象 '{letter}' 为蛇条件收集类型，玩家携带'{player?.CarryCharacter}'，无法收集");
+                    return false;
+                }
+                
+            default:
+                GameLogger.LogWarning($"Highlight: 未知的收集类型 {collectType}，默认允许收集");
+                return true;
+        }
+    }
+    
+    /// <summary>
+    /// 检查当前是否在Level4场景
+    /// </summary>
+    /// <returns>如果在Level4场景则返回true</returns>
+    private bool IsInLevel4()
+    {
+        // 通过场景名称判断是否为Level4
+        string sceneName = UnityEngine.SceneManagement.SceneManager.GetActiveScene().name;
+        bool isLevel4 = sceneName.Contains("Level4") || sceneName.Contains("level4");
+        
+        if (isLevel4)
+        {
+            GameLogger.LogDev($"Highlight: 当前场景为Level4: {sceneName}");
+        }
+        
+        return isLevel4;
+    }
+    
+    /// <summary>
+    /// 移动到指定名称的对象位置
+    /// </summary>
+    /// <param name="targetObjectName">目标对象的名称</param>
+    private void MoveToTargetObject(string targetObjectName)
+    {
+        // 在场景中查找目标对象
+        GameObject targetObject = GameObject.Find(targetObjectName);
+        
+        if (targetObject == null)
+        {
+            GameLogger.LogWarning($"Highlight: 未找到名为 '{targetObjectName}' 的目标对象");
+            return;
+        }
+        
+        Vector3 targetPosition = targetObject.transform.position;
+        Vector3 currentPosition = transform.position;
+        
+        GameLogger.LogDev($"Highlight: 商对象 '{gameObject.name}' 从位置 {currentPosition} 移动到 {targetPosition}");
+        
+        // 直接设置位置（如果需要平滑移动，可以使用协程或DOTween）
+        transform.position = targetPosition;
+        
+        GameLogger.LogDev($"Highlight: 商对象 '{gameObject.name}' 移动完成，当前位置: {transform.position}");
+    }
+    
+    /// <summary>
+    /// 显示指定名称的对象
+    /// </summary>
+    /// <param name="targetObjectName">目标对象的名称</param>
+    private void ShowTargetObject(string targetObjectName)
+    {
+        // 在场景中查找目标对象
+        GameObject targetObject = GameObject.Find(targetObjectName);
+        
+        if (targetObject == null)
+        {
+            GameLogger.LogWarning($"Highlight: 未找到名为 '{targetObjectName}' 的目标对象");
+            return;
+        }
+        
+        // 获取目标对象的Highlight组件
+        Highlight targetHighlight = targetObject.GetComponent<Highlight>();
+        if (targetHighlight != null)
+        {
+            GameLogger.LogDev($"Highlight: 显示目标对象 '{targetObjectName}'");
+            targetHighlight.ShowObject();
+        }
+        else
+        {
+            // 如果目标对象没有Highlight组件，直接激活GameObject
+            if (!targetObject.activeInHierarchy)
+            {
+                GameLogger.LogDev($"Highlight: 激活目标对象 '{targetObjectName}'（无Highlight组件）");
+                targetObject.SetActive(true);
+            }
         }
     }
 
@@ -253,6 +405,16 @@ public class Highlight : MonoBehaviour
                     qinLogic.OnPlayerEnter();
                 }
             }
+            
+            // 酒对象的特殊逻辑：通知WineSpecialLogic脚本
+            if (letter == "酒")
+            {
+                WineSpecialLogic wineLogic = GetComponent<WineSpecialLogic>();
+                if (wineLogic != null)
+                {
+                    wineLogic.OnPlayerEnter();
+                }
+            }
         }
     }
     
@@ -276,6 +438,16 @@ public class Highlight : MonoBehaviour
                 if (qinLogic != null)
                 {
                     qinLogic.OnPlayerExit();
+                }
+            }
+            
+            // 酒对象的特殊逻辑：通知WineSpecialLogic脚本
+            if (letter == "酒")
+            {
+                WineSpecialLogic wineLogic = GetComponent<WineSpecialLogic>();
+                if (wineLogic != null)
+                {
+                    wineLogic.OnPlayerExit();
                 }
             }
         }
@@ -533,6 +705,25 @@ public class Highlight : MonoBehaviour
             return;
         }
         
+        // 先行处理：酒对象的交互应优先于其它分支，避免被教程/collectable等逻辑短路
+        if (letter == "酒")
+        {
+            GameLogger.LogDev($"FunctionA: 酒对象优先处理分支，玩家携带字符: '{player?.CarryCharacter}'");
+            WineSpecialLogic wineLogic = GetComponent<WineSpecialLogic>();
+            if (wineLogic != null)
+            {
+                string carryCharacter = player != null ? player.CarryCharacter : "";
+                GameLogger.LogDev($"FunctionA: 调用WineSpecialLogic.OnPlayerInteract('{carryCharacter}')");
+                wineLogic.OnPlayerInteract(carryCharacter);
+                GameLogger.LogDev("FunctionA: 酒对象处理完成，返回");
+            }
+            else
+            {
+                GameLogger.LogWarning($"FunctionA: 酒对象 '{gameObject.name}' 缺少WineSpecialLogic组件");
+            }
+            return;
+        }
+        
         // 特殊处理：草对象和牒对象在教程步骤中的特殊逻辑
         bool handledByTutorial = HandleSpecialTutorialLogic();
         
@@ -643,6 +834,13 @@ public class Highlight : MonoBehaviour
             }
             
             // 其他可收集对象的正常处理
+            // 检查收集类型条件（仅限Level4）
+            if (!CanCollectBasedOnType())
+            {
+                GameLogger.LogDev($"FunctionA: 对象 '{letter}' 收集条件不满足，无法收集");
+                return;
+            }
+            
             GameLogger.LogDev($"FunctionA: 对象 '{letter}' 是可收集的，优先添加到可用字符串列表");
             AddLetterToAvailableList();
             
@@ -1118,6 +1316,74 @@ public class Highlight : MonoBehaviour
             }
             else if (letter == "童")
             {
+                ShowObject();
+            }
+        }
+        else if (broadcastedValue == "皇")
+        {
+            GameLogger.LogDev($"收到'皇'广播，当前对象letter={letter}");
+            if (letter == "民")
+            {
+                GameLogger.LogDev($"隐藏民对象: {gameObject.name}");
+                HideObject();
+            }
+            else if (letter == "骄")
+            {
+                ShowObject();
+            }
+        }
+        else if (broadcastedValue == "帛")
+        {
+            GameLogger.LogDev($"收到'帛'广播，当前对象letter={letter}");
+            if (letter == "商")
+            {
+                GameLogger.LogDev($"商对象收到'帛'广播，开始移动到'商-2'的位置");
+                MoveToTargetObject("商-2");
+            }
+            else if (letter == "椟")
+            {
+                GameLogger.LogDev($"显示椟对象: {gameObject.name}");
+                ShowObject();
+            }
+        }
+        else if (broadcastedValue == "柏")
+        {
+            GameLogger.LogDev($"收到'柏'广播，当前对象letter={letter}");
+            if (letter == "鼠")
+            {
+                GameLogger.LogDev($"隐藏鼠对象: {gameObject.name}");
+                HideObject();
+            }
+            else if (letter == "维")
+            {
+                GameLogger.LogDev($"显示维对象: {gameObject.name}");
+                ShowObject();
+            }
+        }
+        else if (broadcastedValue == "清")
+        {
+            GameLogger.LogDev($"收到'清'广播，当前对象letter={letter}");
+            if (letter == "枯花")
+            {
+                GameLogger.LogDev($"隐藏枯对象: {gameObject.name}");
+                ShowTargetObject("鲜花");
+                HideObject();
+            }
+            else if (letter == "胡")
+            {
+                GameLogger.LogDev($"显示胡对象: {gameObject.name}");
+                ShowObject();
+            }
+            
+            // 显示场景中名为"鲜花"的物体（所有对象都会执行这个逻辑）
+            
+        }
+        else if (broadcastedValue == "睛")
+        {
+            GameLogger.LogDev($"收到'睛'广播，当前对象letter={letter}");
+            if (letter == "汉")
+            {
+                GameLogger.LogDev($"显示汉对象: {gameObject.name}");
                 ShowObject();
             }
         }

@@ -33,6 +33,20 @@ public class Player : MonoBehaviour
     [Header("颜色设置")]
     [SerializeField] private Color grayedOutColor = new Color(0.2f, 0.2f, 0.2f, 1f);
     
+    [Header("倒计时设置")]
+    [SerializeField] private float countdownDuration = 10f; // 倒计时持续时间（秒）
+    [SerializeField] private bool enableCountdownLogging = true; // 是否启用倒计时日志
+    [SerializeField] private float countdownUIHeight = 1.5f; // 倒计时UI在玩家头顶的高度
+    [SerializeField] private int countdownFontSize = 24; // 倒计时字体大小
+    [SerializeField] private Color countdownTextColor = Color.red; // 倒计时文字颜色
+    
+    // 倒计时相关变量
+    private bool isCountdownActive = false;
+    private float countdownTimer = 0f;
+    private GameObject countdownUI; // 倒计时UI对象（自动创建）
+    private UnityEngine.UI.Text countdownText; // 倒计时文本组件
+    private Canvas countdownCanvas; // 倒计时Canvas
+    
     void Start()
     {
         // 获取SpriteRenderer组件
@@ -41,6 +55,9 @@ public class Player : MonoBehaviour
         {
             originalColor = spriteRenderer.color;
         }
+        
+        // 初始化倒计时UI
+        InitializeCountdownUI();
         
         // 获取主摄像机
         mainCamera = Camera.main;
@@ -69,6 +86,9 @@ public class Player : MonoBehaviour
     {
         HandleMovement();
         ClampToScreen();
+        
+        // 更新倒计时
+        UpdateCountdown();
         
         // 检测R键按下
         if (Input.GetKeyDown(KeyCode.R))
@@ -615,6 +635,12 @@ public class Player : MonoBehaviour
         string oldCharacter = CarryCharacter;
         GameLogger.LogDev($"Player.SetCarryCharacter: 开始设置携带字符，从 '{oldCharacter}' 更改为 '{newCharacter}'");
         
+        // 如果设置为"蛇"，打印完整的调用堆栈
+        if (newCharacter == "蛇")
+        {
+            GameLogger.LogWarning($"!!! Player.SetCarryCharacter: 携带字符被设置为'蛇'，调用堆栈：\n{UnityEngine.StackTraceUtility.ExtractStackTrace()}");
+        }
+        
         CarryCharacter = newCharacter;
         
         // 更新对应的米字格图片
@@ -810,4 +836,208 @@ public class Player : MonoBehaviour
         SetCarryCharacter(initialCarryCharacter);
         GameLogger.LogDev($"Player: 已重置携带字符为初始值 '{initialCarryCharacter}'");
     }
+    
+    #region 倒计时功能
+    
+    /// <summary>
+    /// 初始化倒计时UI
+    /// </summary>
+    private void InitializeCountdownUI()
+    {
+        // 自动创建倒计时UI
+        CreateCountdownUI();
+        
+        if (enableCountdownLogging)
+        {
+            GameLogger.LogDev($"Player: 倒计时UI初始化完成 - {gameObject.name}");
+        }
+    }
+    
+    /// <summary>
+    /// 自动创建倒计时UI
+    /// </summary>
+    private void CreateCountdownUI()
+    {
+        // 创建Canvas
+        GameObject canvasObj = new GameObject("CountdownCanvas");
+        canvasObj.transform.SetParent(transform);
+        countdownCanvas = canvasObj.AddComponent<Canvas>();
+        countdownCanvas.renderMode = RenderMode.WorldSpace;
+        countdownCanvas.sortingOrder = 100; // 确保在其他UI之上
+        
+        // 设置Canvas位置（玩家头顶）
+        Vector3 canvasPosition = transform.position + Vector3.up * countdownUIHeight;
+        canvasObj.transform.position = canvasPosition;
+        
+        // 创建CanvasScaler组件
+        UnityEngine.UI.CanvasScaler canvasScaler = canvasObj.AddComponent<UnityEngine.UI.CanvasScaler>();
+        canvasScaler.uiScaleMode = UnityEngine.UI.CanvasScaler.ScaleMode.ScaleWithScreenSize;
+        canvasScaler.referenceResolution = new Vector2(1920, 1080);
+        
+        // 创建GraphicRaycaster组件
+        canvasObj.AddComponent<UnityEngine.UI.GraphicRaycaster>();
+        
+        // 创建倒计时文本对象
+        countdownUI = new GameObject("CountdownText");
+        countdownUI.transform.SetParent(canvasObj.transform, false);
+        
+        // 添加Text组件
+        countdownText = countdownUI.AddComponent<UnityEngine.UI.Text>();
+        countdownText.text = "0";
+        countdownText.font = Resources.GetBuiltinResource<Font>("Arial.ttf");
+        countdownText.fontSize = countdownFontSize;
+        countdownText.color = countdownTextColor;
+        countdownText.alignment = TextAnchor.MiddleCenter;
+        
+        // 设置文本位置和大小
+        RectTransform textRect = countdownText.GetComponent<RectTransform>();
+        textRect.sizeDelta = new Vector2(100, 50);
+        textRect.anchoredPosition = Vector2.zero;
+        
+        // 初始时隐藏倒计时UI
+        countdownUI.SetActive(false);
+        
+        if (enableCountdownLogging)
+        {
+            GameLogger.LogDev($"Player: 自动创建倒计时UI完成 - {gameObject.name}");
+        }
+    }
+    
+    /// <summary>
+    /// 更新倒计时
+    /// </summary>
+    private void UpdateCountdown()
+    {
+        if (isCountdownActive)
+        {
+            countdownTimer -= Time.deltaTime;
+            
+            // 更新倒计时文本显示
+            if (countdownText != null)
+            {
+                countdownText.text = Mathf.Ceil(countdownTimer).ToString();
+            }
+            
+            // 更新倒计时UI位置，跟随玩家移动
+            if (countdownCanvas != null)
+            {
+                Vector3 canvasPosition = transform.position + Vector3.up * countdownUIHeight;
+                countdownCanvas.transform.position = canvasPosition;
+            }
+            
+            // 检查倒计时是否结束
+            if (countdownTimer <= 0f)
+            {
+                OnCountdownFinished();
+            }
+        }
+    }
+    
+    /// <summary>
+    /// 开始倒计时
+    /// </summary>
+    /// <param name="duration">倒计时持续时间（秒），如果为-1则使用默认时间</param>
+    public void StartCountdown(float duration = -1f)
+    {
+        // 如果传入了自定义时间，使用自定义时间；否则使用默认时间
+        float actualDuration = duration > 0f ? duration : countdownDuration;
+        
+        countdownTimer = actualDuration;
+        isCountdownActive = true;
+        
+        // 显示倒计时UI
+        if (countdownUI != null)
+        {
+            countdownUI.SetActive(true);
+        }
+        
+        // 确保倒计时UI跟随玩家位置
+        if (countdownCanvas != null)
+        {
+            Vector3 canvasPosition = transform.position + Vector3.up * countdownUIHeight;
+            countdownCanvas.transform.position = canvasPosition;
+        }
+        
+        if (enableCountdownLogging)
+        {
+            GameLogger.LogDev($"Player: 开始倒计时 {actualDuration} 秒 - {gameObject.name}");
+        }
+    }
+    
+    /// <summary>
+    /// 停止倒计时
+    /// </summary>
+    public void StopCountdown()
+    {
+        isCountdownActive = false;
+        countdownTimer = 0f;
+        
+        // 隐藏倒计时UI
+        if (countdownUI != null)
+        {
+            countdownUI.SetActive(false);
+        }
+        
+        if (enableCountdownLogging)
+        {
+            GameLogger.LogDev($"Player: 停止倒计时 - {gameObject.name}");
+        }
+    }
+    
+    /// <summary>
+    /// 倒计时结束时的处理
+    /// </summary>
+    private void OnCountdownFinished()
+    {
+        isCountdownActive = false;
+        
+        // 隐藏倒计时UI
+        if (countdownUI != null)
+        {
+            countdownUI.SetActive(false);
+        }
+        
+        if (enableCountdownLogging)
+        {
+            GameLogger.LogDev($"Player: 倒计时结束 - {gameObject.name}");
+        }
+        
+        // 这里可以添加倒计时结束后的特殊逻辑
+        // 例如：重置玩家状态、播放音效、触发事件等
+        OnCountdownExpired();
+    }
+    
+    /// <summary>
+    /// 倒计时过期时的处理（可被子类重写或外部调用）
+    /// </summary>
+    protected virtual void OnCountdownExpired()
+    {
+        // 默认行为：重置为初始携带字符
+        ResetToInitialCarryCharacter();
+        
+        if (enableCountdownLogging)
+        {
+            GameLogger.LogDev($"Player: 倒计时过期，重置携带字符为 '{initialCarryCharacter}' - {gameObject.name}");
+        }
+    }
+    
+    /// <summary>
+    /// 检查倒计时是否正在运行
+    /// </summary>
+    /// <returns>倒计时是否正在运行</returns>
+    public bool IsCountdownActive()
+    {
+        return isCountdownActive;
+    }
+    
+    /// <summary>
+    /// 获取剩余倒计时时间
+    /// </summary>
+    /// <returns>剩余倒计时时间（秒）</returns>
+    public float GetRemainingCountdownTime()
+    {
+        return isCountdownActive ? countdownTimer : 0f;
+    }
+    
+    #endregion
 } 
