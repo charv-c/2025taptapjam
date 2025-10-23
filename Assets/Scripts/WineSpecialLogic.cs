@@ -66,26 +66,50 @@ public class WineSpecialLogic : MonoBehaviour
     /// 当玩家与酒互动时调用
     /// </summary>
     /// <param name="playerCarryCharacter">玩家携带的字符</param>
-    public void OnPlayerInteract(string playerCarryCharacter)
+    /// <param name="player">交互的玩家对象</param>
+    public void OnPlayerInteract(string playerCarryCharacter, Player player = null)
     {
         if (enableLogging)
         {
             GameLogger.LogDev($"WineSpecialLogic: 玩家与酒互动，携带字符: '{playerCarryCharacter}'");
         }
         
-        // 获取Player组件
-        Player player = FindObjectOfType<Player>();
+        // 如果没有传入Player参数，尝试查找
+        if (player == null)
+        {
+            player = FindObjectOfType<Player>();
+        }
+        
         if (player != null)
         {
             // 设置玩家携带字符为"蛇"
             player.SetCarryCharacter("蛇");
             
-            // 开始倒计时
-            player.StartCountdown();
+            // 查找该玩家对应的CountdownTimer组件
+            CountdownTimer countdownTimer = player.GetComponent<CountdownTimer>();
+            if (countdownTimer == null)
+            {
+                // 如果Player组件上没有CountdownTimer，尝试在子对象中查找
+                countdownTimer = player.GetComponentInChildren<CountdownTimer>();
+            }
+            
+            if (countdownTimer != null)
+            {
+                countdownTimer.StartCountdown();
+                
+                if (enableLogging)
+                {
+                    GameLogger.LogDev($"WineSpecialLogic: 已开始倒计时 - {player.gameObject.name}");
+                }
+            }
+            else
+            {
+                GameLogger.LogWarning($"WineSpecialLogic: 玩家 '{player.gameObject.name}' 没有关联的CountdownTimer组件");
+            }
             
             if (enableLogging)
             {
-                GameLogger.LogDev("WineSpecialLogic: 已将玩家携带字符设置为'蛇'并开始倒计时");
+                GameLogger.LogDev("WineSpecialLogic: 已将玩家携带字符设置为'蛇'");
             }
         }
         else
