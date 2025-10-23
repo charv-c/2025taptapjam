@@ -592,4 +592,106 @@ public class CountdownTimer : MonoBehaviour
 #endif
         return null;
     }
+    
+    /// <summary>
+    /// 检查初始倒计时状态，如果为0则隐藏
+    /// </summary>
+    private void CheckInitialCountdownState()
+    {
+        if (countdownTimer <= 0f)
+        {
+            // 倒计时为0时，隐藏UI并设置为非激活状态
+            isCountdownActive = false;
+            if (countdownUI != null)
+            {
+                countdownUI.SetActive(false);
+            }
+            
+            if (enableCountdownLogging)
+            {
+                GameLogger.LogDev($"CountdownTimer: 初始倒计时为0，隐藏UI - {gameObject.name}");
+            }
+        }
+    }
+    
+    /// <summary>
+    /// 检查退出弹窗状态并暂停倒计时
+    /// </summary>
+    private void CheckExitDialogState()
+    {
+        // 检查退出弹窗是否显示
+        bool exitDialogVisible = IsExitDialogVisible();
+        
+        if (exitDialogVisible && isCountdownActive && !isPaused)
+        {
+            // 退出弹窗显示时暂停倒计时
+            PauseCountdown();
+            
+            if (enableCountdownLogging)
+            {
+                GameLogger.LogDev($"CountdownTimer: 退出弹窗显示，暂停倒计时 - {gameObject.name}");
+            }
+        }
+        else if (!exitDialogVisible && isPaused)
+        {
+            // 退出弹窗隐藏时恢复倒计时
+            ResumeCountdown();
+            
+            if (enableCountdownLogging)
+            {
+                GameLogger.LogDev($"CountdownTimer: 退出弹窗隐藏，恢复倒计时 - {gameObject.name}");
+            }
+        }
+    }
+    
+    /// <summary>
+    /// 检查退出弹窗是否可见
+    /// </summary>
+    /// <returns>退出弹窗是否可见</returns>
+    private bool IsExitDialogVisible()
+    {
+        // 检查ExitGameManager的确认对话框是否显示
+        if (ExitGameManager.Instance != null)
+        {
+            // 通过检查Time.timeScale是否为0来判断是否有弹窗显示
+            // 或者直接检查ExitGameManager的对话框状态
+            return Time.timeScale == 0f;
+        }
+        
+        return false;
+    }
+    
+    /// <summary>
+    /// 暂停倒计时
+    /// </summary>
+    public void PauseCountdown()
+    {
+        if (isCountdownActive && !isPaused)
+        {
+            isPaused = true;
+            pausedTime = countdownTimer;
+            
+            if (enableCountdownLogging)
+            {
+                GameLogger.LogDev($"CountdownTimer: 倒计时已暂停 - {gameObject.name}");
+            }
+        }
+    }
+    
+    /// <summary>
+    /// 恢复倒计时
+    /// </summary>
+    public void ResumeCountdown()
+    {
+        if (isCountdownActive && isPaused)
+        {
+            isPaused = false;
+            countdownTimer = pausedTime;
+            
+            if (enableCountdownLogging)
+            {
+                GameLogger.LogDev($"CountdownTimer: 倒计时已恢复 - {gameObject.name}");
+            }
+        }
+    }
 }
