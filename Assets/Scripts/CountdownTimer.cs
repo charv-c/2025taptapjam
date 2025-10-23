@@ -661,37 +661,4 @@ public class CountdownTimer : MonoBehaviour
         return false;
     }
     
-    /// <summary>
-    /// 暂停倒计时
-    /// </summary>
-    public void PauseCountdown()
-    {
-        if (isCountdownActive && !isPaused)
-        {
-            isPaused = true;
-            pausedTime = countdownTimer;
-            
-            if (enableCountdownLogging)
-            {
-                GameLogger.LogDev($"CountdownTimer: 倒计时已暂停 - {gameObject.name}");
-            }
-        }
-    }
-    
-    /// <summary>
-    /// 恢复倒计时
-    /// </summary>
-    public void ResumeCountdown()
-    {
-        if (isCountdownActive && isPaused)
-        {
-            isPaused = false;
-            countdownTimer = pausedTime;
-            
-            if (enableCountdownLogging)
-            {
-                GameLogger.LogDev($"CountdownTimer: 倒计时已恢复 - {gameObject.name}");
-            }
-        }
-    }
 }
