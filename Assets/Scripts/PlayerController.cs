@@ -77,6 +77,7 @@ public class PlayerController : MonoBehaviour
         // 检测切换按键
         if (Input.GetKeyDown(switchKey) && players.Count > 1)
         {
+            GameLogger.LogDev($"PlayerController: 检测到切换按键 {switchKey}，玩家总数: {players.Count}");
             SwitchPlayer();
         }
 
@@ -264,6 +265,7 @@ public class PlayerController : MonoBehaviour
     {
         // 通过将switchKey设置为None来禁用切换
         switchKey = KeyCode.None;
+        GameLogger.LogDev("PlayerController: 已禁用玩家切换功能");
     }
 
     // 公共方法：启用玩家切换功能
@@ -271,6 +273,7 @@ public class PlayerController : MonoBehaviour
     {
         // 重新启用切换键为空格键
         switchKey = KeyCode.Space;
+        GameLogger.LogDev("PlayerController: 已启用玩家切换功能");
     }
     
     /// <summary>
