@@ -713,8 +713,8 @@ public class Highlight : MonoBehaviour
             if (wineLogic != null)
             {
                 string carryCharacter = player != null ? player.CarryCharacter : "";
-                GameLogger.LogDev($"FunctionA: 调用WineSpecialLogic.OnPlayerInteract('{carryCharacter}')");
-                wineLogic.OnPlayerInteract(carryCharacter);
+                GameLogger.LogDev($"FunctionA: 调用WineSpecialLogic.OnPlayerInteract('{carryCharacter}', {player?.gameObject.name})");
+                wineLogic.OnPlayerInteract(carryCharacter, player);
                 GameLogger.LogDev("FunctionA: 酒对象处理完成，返回");
             }
             else
