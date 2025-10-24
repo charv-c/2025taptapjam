@@ -19,6 +19,9 @@ public class CountdownTimer : MonoBehaviour
     [SerializeField] private bool autoCreateUI = true; // 是否自动创建UI
     [SerializeField] private bool followTarget = true; // 是否跟随目标对象移动
     
+    [Header("蛇状态Sprite设置")]
+    [SerializeField] private Sprite snakeSprite; // 蛇状态时的sprite
+    
     // 倒计时相关变量
     private bool isCountdownActive = false;
     private float countdownTimer = 0f;
@@ -34,6 +37,12 @@ public class CountdownTimer : MonoBehaviour
     private bool isPaused = false;
     private float pausedTime = 0f; // 暂停时的时间
     
+    // Player组件引用和sprite管理
+    private Player playerComponent;
+    private SpriteRenderer playerSpriteRenderer;
+    private Sprite originalPlayerSprite; // 存储原始sprite
+    private bool isSnakeState = false; // 当前是否为蛇状态
+    
     void Start()
     {
         // 获取主摄像机
@@ -45,6 +54,9 @@ public class CountdownTimer : MonoBehaviour
         
         // 设置目标对象为当前对象
         targetTransform = transform;
+        
+        // 初始化Player组件引用
+        InitializePlayerReference();
         
         // 如果启用自动创建UI，则初始化
         if (autoCreateUI)
@@ -61,8 +73,49 @@ public class CountdownTimer : MonoBehaviour
         // 检查退出弹窗状态并暂停倒计时
         CheckExitDialogState();
         
+        // 检查Player状态变化并切换sprite
+        CheckPlayerStateAndUpdateSprite();
+        
         // 更新倒计时
         UpdateCountdown();
+    }
+    
+    /// <summary>
+    /// 初始化Player组件引用
+    /// </summary>
+    private void InitializePlayerReference()
+    {
+        // 获取Player组件
+        playerComponent = GetComponent<Player>();
+        if (playerComponent == null)
+        {
+            // 如果当前对象没有Player组件，尝试在父对象中查找
+            playerComponent = GetComponentInParent<Player>();
+        }
+        
+        if (playerComponent != null)
+        {
+            // 获取Player的SpriteRenderer组件
+            playerSpriteRenderer = playerComponent.GetComponent<SpriteRenderer>();
+            if (playerSpriteRenderer != null)
+            {
+                // 保存原始sprite
+                originalPlayerSprite = playerSpriteRenderer.sprite;
+                
+                if (enableCountdownLogging)
+                {
+                    GameLogger.LogDev($"CountdownTimer: 成功初始化Player引用 - {gameObject.name}");
+                }
+            }
+            else
+            {
+                GameLogger.LogWarning($"CountdownTimer: Player组件没有SpriteRenderer - {gameObject.name}");
+            }
+        }
+        else
+        {
+            GameLogger.LogWarning($"CountdownTimer: 未找到Player组件 - {gameObject.name}");
+        }
     }
     
     /// <summary>
@@ -682,6 +735,77 @@ public class CountdownTimer : MonoBehaviour
         }
         
         return false;
+    }
+    
+    /// <summary>
+    /// 检查Player状态变化并更新sprite
+    /// </summary>
+    private void CheckPlayerStateAndUpdateSprite()
+    {
+        if (playerComponent == null || playerSpriteRenderer == null)
+        {
+            return;
+        }
+        
+        // 检查当前携带字符是否为"蛇"
+        bool currentIsSnake = playerComponent.CarryCharacter == "蛇";
+        
+        // 如果状态发生变化
+        if (currentIsSnake != isSnakeState)
+        {
+            isSnakeState = currentIsSnake;
+            
+            if (isSnakeState)
+            {
+                // 变为蛇状态，切换到蛇sprite
+                SwitchToSnakeSprite();
+            }
+            else
+            {
+                // 不是蛇状态，恢复原始sprite
+                RestoreOriginalSprite();
+            }
+        }
+    }
+    
+    /// <summary>
+    /// 切换到蛇状态sprite
+    /// </summary>
+    private void SwitchToSnakeSprite()
+    {
+        if (playerSpriteRenderer != null && snakeSprite != null)
+        {
+            playerSpriteRenderer.sprite = snakeSprite;
+            
+            if (enableCountdownLogging)
+            {
+                GameLogger.LogDev($"CountdownTimer: 已切换到蛇状态sprite - {gameObject.name}");
+            }
+        }
+        else if (snakeSprite == null)
+        {
+            GameLogger.LogWarning($"CountdownTimer: 蛇状态sprite未设置 - {gameObject.name}");
+        }
+    }
+    
+    /// <summary>
+    /// 恢复原始sprite
+    /// </summary>
+    private void RestoreOriginalSprite()
+    {
+        if (playerSpriteRenderer != null && originalPlayerSprite != null)
+        {
+            playerSpriteRenderer.sprite = originalPlayerSprite;
+            
+            if (enableCountdownLogging)
+            {
+                GameLogger.LogDev($"CountdownTimer: 已恢复原始sprite - {gameObject.name}");
+            }
+        }
+        else if (originalPlayerSprite == null)
+        {
+            GameLogger.LogWarning($"CountdownTimer: 原始sprite未保存 - {gameObject.name}");
+        }
     }
     
 }

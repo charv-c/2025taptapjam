@@ -1360,8 +1360,9 @@ public class Highlight : MonoBehaviour
                 GameLogger.LogDev($"隐藏民对象: {gameObject.name}");
                 HideObject();
             }
-            else if (letter == "骄")
+            if (letter == "乔")
             {
+                GameLogger.LogDev($"显示乔对象: {gameObject.name}");
                 ShowObject();
             }
         }
@@ -1376,7 +1377,7 @@ public class Highlight : MonoBehaviour
                 ShowTargetObject("汉字");
                 GameLogger.LogDev($"商人移动完成，已显示汉字物体");
             }
-            else if (letter == "椟")
+            if (letter == "椟")
             {
                 GameLogger.LogDev($"显示椟对象: {gameObject.name}");
                 ShowObject();
