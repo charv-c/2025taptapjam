@@ -87,7 +87,8 @@ public class SeasonParticleSetup : MonoBehaviour
         particleObj.transform.localPosition = Vector3.zero;
         
         ParticleSystem particle = particleObj.AddComponent<ParticleSystem>();
-        particle.playOnAwake = false;
+        var main = particle.main;
+        main.playOnAwake = false;
         
         return particleObj;
     }
@@ -196,7 +197,7 @@ public class SeasonParticleSetup : MonoBehaviour
             textureSheetAnimation.frameOverTime = new ParticleSystem.MinMaxCurve(0f);
             
             // 确保使用随机行
-            textureSheetAnimation.useRandomRow = true;
+            textureSheetAnimation.rowMode = ParticleSystemAnimationRowMode.Random;
             
             // 设置渲染模式以正确显示Sprite
             main.startRotation3D = true;
@@ -293,7 +294,7 @@ public class SeasonParticleSetup : MonoBehaviour
             textureSheetAnimation.frameOverTime = new ParticleSystem.MinMaxCurve(0f);
             
             // 确保使用随机行
-            textureSheetAnimation.useRandomRow = true;
+            textureSheetAnimation.rowMode = ParticleSystemAnimationRowMode.Random;
             
             // 设置渲染模式以正确显示Sprite
             main.startRotation3D = true;

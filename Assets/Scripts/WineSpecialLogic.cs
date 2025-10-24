@@ -13,7 +13,7 @@ public class WineSpecialLogic : MonoBehaviour
     [Header("调试设置")]
     [SerializeField] private bool enableLogging = true;
     
-    private bool isPlayerInRange = false;
+    // private bool isPlayerInRange = false; // 已移除未使用的字段
     private SpriteRenderer wineSpriteRenderer;
     
     private void Start()
@@ -44,7 +44,7 @@ public class WineSpecialLogic : MonoBehaviour
             GameLogger.LogDev($"WineSpecialLogic: 玩家进入酒的触发区域 - {gameObject.name}");
         }
         
-        isPlayerInRange = true;
+        // isPlayerInRange = true; // 已移除未使用的字段
         SetToHighlightedState();
     }
     
@@ -58,7 +58,7 @@ public class WineSpecialLogic : MonoBehaviour
             GameLogger.LogDev($"WineSpecialLogic: 玩家离开酒的触发区域 - {gameObject.name}");
         }
         
-        isPlayerInRange = false;
+        // isPlayerInRange = false; // 已移除未使用的字段
         SetToNormalState();
     }
     

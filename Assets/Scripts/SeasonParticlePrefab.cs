@@ -192,7 +192,7 @@ public class SeasonParticlePrefab : MonoBehaviour
             textureSheetAnimation.frameOverTime = new ParticleSystem.MinMaxCurve(0f);
             
             // 确保使用随机行
-            textureSheetAnimation.useRandomRow = true;
+            textureSheetAnimation.rowMode = ParticleSystemAnimationRowMode.Random;
             
             // 设置渲染模式以正确显示Sprite
             main.startRotation3D = true;
@@ -289,7 +289,7 @@ public class SeasonParticlePrefab : MonoBehaviour
             textureSheetAnimation.frameOverTime = new ParticleSystem.MinMaxCurve(0f);
             
             // 确保使用随机行
-            textureSheetAnimation.useRandomRow = true;
+            textureSheetAnimation.rowMode = ParticleSystemAnimationRowMode.Random;
             
             // 设置渲染模式以正确显示Sprite
             main.startRotation3D = true;

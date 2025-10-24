@@ -4,7 +4,7 @@ public class Player : MonoBehaviour
 {
     [Header("移动设置")]
     [SerializeField] private float moveSpeed = 5f;
-    [SerializeField] private float screenBoundaryOffset = 0.5f; // 距离屏幕边界的偏移量
+    // [SerializeField] private float screenBoundaryOffset = 0.5f; // 已移除未使用的字段
     [SerializeField] private bool isPlayer1 = true; // 是否为玩家1（左半边）
     
     [Header("初始位置设置")]

@@ -204,8 +204,8 @@ public class Highlight : MonoBehaviour
     /// <param name="targetObjectName">目标对象的名称</param>
     private void ShowTargetObject(string targetObjectName)
     {
-        // 在场景中查找目标对象
-        GameObject targetObject = GameObject.Find(targetObjectName);
+        // 在场景中查找目标对象（包括未激活的对象）
+        GameObject targetObject = FindObjectByName(targetObjectName);
         
         if (targetObject == null)
         {
@@ -213,22 +213,46 @@ public class Highlight : MonoBehaviour
             return;
         }
         
-        // 获取目标对象的Highlight组件
-        Highlight targetHighlight = targetObject.GetComponent<Highlight>();
-        if (targetHighlight != null)
+        GameLogger.LogDev($"Highlight: 找到目标对象 '{targetObjectName}'，当前状态: activeInHierarchy={targetObject.activeInHierarchy}");
+        
+        // 直接激活GameObject
+        if (!targetObject.activeInHierarchy)
         {
-            GameLogger.LogDev($"Highlight: 显示目标对象 '{targetObjectName}'");
-            targetHighlight.ShowObject();
+            GameLogger.LogDev($"Highlight: 激活目标对象 '{targetObjectName}'");
+            targetObject.SetActive(true);
         }
         else
         {
-            // 如果目标对象没有Highlight组件，直接激活GameObject
-            if (!targetObject.activeInHierarchy)
+            GameLogger.LogDev($"Highlight: 目标对象 '{targetObjectName}' 已经激活");
+        }
+    }
+    
+    /// <summary>
+    /// 根据名称查找对象（包括未激活的对象）
+    /// </summary>
+    /// <param name="objectName">对象名称</param>
+    /// <returns>找到的对象，如果未找到返回null</returns>
+    private GameObject FindObjectByName(string objectName)
+    {
+        // 首先尝试使用GameObject.Find（只能找到激活的对象）
+        GameObject targetObject = GameObject.Find(objectName);
+        if (targetObject != null)
+        {
+            return targetObject;
+        }
+        
+        // 如果GameObject.Find找不到，遍历所有对象（包括未激活的）
+        GameObject[] allObjects = Resources.FindObjectsOfTypeAll<GameObject>();
+        foreach (GameObject obj in allObjects)
+        {
+            if (obj.name == objectName && obj.scene.isLoaded)
             {
-                GameLogger.LogDev($"Highlight: 激活目标对象 '{targetObjectName}'（无Highlight组件）");
-                targetObject.SetActive(true);
+                GameLogger.LogDev($"Highlight: 在未激活对象中找到 '{objectName}': {obj.name}");
+                return obj;
             }
         }
+        
+        return null;
     }
 
     void Start()
@@ -333,10 +357,19 @@ public class Highlight : MonoBehaviour
             cachedCollider2D.enabled = !hidden;
         }
 
-        // 灯光
+        // 灯光 - 修复：每个对象的light2d状态应该独立控制
         if (light2d != null)
         {
-            light2d.enabled = !hidden && isHighlighted; // 高亮时才开灯
+            // 如果对象被隐藏，直接关闭灯光
+            if (hidden)
+            {
+                light2d.enabled = false;
+            }
+            else
+            {
+                // 如果对象显示，根据高亮状态决定灯光
+                light2d.enabled = isHighlighted;
+            }
         }
     }
 
@@ -1339,6 +1372,9 @@ public class Highlight : MonoBehaviour
             {
                 GameLogger.LogDev($"商对象收到'帛'广播，开始移动到'商-2'的位置");
                 MoveToTargetObject("商-2");
+                // 商人移动后显示场景中的"汉字"物体
+                ShowTargetObject("汉字");
+                GameLogger.LogDev($"商人移动完成，已显示汉字物体");
             }
             else if (letter == "椟")
             {
@@ -1354,10 +1390,13 @@ public class Highlight : MonoBehaviour
                 GameLogger.LogDev($"隐藏鼠对象: {gameObject.name}");
                 HideObject();
             }
-            else if (letter == "维")
+            if (letter == "维")
             {
                 GameLogger.LogDev($"显示维对象: {gameObject.name}");
                 ShowObject();
+                // 设置维为可收集状态
+                collectable = true;
+                GameLogger.LogDev($"维对象已设置为可收集状态: {gameObject.name}");
             }
         }
         else if (broadcastedValue == "清")

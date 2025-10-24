@@ -157,6 +157,13 @@ public class CountdownTimer : MonoBehaviour
     /// </summary>
     private void UpdateCountdown()
     {
+        // 检查倒计时是否为0，如果是则隐藏UI
+        if (countdownTimer <= 0f && isCountdownActive)
+        {
+            OnCountdownFinished();
+            return;
+        }
+        
         if (isCountdownActive && !isPaused)
         {
             countdownTimer -= Time.deltaTime;
@@ -193,6 +200,22 @@ public class CountdownTimer : MonoBehaviour
         
         countdownTimer = actualDuration;
         isCountdownActive = true;
+        
+        // 检查倒计时是否为0，如果为0则隐藏UI
+        if (countdownTimer <= 0f)
+        {
+            isCountdownActive = false;
+            if (countdownUI != null)
+            {
+                countdownUI.SetActive(false);
+            }
+            
+            if (enableCountdownLogging)
+            {
+                GameLogger.LogDev($"CountdownTimer: 倒计时为0，隐藏UI - {gameObject.name}");
+            }
+            return;
+        }
         
         // 显示倒计时UI
         if (countdownUI != null)

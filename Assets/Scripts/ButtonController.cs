@@ -8,7 +8,7 @@ public class ButtonController : MonoBehaviour
 {
     [Header("按钮设置")]
     [SerializeField] private Button splitButton, combineButton;
-    [SerializeField] private float hideDelay = 0.1f;
+    // [SerializeField] private float hideDelay = 0.1f; // 已移除未使用的字段
     
     [Header("UI提示设置")]
     [SerializeField] private TextMeshProUGUI messageText;
@@ -21,8 +21,8 @@ public class ButtonController : MonoBehaviour
     [SerializeField] private float spiralTurns = 3f; // 螺旋圈数
     [SerializeField] private Transform targetPosition; // 目标位置
     [SerializeField] private Canvas targetCanvas; // 目标Canvas
-    [SerializeField] private float flyDuration = 1.5f; // 飞行时长
-    [SerializeField] private float spiralRadius = 50f; // 螺旋半径
+    // [SerializeField] private float flyDuration = 1.5f; // 已移除未使用的字段
+    // [SerializeField] private float spiralRadius = 50f; // 已移除未使用的字段
     
     [Header("字体设置")]
     [SerializeField] private TMP_FontAsset chineseFont; // 中文字体

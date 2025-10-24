@@ -135,7 +135,7 @@ public class SeasonParticleManager : MonoBehaviour
             textureSheetAnimation.frameOverTime = new ParticleSystem.MinMaxCurve(0f);
             
             // 确保使用随机行
-            textureSheetAnimation.useRandomRow = true;
+            textureSheetAnimation.rowMode = ParticleSystemAnimationRowMode.Random;
             
             // 设置渲染模式为Stretched Billboard以正确显示Sprite
             main.startRotation3D = true;
@@ -222,7 +222,7 @@ public class SeasonParticleManager : MonoBehaviour
             textureSheetAnimation.frameOverTime = new ParticleSystem.MinMaxCurve(0f);
             
             // 确保使用随机行
-            textureSheetAnimation.useRandomRow = true;
+            textureSheetAnimation.rowMode = ParticleSystemAnimationRowMode.Random;
             
             // 设置渲染模式为Stretched Billboard以正确显示Sprite
             main.startRotation3D = true;
@@ -456,7 +456,7 @@ public class SeasonParticleManager : MonoBehaviour
             GameLogger.LogDev($"  - 模式: {textureSheetAnimation.mode}");
             GameLogger.LogDev($"  - Sprite数量: {textureSheetAnimation.spriteCount}");
             GameLogger.LogDev($"  - Start Frame范围: {textureSheetAnimation.startFrame.constantMin} - {textureSheetAnimation.startFrame.constantMax}");
-            GameLogger.LogDev($"  - 使用随机行: {textureSheetAnimation.useRandomRow}");
+            GameLogger.LogDev($"  - 行模式: {textureSheetAnimation.rowMode}");
             GameLogger.LogDev($"  - Sprite1: {(springParticleSprite1 != null ? springParticleSprite1.name : "null")}");
             GameLogger.LogDev($"  - Sprite2: {(springParticleSprite2 != null ? springParticleSprite2.name : "null")}");
         }
@@ -470,7 +470,7 @@ public class SeasonParticleManager : MonoBehaviour
             GameLogger.LogDev($"  - 模式: {textureSheetAnimation.mode}");
             GameLogger.LogDev($"  - Sprite数量: {textureSheetAnimation.spriteCount}");
             GameLogger.LogDev($"  - Start Frame范围: {textureSheetAnimation.startFrame.constantMin} - {textureSheetAnimation.startFrame.constantMax}");
-            GameLogger.LogDev($"  - 使用随机行: {textureSheetAnimation.useRandomRow}");
+            GameLogger.LogDev($"  - 行模式: {textureSheetAnimation.rowMode}");
             GameLogger.LogDev($"  - Sprite1: {(summerParticleSprite1 != null ? summerParticleSprite1.name : "null")}");
             GameLogger.LogDev($"  - Sprite2: {(summerParticleSprite2 != null ? summerParticleSprite2.name : "null")}");
         }
