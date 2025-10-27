@@ -22,7 +22,7 @@ public class Player : MonoBehaviour
     private bool inputEnabled = false; // 控制输入是否启用，默认禁用
     private float currentHorizontalInput = 0f;
     private float currentVerticalInput = 0f;
-    private bool enterKeyEnabled = true; // 控制回车键是否启用，默认启用
+    private bool enterKeyEnabled = true; // 控制F键是否启用，默认启用
     public string CarryCharacter="人";
     
     // 颜色控制相关
@@ -77,8 +77,8 @@ public class Player : MonoBehaviour
             OnRKeyPressed();
         }
         
-        // 检测回车键按下（只有在启用时才响应）
-        if (enterKeyEnabled && Input.GetKeyDown(KeyCode.Return))
+        // 检测F键按下（只有在启用时才响应）
+        if (enterKeyEnabled && Input.GetKeyDown(KeyCode.F))
         {
             OnEnterKeyPressed();
         }
@@ -371,17 +371,17 @@ public class Player : MonoBehaviour
         ClearAllCountdownTimers();
     }
     
-    // 回车键按下时的处理
+    // F键按下时的处理
     private void OnEnterKeyPressed()
     {
         // 检查当前玩家是否为当前控制角色
         if (!IsCurrentControlledPlayer())
         {
-            GameLogger.LogDev($"Player: 当前玩家不是控制角色，忽略回车键输入");
+            GameLogger.LogDev($"Player: 当前玩家不是控制角色，忽略F键输入");
             return;
         }
         
-        GameLogger.LogDev($"Player: 当前玩家是控制角色，执行回车键交互逻辑");
+        GameLogger.LogDev($"Player: 当前玩家是控制角色，执行F键交互逻辑");
         // 查找附近的Highlight对象并触发交互
         TriggerNearbyHighlightInteraction();
     }
@@ -727,14 +727,14 @@ public class Player : MonoBehaviour
         return CarryCharacter == character;
     }
     
-    // 启用/禁用回车键响应
+    // 启用/禁用F键响应
     public void SetEnterKeyEnabled(bool enabled)
     {
         enterKeyEnabled = enabled;
-        GameLogger.LogDev($"Player: 回车键响应已{(enabled ? "启用" : "禁用")}");
+        GameLogger.LogDev($"Player: F键响应已{(enabled ? "启用" : "禁用")}");
     }
     
-    // 获取回车键响应状态
+    // 获取F键响应状态
     public bool IsEnterKeyEnabled()
     {
         return enterKeyEnabled;
