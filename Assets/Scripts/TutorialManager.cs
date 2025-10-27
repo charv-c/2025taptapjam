@@ -147,7 +147,7 @@ public class TutorialManager : MonoBehaviour
             }
         }
         
-        // 检测 E 键按下继续教程，但禁用回车键继续
+        // 检测 E 键按下继续教程，但禁用F键继续
         if (Input.GetKeyDown(KeyCode.E))
         {
             // 只有当继续按钮可见且不在等待WASD输入时才允许 E 键继续
@@ -158,8 +158,8 @@ public class TutorialManager : MonoBehaviour
             }
         }
         
-        // 禁用回车键继续教程的功能
-        // 回车键现在只用于与游戏对象交互，不能继续教程
+        // 禁用F键继续教程的功能
+        // F键现在只用于与游戏对象交互，不能继续教程
     }
     #endregion
 
@@ -427,12 +427,12 @@ public class TutorialManager : MonoBehaviour
             GameLogger.LogDev("TutorialManager: 已设置遮罩到右边位置");
         }
         
-        // 启用回车键响应，允许玩家与小狗交互
+        // 启用F键响应，允许玩家与小狗交互
         if (playerController != null && playerController.GetCurrentPlayer() != null)
         {
             Player currentPlayer = playerController.GetCurrentPlayer();
             currentPlayer.SetEnterKeyEnabled(true);
-            GameLogger.LogDev("TutorialManager: 已启用回车键响应，允许与小狗交互");
+            GameLogger.LogDev("TutorialManager: 已启用F键响应，允许与小狗交互");
         }
 
         // 禁用字符选择
