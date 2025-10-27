@@ -56,7 +56,7 @@ public class PublicData : MonoBehaviour
     public static string sceneName;
     
     // 新增：数据驱动的关卡序列
-    public static readonly string[] LevelSequence = { "level1", "level2", "level3" };
+    public static readonly string[] LevelSequence = { "level1", "level2", "level3", "level4" };
     
     // 动态关卡序列获取
     private static string[] _cachedLevelSequence = null;
