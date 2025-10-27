@@ -459,7 +459,7 @@ public class Level3Manager : MonoBehaviour, IBootstrapAware
         if (playerController != null)
         {
             playerController.EnableCurrentPlayerMovement();
-            // 始终开启移动/基础输入，但按引导完成与否控制回车键与切换
+            // 始终开启移动/基础输入，但按引导完成与否控制F键与切换
             int count = playerController.GetPlayerCount();
             for (int i = 0; i < count; i++)
             {

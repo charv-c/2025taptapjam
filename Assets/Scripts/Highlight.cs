@@ -406,7 +406,7 @@ public class Highlight : MonoBehaviour
     {
         if (!enabled) return;
         
-        // 移除回车键检测，现在由Player统一处理
+        // 移除F键检测，现在由Player统一处理
     }
     
     private void OnTriggerEnter2D(Collider2D other)

@@ -455,7 +455,7 @@ public class InfoPopupManager : MonoBehaviour
         PlayerController playerController = FindObjectOfType<PlayerController>();
         if (playerController != null)
         {
-            // 启用所有玩家的移动和回车键响应
+            // 启用所有玩家的移动和F键响应
             for (int i = 0; i < playerController.GetPlayerCount(); i++)
             {
                 Player player = playerController.GetPlayerByIndex(i);

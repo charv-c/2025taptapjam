@@ -432,7 +432,7 @@ public class PlayerController : MonoBehaviour
     {
         GameLogger.LogDev("PlayerController: 强制启用所有玩家输入");
         
-        // 启用所有玩家的输入和回车键
+        // 启用所有玩家的输入和F键
         for (int i = 0; i < players.Count; i++)
         {
             Player player = players[i];
