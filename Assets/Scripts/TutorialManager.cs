@@ -125,7 +125,7 @@ public class TutorialManager : MonoBehaviour
         ExecuteCurrentStep();
         continueButton.onClick.AddListener(GoToNextStep);
         
-        // 禁用继续按钮的键盘导航，防止回车键触发
+        // 禁用继续按钮的键盘导航，防止F键触发
         Navigation noNavigation = new Navigation();
         noNavigation.mode = Navigation.Mode.None;
         continueButton.navigation = noNavigation;
@@ -413,7 +413,7 @@ public class TutorialManager : MonoBehaviour
     private void HandleMoveToDog()
     {
         SetGuideExpression(exprSideEye);
-        hintText.text = "这只小狗似乎很亲近你。靠近它并按下【回车键】进行互动。";
+        hintText.text = "这只小狗似乎很亲近你。靠近它并按下【F键】进行互动。";
         if (dogObject != null)
         {
             PointAtTarget(dogObject.transform);
@@ -502,7 +502,7 @@ public class TutorialManager : MonoBehaviour
     private void HandleMoveToGrass()
     {
         SetGuideExpression(exprSideEye);
-        hintText.text = "那片草丛里似乎藏着什么，靠近并按下【回车键】仔细看看吧。";
+        hintText.text = "那片草丛里似乎藏着什么，靠近并按下【F键】仔细看看吧。";
         if (grassObject != null)
         {
             GameLogger.LogDev($"TutorialManager: HandleMoveToGrass - 找到grassObject: {grassObject.name}");
@@ -684,7 +684,7 @@ public class TutorialManager : MonoBehaviour
     private void HandleMoveToDie()
     {
         SetGuideExpression(exprSideEye);
-        hintText.text = "这是祝英台的书房。请操作她靠近书桌上的【文牒】，并按下【回车键】。";
+        hintText.text = "这是祝英台的书房。请操作她靠近书桌上的【文牒】，并按下【F键】。";
         if (dieObject != null)
         {
             PointAtTarget(dieObject.transform);

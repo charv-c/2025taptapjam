@@ -1371,11 +1371,16 @@ public class Highlight : MonoBehaviour
             GameLogger.LogDev($"收到'帛'广播，当前对象letter={letter}");
             if (letter == "商")
             {
-                GameLogger.LogDev($"商对象收到'帛'广播，开始移动到'商-2'的位置");
-                MoveToTargetObject("商-2");
-                // 商人移动后显示场景中的"汉字"物体
-                ShowTargetObject("汉字");
-                GameLogger.LogDev($"商人移动完成，已显示汉字物体");
+                // 调用商特殊逻辑组件
+                ShangSpecialLogic shangLogic = GetComponent<ShangSpecialLogic>();
+                if (shangLogic != null)
+                {
+                    shangLogic.OnBoBroadcast();
+                }
+                else
+                {
+                    GameLogger.LogWarning($"Highlight: 商对象没有ShangSpecialLogic组件 - {gameObject.name}");
+                }
             }
             if (letter == "椟")
             {
