@@ -1,6 +1,7 @@
 using UnityEngine;
 using System.Collections;
 
+
 /// <summary>
 /// 商特殊逻辑组件
 /// 处理商对象的特殊移动逻辑和sprite切换
@@ -10,6 +11,7 @@ public class ShangSpecialLogic : MonoBehaviour
     [Header("商特殊设置")]
     [SerializeField] private bool enableLogging = true; // 是否启用日志
     [SerializeField] private Sprite moveSprite; // 移动时使用的sprite
+    [SerializeField] private Sprite lightMoveSprite; // Light2D移动时使用的sprite
     
     [Header("移动设置")]
     [SerializeField] private string targetObjectName = "商-2"; // 目标对象名称
@@ -20,6 +22,8 @@ public class ShangSpecialLogic : MonoBehaviour
     // 组件引用
     private SpriteRenderer spriteRenderer;
     private Sprite originalSprite; // 存储原始sprite
+    private UnityEngine.Rendering.Universal.Light2D childLight2D; // 子物体的Light2D组件
+    private Sprite originalLightSprite; // 存储Light2D的原始sprite
     private bool isMoving = false; // 是否正在移动
     
     void Start()
@@ -39,6 +43,26 @@ public class ShangSpecialLogic : MonoBehaviour
         else
         {
             GameLogger.LogWarning($"ShangSpecialLogic: 未找到SpriteRenderer组件 - {gameObject.name}");
+        }
+        
+        // 查找子物体的Light2D组件
+        childLight2D = GetComponentInChildren<UnityEngine.Rendering.Universal.Light2D>();
+        if (childLight2D != null)
+        {
+            // 保存Light2D的原始sprite
+            originalLightSprite = childLight2D.lightCookieSprite;
+            
+            if (enableLogging)
+            {
+                GameLogger.LogDev($"ShangSpecialLogic: 找到子物体Light2D组件，原始sprite已保存 - {gameObject.name}");
+            }
+        }
+        else
+        {
+            if (enableLogging)
+            {
+                GameLogger.LogDev($"ShangSpecialLogic: 未找到子物体Light2D组件 - {gameObject.name}");
+            }
         }
     }
     
@@ -89,6 +113,7 @@ public class ShangSpecialLogic : MonoBehaviour
     /// </summary>
     private void SwitchToMoveSprite()
     {
+        // 切换主物体的sprite
         if (spriteRenderer != null && moveSprite != null)
         {
             spriteRenderer.sprite = moveSprite;
@@ -101,6 +126,24 @@ public class ShangSpecialLogic : MonoBehaviour
         else if (moveSprite == null)
         {
             GameLogger.LogWarning($"ShangSpecialLogic: 移动sprite未设置 - {gameObject.name}");
+        }
+        
+        // 切换子物体Light2D的sprite
+        if (childLight2D != null && lightMoveSprite != null)
+        {
+            childLight2D.lightCookieSprite = lightMoveSprite;
+            
+            if (enableLogging)
+            {
+                GameLogger.LogDev($"ShangSpecialLogic: 已切换子物体Light2D的移动sprite - {gameObject.name}");
+            }
+        }
+        else if (childLight2D != null && lightMoveSprite == null)
+        {
+            if (enableLogging)
+            {
+                GameLogger.LogDev($"ShangSpecialLogic: Light2D移动sprite未设置，保持原始sprite - {gameObject.name}");
+            }
         }
     }
     
@@ -229,6 +272,7 @@ public class ShangSpecialLogic : MonoBehaviour
     /// </summary>
     public void RestoreOriginalSprite()
     {
+        // 恢复主物体的原始sprite
         if (spriteRenderer != null && originalSprite != null)
         {
             spriteRenderer.sprite = originalSprite;
@@ -236,6 +280,17 @@ public class ShangSpecialLogic : MonoBehaviour
             if (enableLogging)
             {
                 GameLogger.LogDev($"ShangSpecialLogic: 已恢复原始sprite - {gameObject.name}");
+            }
+        }
+        
+        // 恢复子物体Light2D的原始sprite
+        if (childLight2D != null && originalLightSprite != null)
+        {
+            childLight2D.lightCookieSprite = originalLightSprite;
+            
+            if (enableLogging)
+            {
+                GameLogger.LogDev($"ShangSpecialLogic: 已恢复子物体Light2D的原始sprite - {gameObject.name}");
             }
         }
     }
@@ -329,6 +384,20 @@ public class ShangSpecialLogic : MonoBehaviour
         if (enableLogging)
         {
             GameLogger.LogDev($"ShangSpecialLogic: 已设置移动持续时间为 {duration} - {gameObject.name}");
+        }
+    }
+    
+    /// <summary>
+    /// 设置Light2D移动sprite
+    /// </summary>
+    /// <param name="sprite">要设置的Light2D移动sprite</param>
+    public void SetLightMoveSprite(Sprite sprite)
+    {
+        lightMoveSprite = sprite;
+        
+        if (enableLogging)
+        {
+            GameLogger.LogDev($"ShangSpecialLogic: 已设置Light2D移动sprite - {gameObject.name}");
         }
     }
 }
