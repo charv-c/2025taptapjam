@@ -173,6 +173,87 @@ public class Highlight : MonoBehaviour
     }
     
     /// <summary>
+    /// 检查是否可以执行字符合成（化字前提条件）
+    /// 前提：carryletter，或者carryletter拆开后的一部分，和互动物体的letter能对应字符拆分列表的某一项
+    /// </summary>
+    /// <returns>如果可以执行字符合成则返回true</returns>
+    private bool CanPerformCharacterTransformation()
+    {
+        if (player == null)
+        {
+            GameLogger.LogDev($"CanPerformCharacterTransformation: 玩家为空，无法执行字符合成");
+            return false;
+        }
+        
+        string carryCharacter = player.CarryCharacter;
+        if (string.IsNullOrEmpty(carryCharacter))
+        {
+            GameLogger.LogDev($"CanPerformCharacterTransformation: 玩家携带字符为空，无法执行字符合成");
+            return false;
+        }
+        
+        GameLogger.LogDev($"CanPerformCharacterTransformation: 检查化字前提条件，玩家携带字符='{carryCharacter}'，互动物体字符='{letter}'");
+        
+        // 检查1：carryletter本身是否与互动物体的letter能对应字符拆分列表的某一项
+        if (CanCharactersCombine(carryCharacter, letter))
+        {
+            GameLogger.LogDev($"CanPerformCharacterTransformation: 玩家携带字符'{carryCharacter}'与互动物体字符'{letter}'可以直接合成");
+            return true;
+        }
+        
+        // 检查2：carryletter拆开后的一部分是否与互动物体的letter能对应字符拆分列表的某一项
+        if (PublicData.CanSplitString(carryCharacter))
+        {
+            var (part1, part2) = PublicData.GetStringSplit(carryCharacter);
+            GameLogger.LogDev($"CanPerformCharacterTransformation: 玩家携带字符'{carryCharacter}'可拆分为'{part1}'和'{part2}'");
+            
+            if (CanCharactersCombine(part1, letter))
+            {
+                GameLogger.LogDev($"CanPerformCharacterTransformation: 玩家携带字符'{carryCharacter}'的拆分部分'{part1}'与互动物体字符'{letter}'可以合成");
+                return true;
+            }
+            
+            if (CanCharactersCombine(part2, letter))
+            {
+                GameLogger.LogDev($"CanPerformCharacterTransformation: 玩家携带字符'{carryCharacter}'的拆分部分'{part2}'与互动物体字符'{letter}'可以合成");
+                return true;
+            }
+        }
+        
+        GameLogger.LogDev($"CanPerformCharacterTransformation: 化字前提条件不满足，玩家携带字符'{carryCharacter}'或其拆分部分无法与互动物体字符'{letter}'合成");
+        return false;
+    }
+    
+    /// <summary>
+    /// 检查两个字符是否可以合成
+    /// </summary>
+    /// <param name="char1">第一个字符</param>
+    /// <param name="char2">第二个字符</param>
+    /// <returns>如果可以合成则返回true</returns>
+    private bool CanCharactersCombine(string char1, string char2)
+    {
+        if (string.IsNullOrEmpty(char1) || string.IsNullOrEmpty(char2))
+        {
+            return false;
+        }
+        
+        // 使用PublicData.FindOriginalString检查两个字符是否可以合成
+        string combinedCharacter = PublicData.FindOriginalString(char1, char2);
+        bool canCombine = combinedCharacter != null;
+        
+        if (canCombine)
+        {
+            GameLogger.LogDev($"CanCharactersCombine: 字符'{char1}'和'{char2}'可以合成为'{combinedCharacter}'");
+        }
+        else
+        {
+            GameLogger.LogDev($"CanCharactersCombine: 字符'{char1}'和'{char2}'无法合成");
+        }
+        
+        return canCombine;
+    }
+    
+    /// <summary>
     /// 移动到指定名称的对象位置
     /// </summary>
     /// <param name="targetObjectName">目标对象的名称</param>
@@ -224,6 +305,35 @@ public class Highlight : MonoBehaviour
         else
         {
             GameLogger.LogDev($"Highlight: 目标对象 '{targetObjectName}' 已经激活");
+        }
+    }
+    
+    /// <summary>
+    /// 隐藏指定名称的对象
+    /// </summary>
+    /// <param name="targetObjectName">目标对象的名称</param>
+    private void HideTargetObject(string targetObjectName)
+    {
+        // 在场景中查找目标对象（包括未激活的对象）
+        GameObject targetObject = FindObjectByName(targetObjectName);
+        
+        if (targetObject == null)
+        {
+            GameLogger.LogWarning($"Highlight: 未找到名为 '{targetObjectName}' 的目标对象");
+            return;
+        }
+        
+        GameLogger.LogDev($"Highlight: 找到目标对象 '{targetObjectName}'，当前状态: activeInHierarchy={targetObject.activeInHierarchy}");
+        
+        // 如果对象是激活的，则隐藏它
+        if (targetObject.activeInHierarchy)
+        {
+            GameLogger.LogDev($"Highlight: 隐藏目标对象 '{targetObjectName}'");
+            targetObject.SetActive(false);
+        }
+        else
+        {
+            GameLogger.LogDev($"Highlight: 目标对象 '{targetObjectName}' 已经隐藏");
         }
     }
     
@@ -522,6 +632,13 @@ public class Highlight : MonoBehaviour
         if (!canControlMisquare)
         {
             GameLogger.LogWarning($"ChangeMi: canControlMisquare为false，无法控制米字格");
+            return;
+        }
+        
+        // 检查化字前提条件
+        if (!CanPerformCharacterTransformation())
+        {
+            GameLogger.LogDev($"ChangeMi: 化字前提条件不满足，无法进行字符合成");
             return;
         }
         
@@ -1404,6 +1521,9 @@ public class Highlight : MonoBehaviour
                 collectable = true;
                 GameLogger.LogDev($"维对象已设置为可收集状态: {gameObject.name}");
             }
+            
+            // 隐藏场景中名为"绳"的物体（所有对象都会执行这个逻辑）
+            HideTargetObject("绳");
         }
         else if (broadcastedValue == "清")
         {
@@ -1430,6 +1550,11 @@ public class Highlight : MonoBehaviour
             {
                 GameLogger.LogDev($"显示汉对象: {gameObject.name}");
                 ShowObject();
+            }
+            if (letter == "商")
+            {
+                GameLogger.LogDev($"收到'睛'广播，禁用商对象的Highlight脚本和Light2D子物体: {gameObject.name}");
+                DisableHighlightAndLight2D();
             }
         }
         else if (broadcastedValue == "孟")
@@ -1763,5 +1888,67 @@ public class Highlight : MonoBehaviour
         }
     }
     
+    /// <summary>
+    /// 禁用Highlight脚本和删除Light2D子物体
+    /// </summary>
+    private void DisableHighlightAndLight2D()
+    {
+        GameLogger.LogDev($"Highlight: 开始禁用Highlight脚本和删除Light2D子物体 - {gameObject.name}");
+        
+        // 先删除Light2D子物体（在禁用脚本之前）
+        if (light2d != null)
+        {
+            GameLogger.LogDev($"Highlight: 删除Light2D子物体 - {light2d.gameObject.name}");
+            Destroy(light2d.gameObject);
+            light2d = null; // 清空引用
+        }
+        else
+        {
+            // 尝试重新查找Light2D子物体
+            Light2D foundLight = GetComponentInChildren<Light2D>();
+            if (foundLight != null)
+            {
+                GameLogger.LogDev($"Highlight: 重新找到并删除Light2D子物体 - {foundLight.gameObject.name}");
+                Destroy(foundLight.gameObject);
+            }
+            else
+            {
+                GameLogger.LogDev($"Highlight: 未找到任何Light2D子物体 - {gameObject.name}");
+            }
+        }
+        
+        // 额外检查：确保所有Light2D子物体都被删除
+        Light2D[] remainingLights = GetComponentsInChildren<Light2D>();
+        foreach (Light2D light in remainingLights)
+        {
+            if (light != null)
+            {
+                GameLogger.LogDev($"Highlight: 发现剩余的Light2D子物体，删除 - {light.gameObject.name}");
+                Destroy(light.gameObject);
+            }
+        }
+        
+        // 最后禁用Highlight脚本
+        this.enabled = false;
+        GameLogger.LogDev($"Highlight: 已禁用Highlight脚本 - {gameObject.name}");
+        
+        GameLogger.LogDev($"Highlight: 禁用Highlight脚本和删除Light2D子物体完成 - {gameObject.name}");
+    }
     
+    /// <summary>
+    /// 测试方法：发送"睛"广播（可在Inspector中调用）
+    /// </summary>
+    [ContextMenu("测试发送'睛'广播")]
+    public void TestJingBroadcast()
+    {
+        if (BroadcastManager.Instance != null)
+        {
+            GameLogger.LogDev("Highlight: 测试发送'睛'广播");
+            BroadcastManager.Instance.BroadcastToAll("睛");
+        }
+        else
+        {
+            GameLogger.LogError("Highlight: 广播管理器不存在，无法测试'睛'广播");
+        }
+    }
 }
