@@ -76,8 +76,8 @@ public class Player : MonoBehaviour
             OnRKeyPressed();
         }
         
-        // 检测回车键按下（只有在启用时才响应）
-        if (enterKeyEnabled && Input.GetKeyDown(KeyCode.Return))
+        // 检测交互键按下（F，只有在启用时才响应）
+        if (enterKeyEnabled && Input.GetKeyDown(KeyCode.F))
         {
             OnEnterKeyPressed();
         }
