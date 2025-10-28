@@ -837,6 +837,13 @@ public class Highlight : MonoBehaviour
         {
             GameLogger.LogError($"AddLetterToAvailableList: ButtonController.Instance为空，无法添加字符 '{letter}'");
         }
+
+        // Level4需求：当收集到“维”字后，应当隐藏“绳”物体以防继续交互
+        if (letter == "维")
+        {
+            GameLogger.LogDev("Highlight: 收集到'维'后，隐藏场景中的'绳'物体");
+            HideTargetObject("绳");
+        }
     }
     
     private void FunctionA()
@@ -1547,17 +1554,17 @@ public class Highlight : MonoBehaviour
                 GameLogger.LogDev($"隐藏鼠对象: {gameObject.name}");
                 HideObject();
             }
-            if (letter == "维")
-            {
-                GameLogger.LogDev($"显示维对象: {gameObject.name}");
-                ShowObject();
-                // 设置维为可收集状态
-                collectable = true;
-                GameLogger.LogDev($"维对象已设置为可收集状态: {gameObject.name}");
-            }
-            
-            // 隐藏场景中名为"绳"的物体（所有对象都会执行这个逻辑）
-            HideTargetObject("绳");
+    if (letter == "维")
+    {
+        GameLogger.LogDev($"显示维对象: {gameObject.name}");
+        ShowObject();
+        // 设置维为可收集状态
+        collectable = true;
+        GameLogger.LogDev($"维对象已设置为可收集状态: {gameObject.name}");
+    }
+    
+    // 显示场景中名为"绳"的物体（所有对象都会执行这个逻辑）
+    ShowTargetObject("绳");
         }
         else if (broadcastedValue == "清")
         {
