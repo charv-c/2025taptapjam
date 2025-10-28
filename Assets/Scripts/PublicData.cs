@@ -50,7 +50,8 @@ public class PublicData : MonoBehaviour
     public static Dictionary<string, Transform> targetPositionDict = new Dictionary<string, Transform>();
     
     // 跟踪已合成的目标字符
-    public static HashSet<string> completedTargets = new HashSet<string>();
+    public static HashSet<string>
+     completedTargets = new HashSet<string>();
     
     // 静态场景名称
     public static string sceneName;

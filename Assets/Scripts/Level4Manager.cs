@@ -55,6 +55,15 @@ public class Level4Manager : MonoBehaviour, IBootstrapAware
         {
             // 订阅关卡完成事件
             levelManager.OnLevelCompleted += HandleLevelCompletion;
+            GameLogger.LogSystem("Level4Manager: 已订阅LevelManager的OnLevelCompleted事件");
+        }
+        else
+        {
+            GameLogger.LogError("Level4Manager: 未找到LevelManager组件！请确保LevelManager组件已附加到Level4Manager GameObject上。");
+            // 尝试添加LevelManager组件
+            levelManager = gameObject.AddComponent<LevelManager>();
+            levelManager.OnLevelCompleted += HandleLevelCompletion;
+            GameLogger.LogSystem("Level4Manager: 已自动添加LevelManager组件并订阅事件");
         }
 
         // 关卡开始时禁用操作，等待Bootstrap和开场白
@@ -117,7 +126,7 @@ public class Level4Manager : MonoBehaviour, IBootstrapAware
     /// </summary>
     private void SetLevel4Targets()
     {
-        // Level4的目标字符：桥、难、断、续
+        // Level4的目标字符：桥、难、湖、续
         List<string> level4Targets = new List<string> { "桥", "难", "湖", "续" };
         
         // 重置目标完成状态

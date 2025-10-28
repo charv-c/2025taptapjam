@@ -417,6 +417,12 @@ public class Highlight : MonoBehaviour
         var collider = GetComponent<Collider2D>();
         if (collider != null && !collider.enabled) return false;
 
+        // Level4场景中需要考虑收集类型
+        if (IsInLevel4())
+        {
+            return CanCollectBasedOnType();
+        }
+
         return true;
     }
     

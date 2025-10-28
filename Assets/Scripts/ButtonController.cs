@@ -1415,6 +1415,10 @@ public class ButtonController : MonoBehaviour
                 stringSelector.RecreateAllButtonsPublic();
                 GameLogger.LogDev("ButtonController: 重新创建所有按钮");
                 
+                // 直接标记目标为完成（因为没有飞行动画）
+                PublicData.MarkTargetAsCompleted("湖");
+                GameLogger.LogDev("ButtonController: 直接标记目标'湖'为完成");
+                
                 // 如果没有飞行动画，立即重新启用ESC弹窗功能
                 if (ExitGameManager.Instance != null)
                 {

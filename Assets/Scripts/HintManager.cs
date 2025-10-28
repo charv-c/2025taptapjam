@@ -683,7 +683,41 @@ public class HintManager : MonoBehaviour
             return selectedHint;
         }
         
-        // 第二优先级：收集与收尾检查
+        // 第二优先级：兜底检查（参考Level2逻辑）
+        // 直接检查场景中是否还有可收集且启用显示的对象
+        Highlight[] allHighlights = FindObjectsOfType<Highlight>();
+        bool anyCollectableActive = false;
+        bool hasSnakeOnlyItems = false;
+        
+        for (int i = 0; i < allHighlights.Length; i++)
+        {
+            Highlight h = allHighlights[i];
+            if (h != null && h.IsCollectableActive())
+            {
+                anyCollectableActive = true;
+                GameLogger.LogDev($"Level4提示: 兜底检查发现未拾取文字: {h.letter}");
+                break;
+            }
+            else if (h != null && h.collectable && h.collectType == Highlight.CollectType.SnakeOnly)
+            {
+                // 检查是否有需要蛇形态才能收集的字
+                hasSnakeOnlyItems = true;
+                GameLogger.LogDev($"Level4提示: 发现需要蛇形态才能收集的文字: {h.letter}");
+            }
+        }
+
+        if (anyCollectableActive)
+        {
+            GameLogger.LogDev("Level4提示: 兜底检查发现未拾取文字，给出收集提示");
+            return "湖光山色间，似乎还藏着文字。";
+        }
+        else if (hasSnakeOnlyItems)
+        {
+            GameLogger.LogDev("Level4提示: 只剩下需要蛇形态才能收集的文字，给出变身提示");
+            return "饮雄黄之酒，可变身蛇形，吞食字中飞禽走兽";
+        }
+        
+        // 第三优先级：收集与收尾检查
         return GetLevel4CollectionAndFinishingHint();
     }
 
@@ -1167,56 +1201,22 @@ public class HintManager : MonoBehaviour
     // 判断Level2场景的目标是否完成
     private bool IsLevel2TargetCompleted(string target)
     {
-        switch (target)
-        {
-            case "雨":
-                return !IsObjectEnabled(rainObject);
-            case "猎":
-                return !IsObjectEnabled(hunterObject);
-            case "孩":
-                return !IsObjectEnabled(childObject);
-            case "王":
-                return !IsObjectEnabled(kingObject);
-            case "日":
-                return !IsAnyObjectEnabled(sunObjects);
-            default:
-                return false;
-        }
+        // 从PublicData的目标完成状态中获取信息
+        return PublicData.completedTargets.Contains(target);
     }
 
     // 判断Level3场景的目标是否完成
     private bool IsLevel3TargetCompleted(string target)
     {
-        switch (target)
-        {
-            case "叶":
-                return !IsObjectEnabled(leafObject);
-            case "老":
-                return !IsObjectEnabled(oldObject);
-            case "生":
-                return !IsObjectEnabled(lifeObject);
-            default:
-                return false;
-        }
+        // 从PublicData的目标完成状态中获取信息
+        return PublicData.completedTargets.Contains(target);
     }
 
     // 判断Level4场景的目标是否完成
     private bool IsLevel4TargetCompleted(string target)
     {
-        // Level4的目标字符：桥、难、断、续
-        // 这里可以根据具体的Level4目标实现逻辑
-        // 目前暂时返回false，表示Level4的目标检查逻辑待实现
-        switch (target)
-        {
-            case "桥":
-            case "难":
-            case "断":
-            case "续":
-                // 可以根据具体的Level4目标完成条件来实现
-                return false;
-            default:
-                return false;
-        }
+        // 从PublicData的目标完成状态中获取信息
+        return PublicData.completedTargets.Contains(target);
     }
 
     // 判断对象是否“显示”（按启用状态）

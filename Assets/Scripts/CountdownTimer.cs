@@ -144,7 +144,26 @@ public class CountdownTimer : MonoBehaviour
     {
         // 创建Canvas
         GameObject canvasObj = new GameObject("CountdownCanvas");
-        canvasObj.transform.SetParent(transform);
+        
+        // 确保Canvas绑定到正确的父物体
+        // 优先绑定到Player组件所在的GameObject，如果没有Player组件则绑定到当前对象
+        Transform parentTransform = transform;
+        if (playerComponent != null)
+        {
+            parentTransform = playerComponent.transform;
+        }
+        canvasObj.transform.SetParent(parentTransform);
+        
+        // 添加调试日志确认绑定
+        if (enableCountdownLogging)
+        {
+            GameLogger.LogDev($"CountdownTimer: Canvas已绑定到父物体 '{parentTransform.name}' - {gameObject.name}");
+            if (playerComponent != null)
+            {
+                GameLogger.LogDev($"CountdownTimer: Player组件名称: '{playerComponent.gameObject.name}' - {gameObject.name}");
+            }
+        }
+        
         countdownCanvas = canvasObj.AddComponent<Canvas>();
         countdownCanvas.renderMode = RenderMode.WorldSpace;
         countdownCanvas.sortingOrder = 5; // 确保在退出弹窗(22)和InfoPopup(10)之下
