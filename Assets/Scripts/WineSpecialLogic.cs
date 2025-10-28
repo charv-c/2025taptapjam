@@ -82,6 +82,16 @@ public class WineSpecialLogic : MonoBehaviour
         
         if (player != null)
         {
+            // 播放雄黄酒交互音效
+            if (AudioManager.Instance != null)
+            {
+                AudioManager.Instance.PlayXionghuang();
+                if (enableLogging)
+                {
+                    GameLogger.LogDev("WineSpecialLogic: 播放雄黄酒交互音效");
+                }
+            }
+            
             // 设置玩家携带字符为"蛇"
             player.SetCarryCharacter("蛇");
             

@@ -86,7 +86,7 @@ public class Level4Manager : MonoBehaviour, IBootstrapAware
         GameLogger.LogSystem("Level4Manager: Bootstrap完成，开始场景初始化");
         
         // 设置BGM
-        // SetupLevel4BGM(); // 暂时注释掉BGM功能
+        SetupLevel4BGM();
         
         // 等待一帧确保所有系统就绪
         yield return null;
@@ -137,15 +137,14 @@ public class Level4Manager : MonoBehaviour, IBootstrapAware
     /// <summary>
     /// 设置Level4的BGM
     /// </summary>
-    /*
     private void SetupLevel4BGM()
     {
         if (AudioManager.Instance != null)
         {
-            // 播放默认BGM或Level4专用BGM
-            if (AudioManager.Instance.bgmLevel2 != null)
+            // 播放Level4专用BGM
+            if (AudioManager.Instance.bgmLevel4 != null)
             {
-                AudioManager.Instance.PlayBGM(AudioManager.Instance.bgmLevel2);
+                AudioManager.Instance.PlayBGM(AudioManager.Instance.bgmLevel4);
                 
                 if (showDebugInfo)
                 {
@@ -162,7 +161,6 @@ public class Level4Manager : MonoBehaviour, IBootstrapAware
             GameLogger.LogWarning("Level4Manager: AudioManager实例未找到，无法播放BGM");
         }
     }
-    */
     
     /// <summary>
     /// 初始化场景内容 - Level4没有开场白，直接开始游戏

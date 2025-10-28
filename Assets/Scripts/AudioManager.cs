@@ -27,6 +27,7 @@ public class AudioManager : MonoBehaviour
     public AudioClip bgmSunny;      // 雨停后的BGM [cite: 8]
     public AudioClip bgmTutorial;   // 教程阶段的BGM [cite: 8]
     public AudioClip bgmLevel3;     // 知音篇：古琴台主题BGM，体现高山流水意境
+    public AudioClip bgmLevel4;     // 白蛇传篇：断桥情缘主题BGM
 
     [Header("音效 (SFX)")]
     public AudioClip sfxUIClick;             // 关卡UI按钮交互音效 [cite: 12]
@@ -49,6 +50,15 @@ public class AudioManager : MonoBehaviour
     public AudioClip sfxApplause;            // 胜利鼓掌音效 (EndLevel)
     public AudioClip sfxBugEatLeaf;          // 虫子吃叶子音效 (Level3)
     public AudioClip sfxSeedSprout;          // 籽发芽音效 (Level3)
+    public AudioClip sfxXionghuang;          // 雄黄酒交互音效 (Level4)
+    public AudioClip sfxClock;               // 倒计时音效 (Level4)
+    public AudioClip sfxSnakeEat;            // 蛇吞食字音效 (Level4)
+    public AudioClip sfxWater;               // 清字浇花音效 (Level4)
+    public AudioClip sfxBox;                 // 木盒出现音效 (Level4)
+    public AudioClip sfxRope;                // 绳子出现音效 (Level4)
+    public AudioClip sfxHan;                 // 汉字出现音效 (Level4)
+    public AudioClip sfxJiao;                // 骄子出现音效 (Level4)
+    public AudioClip sfxBack;                // 恢复人形音效 (Level4)
 
     [Header("环境音 (Ambient)")]
     public AudioClip ambientRain;            // 循环播放的背景雨声 [cite: 12]
@@ -210,6 +220,80 @@ public class AudioManager : MonoBehaviour
     public void PlaySeedSprout()
     {
         PlaySFX(sfxSeedSprout);
+    }
+
+    // --- Level4音效专用方法 ---
+
+    /// <summary>
+    /// 播放雄黄酒交互音效 (Level4)
+    /// </summary>
+    public void PlayXionghuang()
+    {
+        PlaySFX(sfxXionghuang);
+    }
+
+    /// <summary>
+    /// 播放倒计时音效 (Level4)
+    /// </summary>
+    public void PlayClock()
+    {
+        PlaySFX(sfxClock);
+    }
+
+    /// <summary>
+    /// 播放蛇吞食字音效 (Level4)
+    /// </summary>
+    public void PlaySnakeEat()
+    {
+        PlaySFX(sfxSnakeEat);
+    }
+
+    /// <summary>
+    /// 播放清字浇花音效 (Level4)
+    /// </summary>
+    public void PlayWater()
+    {
+        PlaySFX(sfxWater);
+    }
+
+    /// <summary>
+    /// 播放木盒出现音效 (Level4)
+    /// </summary>
+    public void PlayBox()
+    {
+        PlaySFX(sfxBox);
+    }
+
+    /// <summary>
+    /// 播放绳子出现音效 (Level4)
+    /// </summary>
+    public void PlayRope()
+    {
+        PlaySFX(sfxRope);
+    }
+
+    /// <summary>
+    /// 播放汉字出现音效 (Level4)
+    /// </summary>
+    public void PlayHan()
+    {
+        PlaySFX(sfxHan);
+    }
+
+    /// <summary>
+    /// 播放骄子出现音效 (Level4)
+    /// </summary>
+    public void PlayJiao()
+    {
+        PlaySFX(sfxJiao);
+    }
+
+    /// <summary>
+    /// 播放恢复人形音效 (Level4)
+    /// </summary>
+    public void PlayBack()
+    {
+        PlaySFX(sfxBack);
     }
 
     // --- UI音效专用方法 ---

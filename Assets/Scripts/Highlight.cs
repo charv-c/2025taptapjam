@@ -791,11 +791,24 @@ public class Highlight : MonoBehaviour
             return;
         }
         
-        // 播放取字音效
-        if (AudioManager.Instance != null && AudioManager.Instance.sfxAcquire != null)
+        // 播放取字音效（Level4蛇形态使用特殊音效）
+        if (AudioManager.Instance != null)
         {
-            AudioManager.Instance.PlaySFX(AudioManager.Instance.sfxAcquire);
-            GameLogger.LogDev("Highlight: 播放取字音效");
+            // 检查是否在Level4且玩家是蛇形态
+            bool isLevel4SnakeMode = IsInLevel4() && player != null && player.CarryCharacter == "蛇";
+            
+            if (isLevel4SnakeMode && AudioManager.Instance.sfxSnakeEat != null)
+            {
+                // Level4蛇形态播放吞食音效
+                AudioManager.Instance.PlaySFX(AudioManager.Instance.sfxSnakeEat);
+                GameLogger.LogDev("Highlight: 播放蛇吞食字音效");
+            }
+            else if (AudioManager.Instance.sfxAcquire != null)
+            {
+                // 普通情况播放取字音效
+                AudioManager.Instance.PlaySFX(AudioManager.Instance.sfxAcquire);
+                GameLogger.LogDev("Highlight: 播放取字音效");
+            }
         }
         
         if (ButtonController.Instance != null)
@@ -1524,6 +1537,13 @@ public class Highlight : MonoBehaviour
             }
             if (letter == "乔")
             {
+                // 播放骄子出现音效
+                if (AudioManager.Instance != null)
+                {
+                    AudioManager.Instance.PlayJiao();
+                    GameLogger.LogDev("Highlight: 播放骄子出现音效");
+                }
+                
                 GameLogger.LogDev($"显示乔对象: {gameObject.name}");
                 ShowObject();
             }
@@ -1546,6 +1566,13 @@ public class Highlight : MonoBehaviour
             }
             if (letter == "椟")
             {
+                // 播放木盒出现音效
+                if (AudioManager.Instance != null)
+                {
+                    AudioManager.Instance.PlayBox();
+                    GameLogger.LogDev("Highlight: 播放木盒出现音效");
+                }
+                
                 GameLogger.LogDev($"显示椟对象: {gameObject.name}");
                 ShowObject();
             }
@@ -1555,6 +1582,13 @@ public class Highlight : MonoBehaviour
             GameLogger.LogDev($"收到'柏'广播，当前对象letter={letter}");
             if (letter == "鼠")
             {
+                // 播放绳子出现音效（松鼠交互）
+                if (AudioManager.Instance != null)
+                {
+                    AudioManager.Instance.PlayRope();
+                    GameLogger.LogDev("Highlight: 播放绳子出现音效");
+                }
+                
                 GameLogger.LogDev($"隐藏鼠对象: {gameObject.name}");
                 HideObject();
             }
@@ -1575,6 +1609,13 @@ public class Highlight : MonoBehaviour
             GameLogger.LogDev($"收到'清'广播，当前对象letter={letter}");
             if (letter == "枯花")
             {
+                // 播放清字浇花音效
+                if (AudioManager.Instance != null)
+                {
+                    AudioManager.Instance.PlayWater();
+                    GameLogger.LogDev("Highlight: 播放清字浇花音效");
+                }
+                
                 GameLogger.LogDev($"隐藏枯对象: {gameObject.name}");
                 ShowTargetObject("鲜花");
                 HideObject();
@@ -1593,6 +1634,13 @@ public class Highlight : MonoBehaviour
             GameLogger.LogDev($"收到'睛'广播，当前对象letter={letter}");
             if (letter == "汉")
             {
+                // 播放汉字出现音效
+                if (AudioManager.Instance != null)
+                {
+                    AudioManager.Instance.PlayHan();
+                    GameLogger.LogDev("Highlight: 播放汉字出现音效");
+                }
+                
                 GameLogger.LogDev($"显示汉对象: {gameObject.name}");
                 ShowObject();
             }
