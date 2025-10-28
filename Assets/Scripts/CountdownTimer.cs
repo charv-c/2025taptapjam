@@ -416,13 +416,15 @@ public class CountdownTimer : MonoBehaviour
     /// </summary>
     protected virtual void OnCountdownExpired()
     {
-     // 播放恢复人形音效
+        // 播放恢复人形音效
         if (AudioManager.Instance != null)
         {
             AudioManager.Instance.PlayBack();
             if (enableCountdownLogging)
             {
                 GameLogger.LogDev($"CountdownTimer: 播放恢复人形音效 - {gameObject.name}");
+            }
+        }
         // 检查是否是从蛇状态结束
         Player player = GetComponent<Player>();
         if (player != null && player.CarryCharacter == "蛇")
