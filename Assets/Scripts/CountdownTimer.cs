@@ -423,6 +423,8 @@ public class CountdownTimer : MonoBehaviour
             if (enableCountdownLogging)
             {
                 GameLogger.LogDev($"CountdownTimer: 播放恢复人形音效 - {gameObject.name}");
+            }
+        }
         // 检查是否是从蛇状态结束
         Player player = GetComponent<Player>();
         if (player != null && player.CarryCharacter == "蛇")

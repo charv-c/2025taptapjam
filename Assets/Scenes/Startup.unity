@@ -1393,7 +1393,7 @@ PrefabInstance:
     - target: {fileID: 2271110770660785843, guid: db2d85e74bc4c7f459c780f66742a10a, type: 3}
       propertyPath: sfxBack
       value: 
-      objectReference: {fileID: 8300000, guid: fd1d93bbd5e7e014ea2939b90893459e, type: 3}
+      objectReference: {fileID: 0}
     - target: {fileID: 2271110770660785843, guid: db2d85e74bc4c7f459c780f66742a10a, type: 3}
       propertyPath: sfxJiao
       value: 
@@ -1422,6 +1422,10 @@ PrefabInstance:
       propertyPath: sfxXionghuang
       value: 
       objectReference: {fileID: 8300000, guid: 87184b706cbd7a2408299e193e57ec43, type: 3}
+    - target: {fileID: 2271110770660785843, guid: db2d85e74bc4c7f459c780f66742a10a, type: 3}
+      propertyPath: initialAmbientVolume
+      value: 0.5
+      objectReference: {fileID: 0}
     - target: {fileID: 4611476555447765902, guid: db2d85e74bc4c7f459c780f66742a10a, type: 3}
       propertyPath: m_Name
       value: AudioManager

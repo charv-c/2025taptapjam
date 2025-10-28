@@ -116,8 +116,8 @@ public class Level4Manager : MonoBehaviour, IBootstrapAware
     /// </summary>
     private void SetLevel4Targets()
     {
-        // Level4的目标字符：桥、难、断、续
-        List<string> level4Targets = new List<string> { "桥", "难", "断", "续" };
+        // Level4的目标字符：桥、难、湖、续
+        List<string> level4Targets = new List<string> { "桥", "难", "湖", "续" };
         
         // 重置目标完成状态
         PublicData.ResetTargetCompletion();
