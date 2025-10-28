@@ -1091,7 +1091,6 @@ MonoBehaviour:
   buttonSpacing: 20
   buttonSize: {x: 120, y: 40}
   autoLayoutButtons: 1
-  buttonAnchorY: 0.5
   buttonYOffset: 10
   playExitSound: 1
   enableDebugLog: 1
@@ -1375,6 +1374,46 @@ PrefabInstance:
       propertyPath: m_LocalEulerAnglesHint.z
       value: 0
       objectReference: {fileID: 0}
+    - target: {fileID: 2271110770660785843, guid: db2d85e74bc4c7f459c780f66742a10a, type: 3}
+      propertyPath: sfxBox
+      value: 
+      objectReference: {fileID: 8300000, guid: e1159d9a19bd10846b7795632974b673, type: 3}
+    - target: {fileID: 2271110770660785843, guid: db2d85e74bc4c7f459c780f66742a10a, type: 3}
+      propertyPath: sfxHan
+      value: 
+      objectReference: {fileID: 8300000, guid: b046dec3e626f644e85b175977564d1a, type: 3}
+    - target: {fileID: 2271110770660785843, guid: db2d85e74bc4c7f459c780f66742a10a, type: 3}
+      propertyPath: sfxBack
+      value: 
+      objectReference: {fileID: 8300000, guid: fd1d93bbd5e7e014ea2939b90893459e, type: 3}
+    - target: {fileID: 2271110770660785843, guid: db2d85e74bc4c7f459c780f66742a10a, type: 3}
+      propertyPath: sfxJiao
+      value: 
+      objectReference: {fileID: 8300000, guid: 4fdbca6f9aa21c84285bca5c51120167, type: 3}
+    - target: {fileID: 2271110770660785843, guid: db2d85e74bc4c7f459c780f66742a10a, type: 3}
+      propertyPath: sfxRope
+      value: 
+      objectReference: {fileID: 8300000, guid: 4d55cbce77ff9994586ad0d24d093504, type: 3}
+    - target: {fileID: 2271110770660785843, guid: db2d85e74bc4c7f459c780f66742a10a, type: 3}
+      propertyPath: sfxClock
+      value: 
+      objectReference: {fileID: 8300000, guid: 24a8d71ab19b4544281645be6466f23d, type: 3}
+    - target: {fileID: 2271110770660785843, guid: db2d85e74bc4c7f459c780f66742a10a, type: 3}
+      propertyPath: sfxWater
+      value: 
+      objectReference: {fileID: 8300000, guid: 2662a6f7e93124d458d8183a77c7b9b8, type: 3}
+    - target: {fileID: 2271110770660785843, guid: db2d85e74bc4c7f459c780f66742a10a, type: 3}
+      propertyPath: bgmLevel4
+      value: 
+      objectReference: {fileID: 8300000, guid: 42d4db1ce273eb141aac256e58d58e94, type: 3}
+    - target: {fileID: 2271110770660785843, guid: db2d85e74bc4c7f459c780f66742a10a, type: 3}
+      propertyPath: sfxSnakeEat
+      value: 
+      objectReference: {fileID: 8300000, guid: 7f2023b4506b2084b9a13762e657c9ba, type: 3}
+    - target: {fileID: 2271110770660785843, guid: db2d85e74bc4c7f459c780f66742a10a, type: 3}
+      propertyPath: sfxXionghuang
+      value: 
+      objectReference: {fileID: 8300000, guid: 87184b706cbd7a2408299e193e57ec43, type: 3}
     - target: {fileID: 4611476555447765902, guid: db2d85e74bc4c7f459c780f66742a10a, type: 3}
       propertyPath: m_Name
       value: AudioManager
