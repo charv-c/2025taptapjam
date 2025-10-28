@@ -43,6 +43,11 @@ public class CountdownTimer : MonoBehaviour
     private Sprite originalPlayerSprite; // 存储原始sprite
     private bool isSnakeState = false; // 当前是否为蛇状态
     
+    // 音效播放标志
+    private bool hasPlayedFiveSecondSound = false; // 是否已播放5秒倒计时音效
+    private bool hasPlayedStartSound = false; // 是否已播放开始倒计时音效
+    private float xionghuangSoundDuration = 2f; // 雄黄酒音效持续时间（预估）
+    
     void Start()
     {
         // 获取主摄像机
@@ -227,6 +232,20 @@ public class CountdownTimer : MonoBehaviour
                 countdownText.text = Mathf.Ceil(countdownTimer).ToString();
             }
             
+            // 播放5秒倒计时音效（只播放一次）
+            if (countdownTimer <= 5f && countdownTimer > 4.9f && !hasPlayedFiveSecondSound)
+            {
+                hasPlayedFiveSecondSound = true;
+                if (AudioManager.Instance != null)
+                {
+                    AudioManager.Instance.PlayClock();
+                    if (enableCountdownLogging)
+                    {
+                        GameLogger.LogDev($"CountdownTimer: 播放5秒倒计时音效 - {gameObject.name}");
+                    }
+                }
+            }
+            
             // 更新倒计时UI位置，跟随目标对象移动
             if (followTarget && countdownCanvas != null && targetTransform != null)
             {
@@ -253,6 +272,10 @@ public class CountdownTimer : MonoBehaviour
         
         countdownTimer = actualDuration;
         isCountdownActive = true;
+        
+        // 重置音效播放标志
+        hasPlayedFiveSecondSound = false;
+        hasPlayedStartSound = false;
         
         // 检查倒计时是否为0，如果为0则隐藏UI
         if (countdownTimer <= 0f)
@@ -283,9 +306,33 @@ public class CountdownTimer : MonoBehaviour
             countdownCanvas.transform.position = canvasPosition;
         }
         
+        // 延迟播放倒计时开始音效（等待雄黄酒音效播放完）
+        StartCoroutine(PlayStartSoundDelayed());
+        
         if (enableCountdownLogging)
         {
             GameLogger.LogDev($"CountdownTimer: 开始倒计时 {actualDuration} 秒 - {gameObject.name}");
+        }
+    }
+    
+    /// <summary>
+    /// 延迟播放倒计时开始音效的协程
+    /// </summary>
+    private System.Collections.IEnumerator PlayStartSoundDelayed()
+    {
+        // 等待雄黄酒音效播放完
+        yield return new WaitForSeconds(xionghuangSoundDuration);
+        
+        // 播放倒计时开始音效
+        if (!hasPlayedStartSound && AudioManager.Instance != null)
+        {
+            hasPlayedStartSound = true;
+            AudioManager.Instance.PlayClock();
+            
+            if (enableCountdownLogging)
+            {
+                GameLogger.LogDev($"CountdownTimer: 播放倒计时开始音效 - {gameObject.name}");
+            }
         }
     }
     
@@ -297,6 +344,10 @@ public class CountdownTimer : MonoBehaviour
         isCountdownActive = false;
         isPaused = false;
         countdownTimer = 0f;
+        
+        // 重置音效播放标志
+        hasPlayedFiveSecondSound = false;
+        hasPlayedStartSound = false;
         
         // 隐藏倒计时UI
         HideCountdownUI();
@@ -365,8 +416,22 @@ public class CountdownTimer : MonoBehaviour
     /// </summary>
     protected virtual void OnCountdownExpired()
     {
+        // 播放恢复人形音效
+        if (AudioManager.Instance != null)
+        {
+            AudioManager.Instance.PlayBack();
+            if (enableCountdownLogging)
+            {
+                GameLogger.LogDev($"CountdownTimer: 播放恢复人形音效 - {gameObject.name}");
+            }
+        }
+        
         // 重置携带字符为初始值
         ResetCarryCharacterToInitial();
+        
+        // 重置音效播放标志
+        hasPlayedFiveSecondSound = false;
+        hasPlayedStartSound = false;
         
         // 子类可以重写此方法来实现自定义的倒计时结束逻辑
         // 例如：重置状态、播放音效、触发事件等
