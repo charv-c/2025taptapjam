@@ -21,8 +21,7 @@ public class Level4Manager : MonoBehaviour, IBootstrapAware
     private bool sceneInitialized = false;
     
     // 引导（开场流程）完成标志：用于控制回车互动与玩家切换
-    // Level4没有开场白，所以一开始就设为true
-    private bool guideCompleted = true;
+    private bool guideCompleted = false;
 
     // 关卡开场白文案
     private readonly string[] openingMessages =
@@ -163,17 +162,28 @@ public class Level4Manager : MonoBehaviour, IBootstrapAware
     }
     
     /// <summary>
-    /// 初始化场景内容 - Level4没有开场白，直接开始游戏
+    /// 初始化场景内容 - 显示开场白并开始游戏
     /// </summary>
     private void InitializeSceneContent()
     {
         if (sceneInitialized) return;
         
         sceneInitialized = true;
-        GameLogger.LogSystem("Level4Manager: Level4没有开场白，直接开始游戏");
+        GameLogger.LogSystem("Level4Manager: 开始显示开场白");
         
-        // Level4没有开场白，直接开始关卡
-        StartLevel();
+        // 显示开场白，结束后正式开始关卡
+        if (InfoPopupManager.Instance != null)
+        {
+            InfoPopupManager.Instance.ShowPopup(openingMessages, () => {
+                OnOpeningCompleted(); // 先处理开场白结束逻辑
+                StartLevel(); // 再开始关卡
+            });
+        }
+        else
+        {
+            GameLogger.LogWarning("Level4Manager: InfoPopupManager仍然为null，直接开始关卡");
+            StartLevel();
+        }
     }
 
     /// <summary>
@@ -247,12 +257,12 @@ public class Level4Manager : MonoBehaviour, IBootstrapAware
     }
     
     /// <summary>
-    /// 开场白结束时的处理（Level4没有开场白，此方法不会被调用）
+    /// 开场白结束时的处理
     /// </summary>
     private void OnOpeningCompleted()
     {
         GameLogger.LogSystem("Level4Manager: 开场白结束");
-        // 视为Level4引导完成
+        // 设置Level4引导完成
         guideCompleted = true;
         GameLogger.LogSystem($"Level4Manager: guideCompleted设置为{guideCompleted}");
     }
