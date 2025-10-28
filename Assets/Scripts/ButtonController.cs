@@ -345,6 +345,13 @@ public class ButtonController : MonoBehaviour
                 return;
             }
             
+            // Level4特殊拼字检测：沽+月=湖
+            if (IsLevel4Scene() && IsGuYueCombination(firstString, secondString))
+            {
+                HandleGuYueSpecialCombination(firstString, secondString);
+                return;
+            }
+            
             string originalString = PublicData.FindOriginalString(firstString, secondString);
             GameLogger.LogDev($"ButtonController: 查找原始字符，结果: '{originalString}'");
             
@@ -1304,6 +1311,138 @@ public class ButtonController : MonoBehaviour
         else
         {
             GameLogger.LogWarning("ButtonController: stringSelector为空，无法移除王字");
+        }
+    }
+    
+    /// <summary>
+    /// 检测当前场景是否为Level4
+    /// </summary>
+    private bool IsLevel4Scene()
+    {
+        string currentSceneName = UnityEngine.SceneManagement.SceneManager.GetActiveScene().name;
+        bool isLevel4 = currentSceneName.ToLower().Contains("level4") || currentSceneName.ToLower().Contains("4");
+        GameLogger.LogDev($"ButtonController: 当前场景: {currentSceneName}, 是否为Level4: {isLevel4}");
+        return isLevel4;
+    }
+    
+    /// <summary>
+    /// 检测是否为沽+月特殊组合
+    /// </summary>
+    private bool IsGuYueCombination(string first, string second)
+    {
+        bool isGuYue = (first == "沽" && second == "月") || (first == "月" && second == "沽");
+        if (isGuYue)
+        {
+            GameLogger.LogDev($"ButtonController: 检测到Level4特殊组合: '{first}' + '{second}'");
+        }
+        return isGuYue;
+    }
+    
+    /// <summary>
+    /// 处理沽+月=湖的特殊拼字逻辑
+    /// </summary>
+    private void HandleGuYueSpecialCombination(string first, string second)
+    {
+        GameLogger.LogUser("ButtonController: 触发Level4特殊拼字！沽+月=湖");
+        
+        // 播放成功音效
+        if (AudioManager.Instance != null && AudioManager.Instance.sfxCombineSuccess != null)
+        {
+            AudioManager.Instance.PlaySFX(AudioManager.Instance.sfxCombineSuccess);
+            GameLogger.LogDev("ButtonController: 播放特殊拼字成功音效");
+        }
+        
+        // 记录选中字符的索引位置
+        List<int> indices = stringSelector.GetSelectedIndices();
+        indices.Sort();
+        int insertIndex = indices.Count > 0 ? indices[0] : 0;
+        
+        // 清除选择
+        stringSelector.ClearSelection();
+        GameLogger.LogDev("ButtonController: 清除选择");
+        
+        // 移除选中的字符（按索引大的先移除，避免下标偏移）
+        if (indices.Count >= 2)
+        {
+            int idxA = indices[1];
+            stringSelector.RemoveAvailableStringAt(idxA);
+            GameLogger.LogDev($"ButtonController: 从索引 {idxA} 处移除第二个选中字符");
+        }
+        if (indices.Count >= 1)
+        {
+            int idxB = indices[0];
+            stringSelector.RemoveAvailableStringAt(idxB);
+            GameLogger.LogDev($"ButtonController: 从索引 {idxB} 处移除第一个选中字符");
+        }
+        
+        // 检查湖是否为目标字符
+        if (PublicData.IsCharacterInTargetList("湖"))
+        {
+            GameLogger.LogDev("ButtonController: 湖是目标字符，准备播放飞行动画");
+            
+            // 合成目标字成功的那一刻立即禁用ESC弹窗功能
+            if (ExitGameManager.Instance != null)
+            {
+                ExitGameManager.Instance.SetExitDialogDisabled(true);
+                GameLogger.LogDev("ButtonController: 合成目标字成功，已禁用ESC弹窗功能");
+            }
+            
+            Transform targetPosition = PublicData.GetTargetPositionForCharacter("湖");
+            GameLogger.LogDev($"ButtonController: 获取目标位置: {targetPosition?.name ?? "null"}");
+            
+            if (targetPosition != null)
+            {
+                GameLogger.LogDev($"ButtonController: 目标位置有效，准备播放飞行动画");
+                
+                // 在原位置插入合成结果
+                stringSelector.InsertAvailableStringAt("湖", insertIndex);
+                GameLogger.LogDev($"ButtonController: 在索引 {insertIndex} 插入特殊拼字结果 '湖'");
+                
+                // 重新创建按钮显示
+                stringSelector.RecreateAllButtonsPublic();
+                GameLogger.LogDev("ButtonController: 重新创建所有按钮");
+                
+                // 延迟一秒后播放飞行动画
+                StartCoroutine(DelayedFlyingAnimation("湖", targetPosition));
+                GameLogger.LogDev($"ButtonController: 启动飞行动画协程，字符: '湖'");
+            }
+            else
+            {
+                GameLogger.LogWarning($"ButtonController: 目标位置为空，直接添加字符 '湖'");
+                stringSelector.InsertAvailableStringAt("湖", insertIndex);
+                
+                // 重新创建按钮显示
+                stringSelector.RecreateAllButtonsPublic();
+                GameLogger.LogDev("ButtonController: 重新创建所有按钮");
+                
+                // 如果没有飞行动画，立即重新启用ESC弹窗功能
+                if (ExitGameManager.Instance != null)
+                {
+                    ExitGameManager.Instance.SetExitDialogDisabled(false);
+                    GameLogger.LogDev("ButtonController: 无飞行动画，已重新启用ESC弹窗功能");
+                }
+            }
+        }
+        else
+        {
+            // 如果湖不是目标字符，直接添加到可用列表中
+            stringSelector.InsertAvailableStringAt("湖", insertIndex);
+            GameLogger.LogDev($"ButtonController: 在索引 {insertIndex} 插入特殊拼字结果 '湖'");
+            
+            // 重新创建按钮显示
+            stringSelector.RecreateAllButtonsPublic();
+            GameLogger.LogDev("ButtonController: 重新创建所有按钮");
+        }
+        
+        // 重置选择状态
+        stringSelector.SetMaxSelectionCount(2);
+        stringSelector.ClearSelection();
+        
+        // 显示特殊拼字提示框
+        if (BroadcastManager.Instance != null)
+        {
+            BroadcastManager.Instance.BroadcastToAll("拼沽月");
+            GameLogger.LogDev("ButtonController: 显示特殊拼字提示");
         }
     }
     
