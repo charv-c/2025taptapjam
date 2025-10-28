@@ -358,11 +358,11 @@ public class HintManager : MonoBehaviour
     /// </summary>
     public void OnHintButtonClicked()
     {
-        //Debug.Log("HintManager: 提示按钮被点击");
+        Debug.Log($"level4提示: 提示按钮被点击，当前场景: {currentScene}");
         
         if (isAnimating)
         {
-            //Debug.Log("HintManager: 动画正在进行中，忽略点击");
+            Debug.Log("level4提示: 动画正在进行中，忽略点击");
             return;
         }
 
@@ -388,6 +388,8 @@ public class HintManager : MonoBehaviour
 
         // 先选择提示文案（用于计算宽度）
         string text = GetRandomEligibleHintText();
+        Debug.Log($"level4提示: 选择的提示文案: {text}");
+        
         if (hintText != null)
         {
             hintText.text = text;
@@ -533,6 +535,8 @@ public class HintManager : MonoBehaviour
     // 根据当前场景与玩家状态，返回一条可触发的提示文案（随机）
     private string GetRandomEligibleHintText()
     {
+        Debug.Log($"level4提示: 开始获取随机提示文本，当前场景: {currentScene}");
+        
         List<string> candidates = new List<string>();
         string carry = GetCurrentCarryCharacter();
 
@@ -587,11 +591,13 @@ public class HintManager : MonoBehaviour
         }
         else if (currentScene == SceneType.Level4)
         {
+            Debug.Log("level4提示: 检测到Level4场景，调用Level4提示逻辑");
             // Level4：使用新的二级优先级逻辑
             return GetLevel4HintText();
         }
 
         // 其他场景的默认兜底逻辑
+        Debug.Log("level4提示: 未知场景类型，使用默认兜底提示");
         return "请仔细观察周围，或许有所发现";
     }
 
@@ -672,6 +678,8 @@ public class HintManager : MonoBehaviour
     /// <returns>提示文案</returns>
     private string GetLevel4HintText()
     {
+        Debug.Log("level4提示: 开始获取Level4提示文本");
+        
         // 第一优先级：核心谜题检查
         List<string> hintPool = GetLevel4CorePuzzlePool();
         if (hintPool.Count > 0)
@@ -679,45 +687,12 @@ public class HintManager : MonoBehaviour
             // 从提示池中随机选择一条提示
             int randomIndex = Random.Range(0, hintPool.Count);
             string selectedHint = hintPool[randomIndex];
-            GameLogger.LogDev($"Level4提示: 从{hintPool.Count}条核心谜题提示中选择: {selectedHint}");
+            Debug.Log($"level4提示: 从{hintPool.Count}条核心谜题提示中选择: {selectedHint}");
             return selectedHint;
         }
         
-        // 第二优先级：兜底检查（参考Level2逻辑）
-        // 直接检查场景中是否还有可收集且启用显示的对象
-        Highlight[] allHighlights = FindObjectsOfType<Highlight>();
-        bool anyCollectableActive = false;
-        bool hasSnakeOnlyItems = false;
-        
-        for (int i = 0; i < allHighlights.Length; i++)
-        {
-            Highlight h = allHighlights[i];
-            if (h != null && h.IsCollectableActive())
-            {
-                anyCollectableActive = true;
-                GameLogger.LogDev($"Level4提示: 兜底检查发现未拾取文字: {h.letter}");
-                break;
-            }
-            else if (h != null && h.collectable && h.collectType == Highlight.CollectType.SnakeOnly)
-            {
-                // 检查是否有需要蛇形态才能收集的字
-                hasSnakeOnlyItems = true;
-                GameLogger.LogDev($"Level4提示: 发现需要蛇形态才能收集的文字: {h.letter}");
-            }
-        }
-
-        if (anyCollectableActive)
-        {
-            GameLogger.LogDev("Level4提示: 兜底检查发现未拾取文字，给出收集提示");
-            return "湖光山色间，似乎还藏着文字。";
-        }
-        else if (hasSnakeOnlyItems)
-        {
-            GameLogger.LogDev("Level4提示: 只剩下需要蛇形态才能收集的文字，给出变身提示");
-            return "饮雄黄之酒，可变身蛇形，吞食字中飞禽走兽";
-        }
-        
-        // 第三优先级：收集与收尾检查
+        // 第二优先级：收集与收尾检查
+        Debug.Log("level4提示: 核心谜题提示池为空，使用收集与收尾提示");
         return GetLevel4CollectionAndFinishingHint();
     }
 
@@ -746,15 +721,17 @@ public class HintManager : MonoBehaviour
     /// <returns>收集或合成提示</returns>
     private string GetLevel4CollectionAndFinishingHint()
     {
+        Debug.Log("level4提示: 开始检查收集与收尾状态");
+        
         // 检查场景中是否还有未拾取的文字
         if (HasLevel4UnpickedItems())
         {
-            GameLogger.LogDev("Level4提示: 检测到未拾取的文字，给出收集提示");
+            Debug.Log("level4提示: 检测到未拾取的文字，给出收集提示");
             return "湖光山色间，似乎还藏着文字。";
         }
         else
         {
-            GameLogger.LogDev("Level4提示: 所有文字已收集，给出最终合成提示");
+            Debug.Log("level4提示: 所有文字已收集，给出最终合成提示");
             return "材料已齐，去解字台组合吧。";
         }
     }
@@ -786,18 +763,47 @@ public class HintManager : MonoBehaviour
     /// <returns>是否存在未拾取的文字</returns>
     private bool HasLevel4UnpickedItems()
     {
+        Debug.Log("level4提示: 开始检查未拾取的文字");
+        
         // 检查场景中是否还有可收集但未拾取的文字（通过Highlight组件判断）
         Highlight[] allHighlights = FindObjectsOfType<Highlight>();
+        Debug.Log($"level4提示: 找到{allHighlights.Length}个Highlight对象");
+        
         foreach (Highlight highlight in allHighlights)
         {
             if (highlight != null && highlight.IsCollectableActive())
             {
-                GameLogger.LogDev($"发现未拾取的文字: {highlight.letter}");
+                Debug.Log($"level4提示: 发现未拾取的文字: {highlight.letter}");
                 return true;
             }
         }
         
-        GameLogger.LogDev("所有文字已被拾取");
+        Debug.Log("level4提示: 所有文字已被拾取");
+        return false;
+    }
+
+    /// <summary>
+    /// 检查Level4场景中是否有需要蛇形态才能收集的物品
+    /// </summary>
+    /// <returns>是否存在蛇形态专用物品</returns>
+    private bool HasSnakeOnlyItemsInLevel4()
+    {
+        Debug.Log("level4提示: 开始检查蛇形态专用物品");
+        
+        // 检查场景中是否有需要蛇形态才能收集的物品
+        Highlight[] allHighlights = FindObjectsOfType<Highlight>();
+        Debug.Log($"level4提示: 检查{allHighlights.Length}个Highlight对象是否为蛇形态专用");
+        
+        foreach (Highlight highlight in allHighlights)
+        {
+            if (highlight != null && IsSnakeOnlyItem(highlight))
+            {
+                Debug.Log($"level4提示: 发现需要蛇形态才能收集的文字: {highlight.letter}");
+                return true;
+            }
+        }
+        
+        Debug.Log("level4提示: 没有需要蛇形态才能收集的文字");
         return false;
     }
 
@@ -832,15 +838,17 @@ public class HintManager : MonoBehaviour
     }
 
     /// <summary>
-    /// Level4 核心谜题提示池 - 按照新的详细逻辑构建
+    /// Level4 核心谜题提示池 - 重写版本
     /// </summary>
     /// <returns>所有满足条件的核心谜题提示</returns>
     private List<string> GetLevel4CorePuzzlePool()
     {
+        Debug.Log("level4提示: 开始构建核心谜题提示池");
+        
         List<string> hintPool = new List<string>();
         string carry = GetCurrentCarryCharacter();
         
-        GameLogger.LogDev($"构建Level4核心谜题提示池, carry='{carry}'");
+        Debug.Log($"level4提示: 当前携带字符: '{carry}'");
         
         // 1. 酒互动检查
         AddWineInteractionHints(hintPool, carry);
@@ -863,7 +871,13 @@ public class HintManager : MonoBehaviour
         // 7. 帛商相关检查
         AddBoShangHints(hintPool, carry);
         
-        GameLogger.LogDev($"Level4核心谜题提示池构建完成，共{hintPool.Count}条提示");
+        // 8. 可拾取文字检查
+        AddCollectableItemsHints(hintPool);
+        
+        // 9. 解字台操作检查
+        AddPuzzleTableHints(hintPool);
+        
+        Debug.Log($"level4提示: 核心谜题提示池构建完成，共{hintPool.Count}条提示");
         UpdateHintPoolDisplay(hintPool);
         
         return hintPool;
@@ -978,10 +992,27 @@ public class HintManager : MonoBehaviour
         Highlight[] allHighlights = FindObjectsOfType<Highlight>();
         foreach (Highlight highlight in allHighlights)
         {
-            if (highlight != null && highlight.letter == targetName && highlight.IsCollectableActive())
+            if (highlight != null && highlight.letter == targetName)
             {
-                GameLogger.LogDev($"目标对象可见: {targetName}");
-                return true;
+                // 在Level4场景中，需要特殊处理蛇形态专用物品
+                if (currentScene == SceneType.Level4)
+                {
+                    // 检查对象是否可见（不考虑收集条件）
+                    if (IsHighlightObjectVisible(highlight))
+                    {
+                        GameLogger.LogDev($"目标对象可见（Level4）: {targetName}");
+                        return true;
+                    }
+                }
+                else
+                {
+                    // 其他场景使用原有的收集条件检查
+                    if (highlight.IsCollectableActive())
+                    {
+                        GameLogger.LogDev($"目标对象可见: {targetName}");
+                        return true;
+                    }
+                }
             }
         }
         
@@ -1003,6 +1034,28 @@ public class HintManager : MonoBehaviour
         
         GameLogger.LogDev($"目标对象不可见: {targetName}");
         return false;
+    }
+
+    /// <summary>
+    /// 检查Highlight对象是否可见（不考虑收集条件）
+    /// </summary>
+    /// <param name="highlight">要检查的Highlight对象</param>
+    /// <returns>是否可见</returns>
+    private bool IsHighlightObjectVisible(Highlight highlight)
+    {
+        if (highlight == null) return false;
+        
+        // 检查基本可见性条件
+        if (!highlight.enabled) return false;
+        if (!highlight.gameObject.activeInHierarchy) return false;
+        
+        var spriteRenderer = highlight.GetComponent<SpriteRenderer>();
+        if (spriteRenderer != null && !spriteRenderer.enabled) return false;
+        
+        var collider = highlight.GetComponent<Collider2D>();
+        if (collider != null && !collider.enabled) return false;
+        
+        return true;
     }
     
     /// <summary>
@@ -1318,11 +1371,18 @@ public class HintManager : MonoBehaviour
     /// </summary>
     private void AddWineInteractionHints(List<string> hintPool, string carry)
     {
+        Debug.Log("level4提示: 检查酒互动提示条件");
+        
         // player和酒互动，场景中存在"骄"或"蝴"
-        if (IsTargetObjectVisible("骄") || IsTargetObjectVisible("蝴"))
+        bool jiaoVisible = IsTargetObjectVisible("乔");  // 骄对应的letter是乔
+        bool huVisible = IsTargetObjectVisible("胡");    // 蝴对应的letter是胡
+        
+        Debug.Log($"level4提示: 乔(骄)可见: {jiaoVisible}, 胡(蝴)可见: {huVisible}");
+        
+        if (jiaoVisible || huVisible)
         {
             hintPool.Add("饮下雄黄酒，或可显露真身。");
-            GameLogger.LogDev("添加酒互动提示: 雄黄酒");
+            Debug.Log("level4提示: 添加酒互动提示: 雄黄酒");
         }
     }
 
@@ -1331,18 +1391,29 @@ public class HintManager : MonoBehaviour
     /// </summary>
     private void AddSnakeHints(List<string> hintPool, string carry)
     {
-        if (carry == "蛇")
+        Debug.Log($"level4提示: 检查蛇相关提示，当前携带: {carry}");
+        
+        // 检查所有玩家中是否有携带"蛇"字符的
+        bool hasSnakePlayer = HasPlayerWithCarryCharacter("蛇");
+        Debug.Log($"level4提示: 所有玩家中有蛇形态: {hasSnakePlayer}");
+        
+        if (hasSnakePlayer)
         {
-            if (IsTargetObjectVisible("骄"))
+            bool jiaoVisible = IsTargetObjectVisible("乔");  // 骄对应的letter是乔
+            bool huVisible = IsTargetObjectVisible("胡");    // 蝴对应的letter是胡
+            
+            Debug.Log($"level4提示: 蛇形态下 - 乔(骄)可见: {jiaoVisible}, 胡(蝴)可见: {huVisible}");
+            
+            if (jiaoVisible)
             {
                 hintPool.Add("「蛇」之本性，或可吞食骄马。");
-                GameLogger.LogDev("添加蛇提示: 骄马");
+                Debug.Log("level4提示: 添加蛇提示: 骄马");
             }
             
-            if (IsTargetObjectVisible("蝴"))
+            if (huVisible)
             {
                 hintPool.Add("「蛇」之本性，或可吞食虫蝶。");
-                GameLogger.LogDev("添加蛇提示: 虫蝶");
+                Debug.Log("level4提示: 添加蛇提示: 虫蝶");
             }
         }
     }
@@ -1352,10 +1423,22 @@ public class HintManager : MonoBehaviour
     /// </summary>
     private void AddEmperorHints(List<string> hintPool, string carry)
     {
-        if (carry == "皇" && IsTargetObjectVisible("民"))
+        Debug.Log($"level4提示: 检查皇民相关提示，当前携带: {carry}");
+        
+        // 检查所有玩家中是否有携带"皇"字符的
+        bool hasEmperorPlayer = HasPlayerWithCarryCharacter("皇");
+        Debug.Log($"level4提示: 所有玩家中有皇形态: {hasEmperorPlayer}");
+        
+        if (hasEmperorPlayer)
         {
-            hintPool.Add("「皇」者临「民」，化为天之「骄」子。");
-            GameLogger.LogDev("添加皇民提示");
+            bool minVisible = IsTargetObjectVisible("民");
+            Debug.Log($"level4提示: 皇形态下 - 民可见: {minVisible}");
+            
+            if (minVisible)
+            {
+                hintPool.Add("「皇」者临「民」，化为天之「骄」子。");
+                Debug.Log("level4提示: 添加皇民提示");
+            }
         }
     }
 
@@ -1364,10 +1447,22 @@ public class HintManager : MonoBehaviour
     /// </summary>
     private void AddQingKuhuaHints(List<string> hintPool, string carry)
     {
-        if (carry == "清" && IsTargetObjectVisible("枯花"))
+        Debug.Log($"level4提示: 检查清枯花相关提示，当前携带: {carry}");
+        
+        // 检查所有玩家中是否有携带"清"字符的
+        bool hasQingPlayer = HasPlayerWithCarryCharacter("清");
+        Debug.Log($"level4提示: 所有玩家中有清形态: {hasQingPlayer}");
+        
+        if (hasQingPlayer)
         {
-            hintPool.Add("「清」泉或可让枯萎的花盛开。");
-            GameLogger.LogDev("添加清枯花提示");
+            bool kuhuaVisible = IsTargetObjectVisible("枯花");
+            Debug.Log($"level4提示: 清形态下 - 枯花可见: {kuhuaVisible}");
+            
+            if (kuhuaVisible)
+            {
+                hintPool.Add("「清」泉或可让枯萎的花盛开。");
+                Debug.Log("level4提示: 添加清枯花提示");
+            }
         }
     }
 
@@ -1376,10 +1471,22 @@ public class HintManager : MonoBehaviour
     /// </summary>
     private void AddJingShangHints(List<string> hintPool, string carry)
     {
-        if (carry == "睛" && HasBroadcastHistory("商"))
+        Debug.Log($"level4提示: 检查睛商相关提示，当前携带: {carry}");
+        
+        // 检查所有玩家中是否有携带"睛"字符的
+        bool hasJingPlayer = HasPlayerWithCarryCharacter("睛");
+        Debug.Log($"level4提示: 所有玩家中有睛形态: {hasJingPlayer}");
+        
+        if (hasJingPlayer)
         {
-            hintPool.Add("以「睛」辨「玉」，方知其源。");
-            GameLogger.LogDev("添加睛商提示");
+            bool shangHistory = HasBroadcastHistory("商");
+            Debug.Log($"level4提示: 睛形态下 - 商广播历史: {shangHistory}");
+            
+            if (shangHistory)
+            {
+                hintPool.Add("以「睛」辨「玉」，方知其源。");
+                Debug.Log("level4提示: 添加睛商提示");
+            }
         }
     }
 
@@ -1388,10 +1495,22 @@ public class HintManager : MonoBehaviour
     /// </summary>
     private void AddBaiShuHints(List<string> hintPool, string carry)
     {
-        if (carry == "柏" && IsTargetObjectVisible("鼠"))
+        Debug.Log($"level4提示: 检查柏鼠相关提示，当前携带: {carry}");
+        
+        // 检查所有玩家中是否有携带"柏"字符的
+        bool hasBaiPlayer = HasPlayerWithCarryCharacter("柏");
+        Debug.Log($"level4提示: 所有玩家中有柏形态: {hasBaiPlayer}");
+        
+        if (hasBaiPlayer)
         {
-            hintPool.Add("观「柏」间松鼠，其戏耍之绳或可一用。");
-            GameLogger.LogDev("添加柏鼠提示");
+            bool shuVisible = IsTargetObjectVisible("鼠");
+            Debug.Log($"level4提示: 柏形态下 - 鼠可见: {shuVisible}");
+            
+            if (shuVisible)
+            {
+                hintPool.Add("观「柏」间松鼠，其戏耍之绳或可一用。");
+                Debug.Log("level4提示: 添加柏鼠提示");
+            }
         }
     }
 
@@ -1400,10 +1519,107 @@ public class HintManager : MonoBehaviour
     /// </summary>
     private void AddBoShangHints(List<string> hintPool, string carry)
     {
-        if (carry == "帛" && !HasBroadcastHistory("商"))
+        Debug.Log($"level4提示: 检查帛商相关提示，当前携带: {carry}");
+        
+        // 检查所有玩家中是否有携带"帛"字符的
+        bool hasBoPlayer = HasPlayerWithCarryCharacter("帛");
+        Debug.Log($"level4提示: 所有玩家中有帛形态: {hasBoPlayer}");
+        
+        if (hasBoPlayer)
         {
-            hintPool.Add("以「帛」易物，乃商人之道。");
-            GameLogger.LogDev("添加帛商提示");
+            bool shangHistory = HasBroadcastHistory("商");
+            Debug.Log($"level4提示: 帛形态下 - 商广播历史: {shangHistory}");
+            
+            if (!shangHistory)
+            {
+                hintPool.Add("以「帛」易物，乃商人之道。");
+                Debug.Log("level4提示: 添加帛商提示");
+            }
+        }
+    }
+
+    /// <summary>
+    /// 添加可拾取文字提示
+    /// </summary>
+    private void AddCollectableItemsHints(List<string> hintPool)
+    {
+        Debug.Log("level4提示: 检查可拾取文字提示");
+        
+        bool hasUnpicked = HasLevel4UnpickedItems();
+        bool hasSnakeOnly = HasSnakeOnlyItemsInLevel4();
+        
+        Debug.Log($"level4提示: 有未拾取物品: {hasUnpicked}, 有蛇形态专用物品: {hasSnakeOnly}");
+        
+        if (hasUnpicked)
+        {
+            hintPool.Add("湖光山色间，似乎还藏着文字。");
+            Debug.Log("level4提示: 添加可拾取文字提示");
+        }
+        else if (hasSnakeOnly)
+        {
+            hintPool.Add("饮雄黄之酒，可变身蛇形，吞食字中飞禽走兽");
+            Debug.Log("level4提示: 添加蛇形态变身提示");
+        }
+    }
+
+    /// <summary>
+    /// 检查是否为需要蛇形态才能收集的物品
+    /// </summary>
+    /// <param name="highlight">要检查的Highlight对象</param>
+    /// <returns>是否为蛇形态专用物品</returns>
+    private bool IsSnakeOnlyItem(Highlight highlight)
+    {
+        Debug.Log($"level4提示: 检查{highlight.letter}是否为蛇形态专用物品");
+        
+        // 使用反射访问私有字段 collectType
+        var field = typeof(Highlight).GetField("collectType", 
+            System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
+        
+        if (field != null)
+        {
+            var collectType = field.GetValue(highlight);
+            if (collectType != null && collectType.ToString() == "SnakeOnly")
+            {
+                Debug.Log($"level4提示: 通过反射确认 {highlight.letter} 为蛇形态专用物品");
+                return true;
+            }
+        }
+        
+        // 备用方案：检查对象名称或字母是否属于蛇形态专用物品
+        string[] snakeOnlyLetters = { "乔", "胡" }; // 骄对应的letter是乔，蝴对应的letter是胡
+        
+        foreach (string letter in snakeOnlyLetters)
+        {
+            if (highlight.letter == letter)
+            {
+                Debug.Log($"level4提示: 通过字母匹配确认 {highlight.letter} 为蛇形态专用物品");
+                return true;
+            }
+        }
+        
+        Debug.Log($"level4提示: {highlight.letter} 不是蛇形态专用物品");
+        return false;
+    }
+
+    /// <summary>
+    /// 添加解字台操作提示
+    /// </summary>
+    private void AddPuzzleTableHints(List<string> hintPool)
+    {
+        Debug.Log("level4提示: 检查解字台操作提示");
+        
+        bool hasUnpicked = HasLevel4UnpickedItems();
+        Debug.Log($"level4提示: 解字台提示检查 - 有未拾取物品: {hasUnpicked}, 当前提示池数量: {hintPool.Count}");
+        
+        // 只有在没有未拾取物品且提示池为空时才添加解字台提示
+        if (!hasUnpicked && hintPool.Count == 0)
+        {
+            hintPool.Add("材料已齐，去解字台组合吧。");
+            Debug.Log("level4提示: 添加解字台操作提示");
+        }
+        else
+        {
+            Debug.Log("level4提示: 跳过解字台提示 - 有未拾取物品或提示池不为空");
         }
     }
 
