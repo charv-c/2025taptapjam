@@ -251,7 +251,7 @@ public class StringSelector : MonoBehaviour
                 // 确保按钮可以交互
                 button.interactable = true;
                 
-                // 禁用按钮的键盘导航，防止回车键触发
+                // 禁用按钮的键盘导航，防止F键触发
                 Navigation noNavigation = new Navigation();
                 noNavigation.mode = Navigation.Mode.None;
                 button.navigation = noNavigation;

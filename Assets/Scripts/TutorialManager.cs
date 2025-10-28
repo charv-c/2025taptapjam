@@ -67,6 +67,7 @@ public class TutorialManager : MonoBehaviour
     // 状态标志
     private bool chongShown = false;
     private bool dieShown = false;
+    private bool waitingForWASD = false; // 是否正在等待WASD键输入
     #endregion
 
     #region Unity Lifecycle
@@ -124,7 +125,7 @@ public class TutorialManager : MonoBehaviour
         ExecuteCurrentStep();
         continueButton.onClick.AddListener(GoToNextStep);
         
-        // 禁用继续按钮的键盘导航，防止回车键触发
+        // 禁用继续按钮的键盘导航，防止F键触发
         Navigation noNavigation = new Navigation();
         noNavigation.mode = Navigation.Mode.None;
         continueButton.navigation = noNavigation;
@@ -133,19 +134,32 @@ public class TutorialManager : MonoBehaviour
 
     private void Update()
     {
-        // 检测 E 键按下继续教程，但禁用回车键继续
+        // 检测WASD键输入（仅在等待WASD输入时）
+        if (waitingForWASD)
+        {
+            if (Input.GetKeyDown(KeyCode.W) || Input.GetKeyDown(KeyCode.A) || 
+                Input.GetKeyDown(KeyCode.S) || Input.GetKeyDown(KeyCode.D))
+            {
+                GameLogger.LogDev("TutorialManager: 检测到WASD键按下，继续教程");
+                waitingForWASD = false;
+                GoToNextStep();
+                return;
+            }
+        }
+        
+        // 检测 E 键按下继续教程，但禁用F键继续
         if (Input.GetKeyDown(KeyCode.E))
         {
-            // 只有当继续按钮可见时才允许 E 键继续
-            if (continueButton != null && continueButton.gameObject.activeInHierarchy)
+            // 只有当继续按钮可见且不在等待WASD输入时才允许 E 键继续
+            if (continueButton != null && continueButton.gameObject.activeInHierarchy && !waitingForWASD)
             {
                 GameLogger.LogDev("TutorialManager: 检测到 E 键按下，继续教程");
                 GoToNextStep();
             }
         }
         
-        // 禁用回车键继续教程的功能
-        // 回车键现在只用于与游戏对象交互，不能继续教程
+        // 禁用F键继续教程的功能
+        // F键现在只用于与游戏对象交互，不能继续教程
     }
     #endregion
 
@@ -378,7 +392,13 @@ public class TutorialManager : MonoBehaviour
     {
         SetGuideExpression(exprHappy);
         hintText.text = "请使用【WASD】键，在书院中自由走动，熟悉一下环境吧。";
-        continueButton.gameObject.SetActive(true);
+        
+        // 隐藏继续按钮，不允许点击或按E键继续
+        continueButton.gameObject.SetActive(false);
+        
+        // 设置等待WASD输入状态
+        waitingForWASD = true;
+        
         EnablePlayerMovement();
         
         // 禁用字符选择
@@ -387,7 +407,7 @@ public class TutorialManager : MonoBehaviour
             ButtonController.Instance.DisableCharacterSelection();
         }
         
-        // EnableUIInteraction();
+        GameLogger.LogDev("TutorialManager: 等待WASD键输入，继续按钮已隐藏");
     }
 
     private void HandleMoveToDog()
@@ -407,12 +427,12 @@ public class TutorialManager : MonoBehaviour
             GameLogger.LogDev("TutorialManager: 已设置遮罩到右边位置");
         }
         
-        // 启用回车键响应，允许玩家与小狗交互
+        // 启用F键响应，允许玩家与小狗交互
         if (playerController != null && playerController.GetCurrentPlayer() != null)
         {
             Player currentPlayer = playerController.GetCurrentPlayer();
             currentPlayer.SetEnterKeyEnabled(true);
-            GameLogger.LogDev("TutorialManager: 已启用回车键响应，允许与小狗交互");
+            GameLogger.LogDev("TutorialManager: 已启用F键响应，允许与小狗交互");
         }
 
         // 禁用字符选择
@@ -439,7 +459,7 @@ public class TutorialManager : MonoBehaviour
                 if (currentPlayer.CarryCharacter == "伏")
                 {
                     GameLogger.LogDev("TutorialManager: 检测到玩家已获得'伏'字，自动进入下一步");
-                    // 禁用回车键响应
+                    // 禁用F键响应
                     currentPlayer.SetEnterKeyEnabled(false);
                     // 自动进入下一步
                     GoToNextStep();
@@ -494,7 +514,7 @@ public class TutorialManager : MonoBehaviour
         }
         EnablePlayerMovement(0);
         
-        EnableEnterKey(); // 启用回车键响应，允许与草丛交互
+        EnableEnterKey(); // 启用F键响应，允许与草丛交互
 
         // 禁用字符选择
         if (ButtonController.Instance != null)
@@ -521,7 +541,7 @@ public class TutorialManager : MonoBehaviour
         }
         
         GameLogger.LogDev("TutorialManager: 收到虫显示通知，自动进入下一步");
-        // 禁用回车键响应
+        // 禁用F键响应
         if (playerController != null && playerController.GetCurrentPlayer() != null)
         {
             Player currentPlayer = playerController.GetCurrentPlayer();
@@ -678,7 +698,7 @@ public class TutorialManager : MonoBehaviour
         
         EnablePlayerMovement(1);
         
-        EnableEnterKey(); // 启用回车键响应，允许与文牒交互
+        EnableEnterKey(); // 启用F键响应，允许与文牒交互
 
         // 禁用字符选择
         if (ButtonController.Instance != null)
@@ -705,7 +725,7 @@ public class TutorialManager : MonoBehaviour
         }
         
         GameLogger.LogDev("TutorialManager: 收到牒显示通知，自动进入下一步");
-        // 禁用回车键响应
+        // 禁用F键响应
         if (playerController != null && playerController.GetCurrentPlayer() != null)
         {
             Player currentPlayer = playerController.GetCurrentPlayer();
@@ -1158,9 +1178,9 @@ public class TutorialManager : MonoBehaviour
         // 禁止玩家移动，确保游戏开始时玩家无法移动
         DisablePlayerMovement();
         DisablePlayerSwitching(); // 禁用玩家切换
-        DisableEnterKey(); // 禁用回车键响应
+        DisableEnterKey(); // 禁用F键响应
         
-        GameLogger.LogDev("TutorialManager: 延迟禁用玩家移动和回车键响应完成");
+        GameLogger.LogDev("TutorialManager: 延迟禁用玩家移动和F键响应完成");
     }
 
     public void OnPlayerTransformed()
@@ -1563,25 +1583,25 @@ public class TutorialManager : MonoBehaviour
         }
     }
     
-    // 禁用回车键响应
+    // 禁用F键响应
     private void DisableEnterKey()
     {
         if (playerController != null && playerController.GetCurrentPlayer() != null)
         {
             Player currentPlayer = playerController.GetCurrentPlayer();
             currentPlayer.SetEnterKeyEnabled(false);
-            GameLogger.LogDev("TutorialManager: 已禁用回车键响应");
+            GameLogger.LogDev("TutorialManager: 已禁用F键响应");
         }
     }
     
-    // 启用回车键响应
+    // 启用F键响应
     private void EnableEnterKey()
     {
         if (playerController != null && playerController.GetCurrentPlayer() != null)
         {
             Player currentPlayer = playerController.GetCurrentPlayer();
             currentPlayer.SetEnterKeyEnabled(true);
-            GameLogger.LogDev("TutorialManager: 已启用回车键响应");
+            GameLogger.LogDev("TutorialManager: 已启用F键响应");
         }
     }
     #endregion

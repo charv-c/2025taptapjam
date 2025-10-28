@@ -25,8 +25,8 @@ public class ExitGameManager : MonoBehaviour
     [SerializeField] private float buttonSpacing = 20f;
     [SerializeField] private Vector2 buttonSize = new Vector2(120f, 40f);
     [SerializeField] private bool autoLayoutButtons = true;
-    [Tooltip("按钮容器锚点的Y值（0=底部, 1=顶部）")]
-    [SerializeField, Range(0f,1f)] private float buttonAnchorY = 0.3f;
+    // [Tooltip("按钮容器锚点的Y值（0=底部, 1=顶部）")] // 已移除未使用的字段的Tooltip
+    // [SerializeField, Range(0f,1f)] private float buttonAnchorY = 0.3f; // 已移除未使用的字段
     [Tooltip("在锚点基础上的Y偏移（像素，正值向上）")]
     [SerializeField] private float buttonYOffset = 24f;
     

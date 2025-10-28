@@ -7,7 +7,7 @@ public class FontRegenerator : MonoBehaviour
 {
     [Header("字体重新生成设置")]
     [SerializeField] private Font sourceFont;
-    [SerializeField] private string outputFontName = "RegeneratedChineseFont";
+    // [SerializeField] private string outputFontName = "RegeneratedChineseFont"; // 已移除未使用的字段
     [SerializeField] private int samplingPointSize = 64;
     [SerializeField] private int atlasPadding = 5;
     [SerializeField] private int atlasWidth = 1024;

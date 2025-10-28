@@ -13,7 +13,7 @@ public class Level2Manager : MonoBehaviour, IBootstrapAware
     private LevelManager levelManager; // 对通用完成检测器的引用
     
     // Bootstrap状态
-    private bool bootstrapCompleted = false;
+    // private bool bootstrapCompleted = false; // 已移除未使用的字段
     private bool sceneInitialized = false;
     
     // 引导（开场流程）完成标志：用于控制回车互动与玩家切换
@@ -84,7 +84,7 @@ public class Level2Manager : MonoBehaviour, IBootstrapAware
         yield return null;
         
         // 标记Bootstrap完成
-        bootstrapCompleted = true;
+        // bootstrapCompleted = true; // 已移除未使用的字段
         
         // 开始场景内容
         InitializeSceneContent();
@@ -95,7 +95,7 @@ public class Level2Manager : MonoBehaviour, IBootstrapAware
     /// </summary>
     public void OnBootstrapComplete()
     {
-        bootstrapCompleted = true;
+        // bootstrapCompleted = true; // 已移除未使用的字段
         GameLogger.LogSystem("Level2Manager: 收到Bootstrap完成通知");
         
         if (!sceneInitialized)
@@ -273,7 +273,7 @@ public class Level2Manager : MonoBehaviour, IBootstrapAware
         
         if (playerController != null)
         {
-            // 启用所有玩家的移动和回车键响应
+            // 启用所有玩家的移动和F键响应
             for (int i = 0; i < playerController.GetPlayerCount(); i++)
             {
                 Player player = playerController.GetPlayerByIndex(i);
@@ -281,7 +281,7 @@ public class Level2Manager : MonoBehaviour, IBootstrapAware
                 {
                     // 启用移动
                     player.SetInputEnabled(true);
-                    // 启用回车键响应
+                    // 启用F键响应
                     player.SetEnterKeyEnabled(true);
                 }
             }

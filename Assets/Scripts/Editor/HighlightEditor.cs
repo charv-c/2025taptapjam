@@ -10,6 +10,13 @@ public class HighlightEditor : Editor
     {
         Highlight highlight = (Highlight)target;
         
+        // 检查对象是否仍然有效
+        if (highlight == null || highlight.gameObject == null)
+        {
+            EditorGUILayout.HelpBox("Highlight对象已被销毁或无效", MessageType.Warning);
+            return;
+        }
+        
         // 绘制默认的Inspector
         DrawDefaultInspector();
         
@@ -46,11 +53,17 @@ public class HighlightEditor : Editor
         EditorGUILayout.BeginHorizontal();
         if (GUILayout.Button("显示对象"))
         {
-            highlight.SendMessage("ShowObject", SendMessageOptions.DontRequireReceiver);
+            if (highlight != null && highlight.gameObject != null)
+            {
+                highlight.SendMessage("ShowObject", SendMessageOptions.DontRequireReceiver);
+            }
         }
         if (GUILayout.Button("隐藏对象"))
         {
-            highlight.SendMessage("HideObject", SendMessageOptions.DontRequireReceiver);
+            if (highlight != null && highlight.gameObject != null)
+            {
+                highlight.SendMessage("HideObject", SendMessageOptions.DontRequireReceiver);
+            }
         }
         EditorGUILayout.EndHorizontal();
         

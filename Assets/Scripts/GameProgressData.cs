@@ -121,6 +121,22 @@ public class GameProgressData
     }
     
     /// <summary>
+    /// 倒计时状态数据
+    /// </summary>
+    [System.Serializable]
+    public class CountdownTimerState
+    {
+        public string objectName;
+        public string objectPath;
+        public string uniqueId;
+        public bool isActive;
+        public bool isPaused;
+        public float remainingTime;
+        public float totalDuration;
+        public Vector3 position;
+    }
+    
+    /// <summary>
     /// 默认构造函数
     /// </summary>
     public GameProgressData()

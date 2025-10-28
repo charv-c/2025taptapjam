@@ -23,6 +23,20 @@ public class Highlight : MonoBehaviour
     
     [Header("收集设置")]
     [SerializeField] private bool collectable = true;
+    
+    [Header("Level4收集类型设置")]
+    [SerializeField] private CollectType collectType = CollectType.Unconditional;
+    
+    /// <summary>
+    /// 收集类型枚举
+    /// </summary>
+    public enum CollectType
+    {
+        [Tooltip("无条件收集：无论carryletter是什么都可以收集")]
+        Unconditional,
+        [Tooltip("条件收集：只有carryletter为'蛇'时才能收集")]
+        SnakeOnly
+    }
 
     [Header("显示/隐藏设置")]
     [Tooltip("是否在开始时隐藏（仅禁用渲染/碰撞/光照，不会禁用GameObject或组件）")]
@@ -39,12 +53,316 @@ public class Highlight : MonoBehaviour
         cachedSpriteRenderer = GetComponent<SpriteRenderer>();
         cachedCollider2D = GetComponent<Collider2D>();
         light2d = GetComponentInChildren<Light2D>(true);
+        // 防御：确保缓存的Light2D属于当前对象层级，避免场景重载后出现错挂到其他同字对象上的情况
+        if (light2d != null && !light2d.transform.IsChildOf(transform))
+        {
+            light2d = null;
+        }
+        // 若未找到或被判定为外部对象，则在本对象下创建一个专属的灯光子物体，避免共享/错挂
+        // 但是某些对象不需要Light2D（如酒对象）
+        if (light2d == null && !ShouldSkipLight2D())
+        {
+            Transform lightChild = transform.Find("Light2D_Local");
+            if (lightChild == null)
+            {
+                GameObject g = new GameObject("Light2D_Local");
+                g.transform.SetParent(transform, false);
+                light2d = g.AddComponent<Light2D>();
+                // 基础参数：点光、较小半径，默认关闭，由后续高亮逻辑控制
+                light2d.lightType = Light2D.LightType.Point;
+                light2d.pointLightInnerRadius = 0.1f;
+                light2d.pointLightOuterRadius = 1.5f;
+                light2d.intensity = 1.0f;
+                light2d.enabled = false;
+                GameLogger.LogDev($"Highlight: 为 '{gameObject.name}' 创建专属Light2D子物体");
+            }
+            else
+            {
+                light2d = lightChild.GetComponent<Light2D>();
+                if (light2d == null)
+                {
+                    light2d = lightChild.gameObject.AddComponent<Light2D>();
+                }
+                light2d.enabled = false;
+            }
+        }
         
         // 如果没有找到Light2D，记录调试信息
         if (light2d == null)
         {
             GameLogger.LogDev($"Highlight: 对象 '{gameObject.name}' 没有Light2D组件，将跳过光照相关操作");
         }
+    }
+    
+    /// <summary>
+    /// 判断是否应该跳过Light2D的创建
+    /// </summary>
+    /// <returns>如果应该跳过Light2D创建则返回true</returns>
+    private bool ShouldSkipLight2D()
+    {
+        // 酒对象不需要Light2D
+        if (letter == "酒")
+        {
+            GameLogger.LogDev($"Highlight: 酒对象 '{gameObject.name}' 跳过Light2D创建");
+            return true;
+        }
+        
+        // 可以在这里添加其他不需要Light2D的对象类型
+        // if (letter == "其他对象类型")
+        // {
+        //     return true;
+        // }
+        
+        return false;
+    }
+    
+    /// <summary>
+    /// 根据收集类型判断是否可以收集（仅限Level4）
+    /// </summary>
+    /// <returns>如果可以收集则返回true</returns>
+    private bool CanCollectBasedOnType()
+    {
+        // 检查是否在Level4场景
+        if (!IsInLevel4())
+        {
+            // 不在Level4场景，使用默认的无条件收集逻辑
+            return true;
+        }
+        
+        // 在Level4场景中，根据收集类型判断
+        switch (collectType)
+        {
+            case CollectType.Unconditional:
+                GameLogger.LogDev($"Highlight: 对象 '{letter}' 为无条件收集类型，可以收集");
+                return true;
+                
+            case CollectType.SnakeOnly:
+                if (player != null && player.CarryCharacter == "蛇")
+                {
+                    GameLogger.LogDev($"Highlight: 对象 '{letter}' 为蛇条件收集类型，玩家携带'蛇'，可以收集");
+                    return true;
+                }
+                else
+                {
+                    GameLogger.LogDev($"Highlight: 对象 '{letter}' 为蛇条件收集类型，玩家携带'{player?.CarryCharacter}'，无法收集");
+                    return false;
+                }
+                
+            default:
+                GameLogger.LogWarning($"Highlight: 未知的收集类型 {collectType}，默认允许收集");
+                return true;
+        }
+    }
+    
+    /// <summary>
+    /// 检查当前是否在Level4场景
+    /// </summary>
+    /// <returns>如果在Level4场景则返回true</returns>
+    private bool IsInLevel4()
+    {
+        // 通过场景名称判断是否为Level4
+        string sceneName = UnityEngine.SceneManagement.SceneManager.GetActiveScene().name;
+        bool isLevel4 = sceneName.Contains("Level4") || sceneName.Contains("level4");
+        
+        if (isLevel4)
+        {
+            GameLogger.LogDev($"Highlight: 当前场景为Level4: {sceneName}");
+        }
+        
+        return isLevel4;
+    }
+    
+    /// <summary>
+    /// 检查是否可以执行字符合成（化字前提条件）
+    /// 前提：carryletter，或者carryletter拆开后的一部分，和互动物体的letter能对应字符拆分列表的某一项
+    /// </summary>
+    /// <returns>如果可以执行字符合成则返回true</returns>
+    private bool CanPerformCharacterTransformation()
+    {
+        if (player == null)
+        {
+            GameLogger.LogDev($"CanPerformCharacterTransformation: 玩家为空，无法执行字符合成");
+            return false;
+        }
+        
+        string carryCharacter = player.CarryCharacter;
+        if (string.IsNullOrEmpty(carryCharacter))
+        {
+            GameLogger.LogDev($"CanPerformCharacterTransformation: 玩家携带字符为空，无法执行字符合成");
+            return false;
+        }
+        
+        GameLogger.LogDev($"CanPerformCharacterTransformation: 检查化字前提条件，玩家携带字符='{carryCharacter}'，互动物体字符='{letter}'");
+        
+        // 检查1：carryletter本身是否与互动物体的letter能对应字符拆分列表的某一项
+        if (CanCharactersCombine(carryCharacter, letter))
+        {
+            GameLogger.LogDev($"CanPerformCharacterTransformation: 玩家携带字符'{carryCharacter}'与互动物体字符'{letter}'可以直接合成");
+            return true;
+        }
+        
+        // 检查2：carryletter拆开后的一部分是否与互动物体的letter能对应字符拆分列表的某一项
+        if (PublicData.CanSplitString(carryCharacter))
+        {
+            var (part1, part2) = PublicData.GetStringSplit(carryCharacter);
+            GameLogger.LogDev($"CanPerformCharacterTransformation: 玩家携带字符'{carryCharacter}'可拆分为'{part1}'和'{part2}'");
+            
+            if (CanCharactersCombine(part1, letter))
+            {
+                GameLogger.LogDev($"CanPerformCharacterTransformation: 玩家携带字符'{carryCharacter}'的拆分部分'{part1}'与互动物体字符'{letter}'可以合成");
+                return true;
+            }
+            
+            if (CanCharactersCombine(part2, letter))
+            {
+                GameLogger.LogDev($"CanPerformCharacterTransformation: 玩家携带字符'{carryCharacter}'的拆分部分'{part2}'与互动物体字符'{letter}'可以合成");
+                return true;
+            }
+        }
+        
+        GameLogger.LogDev($"CanPerformCharacterTransformation: 化字前提条件不满足，玩家携带字符'{carryCharacter}'或其拆分部分无法与互动物体字符'{letter}'合成");
+        return false;
+    }
+    
+    /// <summary>
+    /// 检查两个字符是否可以合成
+    /// </summary>
+    /// <param name="char1">第一个字符</param>
+    /// <param name="char2">第二个字符</param>
+    /// <returns>如果可以合成则返回true</returns>
+    private bool CanCharactersCombine(string char1, string char2)
+    {
+        if (string.IsNullOrEmpty(char1) || string.IsNullOrEmpty(char2))
+        {
+            return false;
+        }
+        
+        // 使用PublicData.FindOriginalString检查两个字符是否可以合成
+        string combinedCharacter = PublicData.FindOriginalString(char1, char2);
+        bool canCombine = combinedCharacter != null;
+        
+        if (canCombine)
+        {
+            GameLogger.LogDev($"CanCharactersCombine: 字符'{char1}'和'{char2}'可以合成为'{combinedCharacter}'");
+        }
+        else
+        {
+            GameLogger.LogDev($"CanCharactersCombine: 字符'{char1}'和'{char2}'无法合成");
+        }
+        
+        return canCombine;
+    }
+    
+    /// <summary>
+    /// 移动到指定名称的对象位置
+    /// </summary>
+    /// <param name="targetObjectName">目标对象的名称</param>
+    private void MoveToTargetObject(string targetObjectName)
+    {
+        // 在场景中查找目标对象
+        GameObject targetObject = GameObject.Find(targetObjectName);
+        
+        if (targetObject == null)
+        {
+            GameLogger.LogWarning($"Highlight: 未找到名为 '{targetObjectName}' 的目标对象");
+            return;
+        }
+        
+        Vector3 targetPosition = targetObject.transform.position;
+        Vector3 currentPosition = transform.position;
+        
+        GameLogger.LogDev($"Highlight: 商对象 '{gameObject.name}' 从位置 {currentPosition} 移动到 {targetPosition}");
+        
+        // 直接设置位置（如果需要平滑移动，可以使用协程或DOTween）
+        transform.position = targetPosition;
+        
+        GameLogger.LogDev($"Highlight: 商对象 '{gameObject.name}' 移动完成，当前位置: {transform.position}");
+    }
+    
+    /// <summary>
+    /// 显示指定名称的对象
+    /// </summary>
+    /// <param name="targetObjectName">目标对象的名称</param>
+    private void ShowTargetObject(string targetObjectName)
+    {
+        // 在场景中查找目标对象（包括未激活的对象）
+        GameObject targetObject = FindObjectByName(targetObjectName);
+        
+        if (targetObject == null)
+        {
+            GameLogger.LogWarning($"Highlight: 未找到名为 '{targetObjectName}' 的目标对象");
+            return;
+        }
+        
+        GameLogger.LogDev($"Highlight: 找到目标对象 '{targetObjectName}'，当前状态: activeInHierarchy={targetObject.activeInHierarchy}");
+        
+        // 直接激活GameObject
+        if (!targetObject.activeInHierarchy)
+        {
+            GameLogger.LogDev($"Highlight: 激活目标对象 '{targetObjectName}'");
+            targetObject.SetActive(true);
+        }
+        else
+        {
+            GameLogger.LogDev($"Highlight: 目标对象 '{targetObjectName}' 已经激活");
+        }
+    }
+    
+    /// <summary>
+    /// 隐藏指定名称的对象
+    /// </summary>
+    /// <param name="targetObjectName">目标对象的名称</param>
+    private void HideTargetObject(string targetObjectName)
+    {
+        // 在场景中查找目标对象（包括未激活的对象）
+        GameObject targetObject = FindObjectByName(targetObjectName);
+        
+        if (targetObject == null)
+        {
+            GameLogger.LogWarning($"Highlight: 未找到名为 '{targetObjectName}' 的目标对象");
+            return;
+        }
+        
+        GameLogger.LogDev($"Highlight: 找到目标对象 '{targetObjectName}'，当前状态: activeInHierarchy={targetObject.activeInHierarchy}");
+        
+        // 如果对象是激活的，则隐藏它
+        if (targetObject.activeInHierarchy)
+        {
+            GameLogger.LogDev($"Highlight: 隐藏目标对象 '{targetObjectName}'");
+            targetObject.SetActive(false);
+        }
+        else
+        {
+            GameLogger.LogDev($"Highlight: 目标对象 '{targetObjectName}' 已经隐藏");
+        }
+    }
+    
+    /// <summary>
+    /// 根据名称查找对象（包括未激活的对象）
+    /// </summary>
+    /// <param name="objectName">对象名称</param>
+    /// <returns>找到的对象，如果未找到返回null</returns>
+    private GameObject FindObjectByName(string objectName)
+    {
+        // 首先尝试使用GameObject.Find（只能找到激活的对象）
+        GameObject targetObject = GameObject.Find(objectName);
+        if (targetObject != null)
+        {
+            return targetObject;
+        }
+        
+        // 如果GameObject.Find找不到，遍历所有对象（包括未激活的）
+        GameObject[] allObjects = Resources.FindObjectsOfTypeAll<GameObject>();
+        foreach (GameObject obj in allObjects)
+        {
+            if (obj.name == objectName && obj.scene.isLoaded)
+            {
+                GameLogger.LogDev($"Highlight: 在未激活对象中找到 '{objectName}': {obj.name}");
+                return obj;
+            }
+        }
+        
+        return null;
     }
 
     void Start()
@@ -149,10 +467,19 @@ public class Highlight : MonoBehaviour
             cachedCollider2D.enabled = !hidden;
         }
 
-        // 灯光
+        // 灯光 - 修复：每个对象的light2d状态应该独立控制
         if (light2d != null)
         {
-            light2d.enabled = !hidden && isHighlighted; // 高亮时才开灯
+            // 如果对象被隐藏，直接关闭灯光
+            if (hidden)
+            {
+                light2d.enabled = false;
+            }
+            else
+            {
+                // 如果对象显示，根据高亮状态决定灯光
+                light2d.enabled = isHighlighted;
+            }
         }
     }
 
@@ -189,7 +516,7 @@ public class Highlight : MonoBehaviour
     {
         if (!enabled) return;
         
-        // 移除回车键检测，现在由Player统一处理
+        // 移除F键检测，现在由Player统一处理
     }
     
     private void OnTriggerEnter2D(Collider2D other)
@@ -221,6 +548,16 @@ public class Highlight : MonoBehaviour
                     qinLogic.OnPlayerEnter();
                 }
             }
+            
+            // 酒对象的特殊逻辑：通知WineSpecialLogic脚本
+            if (letter == "酒")
+            {
+                WineSpecialLogic wineLogic = GetComponent<WineSpecialLogic>();
+                if (wineLogic != null)
+                {
+                    wineLogic.OnPlayerEnter();
+                }
+            }
         }
     }
     
@@ -244,6 +581,16 @@ public class Highlight : MonoBehaviour
                 if (qinLogic != null)
                 {
                     qinLogic.OnPlayerExit();
+                }
+            }
+            
+            // 酒对象的特殊逻辑：通知WineSpecialLogic脚本
+            if (letter == "酒")
+            {
+                WineSpecialLogic wineLogic = GetComponent<WineSpecialLogic>();
+                if (wineLogic != null)
+                {
+                    wineLogic.OnPlayerExit();
                 }
             }
         }
@@ -285,6 +632,13 @@ public class Highlight : MonoBehaviour
         if (!canControlMisquare)
         {
             GameLogger.LogWarning($"ChangeMi: canControlMisquare为false，无法控制米字格");
+            return;
+        }
+        
+        // 检查化字前提条件
+        if (!CanPerformCharacterTransformation())
+        {
+            GameLogger.LogDev($"ChangeMi: 化字前提条件不满足，无法进行字符合成");
             return;
         }
         
@@ -501,6 +855,25 @@ public class Highlight : MonoBehaviour
             return;
         }
         
+        // 先行处理：酒对象的交互应优先于其它分支，避免被教程/collectable等逻辑短路
+        if (letter == "酒")
+        {
+            GameLogger.LogDev($"FunctionA: 酒对象优先处理分支，玩家携带字符: '{player?.CarryCharacter}'");
+            WineSpecialLogic wineLogic = GetComponent<WineSpecialLogic>();
+            if (wineLogic != null)
+            {
+                string carryCharacter = player != null ? player.CarryCharacter : "";
+                GameLogger.LogDev($"FunctionA: 调用WineSpecialLogic.OnPlayerInteract('{carryCharacter}', {player?.gameObject.name})");
+                wineLogic.OnPlayerInteract(carryCharacter, player);
+                GameLogger.LogDev("FunctionA: 酒对象处理完成，返回");
+            }
+            else
+            {
+                GameLogger.LogWarning($"FunctionA: 酒对象 '{gameObject.name}' 缺少WineSpecialLogic组件");
+            }
+            return;
+        }
+        
         // 特殊处理：草对象和牒对象在教程步骤中的特殊逻辑
         bool handledByTutorial = HandleSpecialTutorialLogic();
         
@@ -611,6 +984,13 @@ public class Highlight : MonoBehaviour
             }
             
             // 其他可收集对象的正常处理
+            // 检查收集类型条件（仅限Level4）
+            if (!CanCollectBasedOnType())
+            {
+                GameLogger.LogDev($"FunctionA: 对象 '{letter}' 收集条件不满足，无法收集");
+                return;
+            }
+            
             GameLogger.LogDev($"FunctionA: 对象 '{letter}' 是可收集的，优先添加到可用字符串列表");
             AddLetterToAvailableList();
             
@@ -1089,6 +1469,94 @@ public class Highlight : MonoBehaviour
                 ShowObject();
             }
         }
+        else if (broadcastedValue == "皇")
+        {
+            GameLogger.LogDev($"收到'皇'广播，当前对象letter={letter}");
+            if (letter == "民")
+            {
+                GameLogger.LogDev($"隐藏民对象: {gameObject.name}");
+                HideObject();
+            }
+            if (letter == "乔")
+            {
+                GameLogger.LogDev($"显示乔对象: {gameObject.name}");
+                ShowObject();
+            }
+        }
+        else if (broadcastedValue == "帛")
+        {
+            GameLogger.LogDev($"收到'帛'广播，当前对象letter={letter}");
+            if (letter == "商")
+            {
+                // 调用商特殊逻辑组件
+                ShangSpecialLogic shangLogic = GetComponent<ShangSpecialLogic>();
+                if (shangLogic != null)
+                {
+                    shangLogic.OnBoBroadcast();
+                }
+                else
+                {
+                    GameLogger.LogWarning($"Highlight: 商对象没有ShangSpecialLogic组件 - {gameObject.name}");
+                }
+            }
+            if (letter == "椟")
+            {
+                GameLogger.LogDev($"显示椟对象: {gameObject.name}");
+                ShowObject();
+            }
+        }
+        else if (broadcastedValue == "柏")
+        {
+            GameLogger.LogDev($"收到'柏'广播，当前对象letter={letter}");
+            if (letter == "鼠")
+            {
+                GameLogger.LogDev($"隐藏鼠对象: {gameObject.name}");
+                HideObject();
+            }
+            if (letter == "维")
+            {
+                GameLogger.LogDev($"显示维对象: {gameObject.name}");
+                ShowObject();
+                // 设置维为可收集状态
+                collectable = true;
+                GameLogger.LogDev($"维对象已设置为可收集状态: {gameObject.name}");
+            }
+            
+            // 隐藏场景中名为"绳"的物体（所有对象都会执行这个逻辑）
+            HideTargetObject("绳");
+        }
+        else if (broadcastedValue == "清")
+        {
+            GameLogger.LogDev($"收到'清'广播，当前对象letter={letter}");
+            if (letter == "枯花")
+            {
+                GameLogger.LogDev($"隐藏枯对象: {gameObject.name}");
+                ShowTargetObject("鲜花");
+                HideObject();
+            }
+            else if (letter == "胡")
+            {
+                GameLogger.LogDev($"显示胡对象: {gameObject.name}");
+                ShowObject();
+            }
+            
+            // 显示场景中名为"鲜花"的物体（所有对象都会执行这个逻辑）
+            
+        }
+        else if (broadcastedValue == "睛")
+        {
+            GameLogger.LogDev($"收到'睛'广播，当前对象letter={letter}");
+            if (letter == "汉")
+            {
+                GameLogger.LogDev($"显示汉对象: {gameObject.name}");
+                ShowObject();
+            }
+            if (letter == "商")
+            {
+                GameLogger.LogDev($"收到'睛'广播，禁用商对象的Highlight脚本和Light2D子物体: {gameObject.name}");
+                DisableHighlightAndLight2D();
+            }
+        }
         else if (broadcastedValue == "孟")
         {
             GameLogger.LogDev($"收到'孟'广播，当前对象letter={letter}");
@@ -1420,5 +1888,67 @@ public class Highlight : MonoBehaviour
         }
     }
     
+    /// <summary>
+    /// 禁用Highlight脚本和删除Light2D子物体
+    /// </summary>
+    private void DisableHighlightAndLight2D()
+    {
+        GameLogger.LogDev($"Highlight: 开始禁用Highlight脚本和删除Light2D子物体 - {gameObject.name}");
+        
+        // 先删除Light2D子物体（在禁用脚本之前）
+        if (light2d != null)
+        {
+            GameLogger.LogDev($"Highlight: 删除Light2D子物体 - {light2d.gameObject.name}");
+            Destroy(light2d.gameObject);
+            light2d = null; // 清空引用
+        }
+        else
+        {
+            // 尝试重新查找Light2D子物体
+            Light2D foundLight = GetComponentInChildren<Light2D>();
+            if (foundLight != null)
+            {
+                GameLogger.LogDev($"Highlight: 重新找到并删除Light2D子物体 - {foundLight.gameObject.name}");
+                Destroy(foundLight.gameObject);
+            }
+            else
+            {
+                GameLogger.LogDev($"Highlight: 未找到任何Light2D子物体 - {gameObject.name}");
+            }
+        }
+        
+        // 额外检查：确保所有Light2D子物体都被删除
+        Light2D[] remainingLights = GetComponentsInChildren<Light2D>();
+        foreach (Light2D light in remainingLights)
+        {
+            if (light != null)
+            {
+                GameLogger.LogDev($"Highlight: 发现剩余的Light2D子物体，删除 - {light.gameObject.name}");
+                Destroy(light.gameObject);
+            }
+        }
+        
+        // 最后禁用Highlight脚本
+        this.enabled = false;
+        GameLogger.LogDev($"Highlight: 已禁用Highlight脚本 - {gameObject.name}");
+        
+        GameLogger.LogDev($"Highlight: 禁用Highlight脚本和删除Light2D子物体完成 - {gameObject.name}");
+    }
     
+    /// <summary>
+    /// 测试方法：发送"睛"广播（可在Inspector中调用）
+    /// </summary>
+    [ContextMenu("测试发送'睛'广播")]
+    public void TestJingBroadcast()
+    {
+        if (BroadcastManager.Instance != null)
+        {
+            GameLogger.LogDev("Highlight: 测试发送'睛'广播");
+            BroadcastManager.Instance.BroadcastToAll("睛");
+        }
+        else
+        {
+            GameLogger.LogError("Highlight: 广播管理器不存在，无法测试'睛'广播");
+        }
+    }
 }

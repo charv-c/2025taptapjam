@@ -4,7 +4,7 @@ public class Player : MonoBehaviour
 {
     [Header("移动设置")]
     [SerializeField] private float moveSpeed = 5f;
-    [SerializeField] private float screenBoundaryOffset = 0.5f; // 距离屏幕边界的偏移量
+    // [SerializeField] private float screenBoundaryOffset = 0.5f; // 已移除未使用的字段
     [SerializeField] private bool isPlayer1 = true; // 是否为玩家1（左半边）
     
     [Header("初始位置设置")]
@@ -22,7 +22,7 @@ public class Player : MonoBehaviour
     private bool inputEnabled = false; // 控制输入是否启用，默认禁用
     private float currentHorizontalInput = 0f;
     private float currentVerticalInput = 0f;
-    private bool enterKeyEnabled = true; // 控制回车键是否启用，默认启用
+    private bool enterKeyEnabled = true; // 控制F键是否启用，默认启用
     public string CarryCharacter="人";
     
     // 颜色控制相关
@@ -32,6 +32,7 @@ public class Player : MonoBehaviour
     
     [Header("颜色设置")]
     [SerializeField] private Color grayedOutColor = new Color(0.2f, 0.2f, 0.2f, 1f);
+    
     
     void Start()
     {
@@ -76,7 +77,7 @@ public class Player : MonoBehaviour
             OnRKeyPressed();
         }
         
-        // 检测交互键按下（F，只有在启用时才响应）
+        // 检测F键按下（只有在启用时才响应）
         if (enterKeyEnabled && Input.GetKeyDown(KeyCode.F))
         {
             OnEnterKeyPressed();
@@ -221,6 +222,20 @@ public class Player : MonoBehaviour
                 GameLogger.LogDev($"Player: Level3场景，Player2初始字符设为'子'");
             }
         }
+        else if (currentSceneName.Contains("level4") || currentSceneName.Contains("4"))
+        {
+            // Level4: Player1为"白"，Player2为"青"
+            if (isPlayer1)
+            {
+                initialCarryCharacter = "白";
+                GameLogger.LogDev($"Player: Level4场景，Player1初始字符设为'白'");
+            }
+            else
+            {
+                initialCarryCharacter = "青";
+                GameLogger.LogDev($"Player: Level4场景，Player2初始字符设为'青'");
+            }
+        }
         else
         {
             // Level1、Level2以及其他场景：默认为"人"
@@ -351,19 +366,22 @@ public class Player : MonoBehaviour
         }
         
         RestoreAllHighlightScripts();
+        
+        // 清空所有倒计时
+        ClearAllCountdownTimers();
     }
     
-    // 回车键按下时的处理
+    // F键按下时的处理
     private void OnEnterKeyPressed()
     {
         // 检查当前玩家是否为当前控制角色
         if (!IsCurrentControlledPlayer())
         {
-            GameLogger.LogDev($"Player: 当前玩家不是控制角色，忽略回车键输入");
+            GameLogger.LogDev($"Player: 当前玩家不是控制角色，忽略F键输入");
             return;
         }
         
-        GameLogger.LogDev($"Player: 当前玩家是控制角色，执行回车键交互逻辑");
+        GameLogger.LogDev($"Player: 当前玩家是控制角色，执行F键交互逻辑");
         // 查找附近的Highlight对象并触发交互
         TriggerNearbyHighlightInteraction();
     }
@@ -615,6 +633,12 @@ public class Player : MonoBehaviour
         string oldCharacter = CarryCharacter;
         GameLogger.LogDev($"Player.SetCarryCharacter: 开始设置携带字符，从 '{oldCharacter}' 更改为 '{newCharacter}'");
         
+        // 如果设置为"蛇"，打印完整的调用堆栈
+        if (newCharacter == "蛇")
+        {
+            GameLogger.LogWarning($"!!! Player.SetCarryCharacter: 携带字符被设置为'蛇'，调用堆栈：\n{UnityEngine.StackTraceUtility.ExtractStackTrace()}");
+        }
+        
         CarryCharacter = newCharacter;
         
         // 更新对应的米字格图片
@@ -703,14 +727,14 @@ public class Player : MonoBehaviour
         return CarryCharacter == character;
     }
     
-    // 启用/禁用回车键响应
+    // 启用/禁用F键响应
     public void SetEnterKeyEnabled(bool enabled)
     {
         enterKeyEnabled = enabled;
-        GameLogger.LogDev($"Player: 回车键响应已{(enabled ? "启用" : "禁用")}");
+        GameLogger.LogDev($"Player: F键响应已{(enabled ? "启用" : "禁用")}");
     }
     
-    // 获取回车键响应状态
+    // 获取F键响应状态
     public bool IsEnterKeyEnabled()
     {
         return enterKeyEnabled;
@@ -810,4 +834,26 @@ public class Player : MonoBehaviour
         SetCarryCharacter(initialCarryCharacter);
         GameLogger.LogDev($"Player: 已重置携带字符为初始值 '{initialCarryCharacter}'");
     }
-} 
+    
+     
+     /// <summary>
+     /// 清空场景中所有倒计时
+     /// </summary>
+     private void ClearAllCountdownTimers()
+     {
+         // 查找场景中所有CountdownTimer组件
+         CountdownTimer[] allCountdownTimers = FindObjectsOfType<CountdownTimer>();
+         
+         foreach (CountdownTimer countdownTimer in allCountdownTimers)
+         {
+             if (countdownTimer != null)
+             {
+                 // 停止倒计时
+                 countdownTimer.StopCountdown();
+                 GameLogger.LogDev($"Player: 已清空倒计时 - {countdownTimer.gameObject.name}");
+             }
+         }
+         
+         GameLogger.LogDev($"Player: 已清空所有倒计时，共处理 {allCountdownTimers.Length} 个倒计时组件");
+     }
+ }

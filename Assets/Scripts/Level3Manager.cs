@@ -63,7 +63,7 @@ public class Level3Manager : MonoBehaviour, IBootstrapAware
     private LevelManager levelManager;
     
     // Bootstrap状态
-    private bool bootstrapCompleted = false;
+    // private bool bootstrapCompleted = false; // 已移除未使用的字段
     private bool sceneInitialized = false;
     
     // 引导（开场流程）完成标志：用于控制回车互动与玩家切换
@@ -148,7 +148,7 @@ public class Level3Manager : MonoBehaviour, IBootstrapAware
         yield return null;
         
         // 标记Bootstrap完成
-        bootstrapCompleted = true;
+        // bootstrapCompleted = true; // 已移除未使用的字段
         
         // 开始场景内容
         InitializeSceneContent();
@@ -159,7 +159,7 @@ public class Level3Manager : MonoBehaviour, IBootstrapAware
     /// </summary>
     public void OnBootstrapComplete()
     {
-        bootstrapCompleted = true;
+        // bootstrapCompleted = true; // 已移除未使用的字段
         GameLogger.LogSystem("Level3Manager: 收到Bootstrap完成通知");
         
         if (!sceneInitialized)
@@ -459,7 +459,7 @@ public class Level3Manager : MonoBehaviour, IBootstrapAware
         if (playerController != null)
         {
             playerController.EnableCurrentPlayerMovement();
-            // 始终开启移动/基础输入，但按引导完成与否控制回车键与切换
+            // 始终开启移动/基础输入，但按引导完成与否控制F键与切换
             int count = playerController.GetPlayerCount();
             for (int i = 0; i < count; i++)
             {
