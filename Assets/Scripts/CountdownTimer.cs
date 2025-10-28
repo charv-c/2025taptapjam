@@ -365,6 +365,26 @@ public class CountdownTimer : MonoBehaviour
     /// </summary>
     protected virtual void OnCountdownExpired()
     {
+        // 检查是否是从蛇状态结束
+        Player player = GetComponent<Player>();
+        if (player != null && player.CarryCharacter == "蛇")
+        {
+            // 发送蛇形态结束广播
+            if (BroadcastManager.Instance != null)
+            {
+                BroadcastManager.Instance.BroadcastToAll("蛇形态结束");
+                
+                if (enableCountdownLogging)
+                {
+                    GameLogger.LogDev($"CountdownTimer: 蛇形态结束，已发送广播 '蛇形态结束' - {gameObject.name}");
+                }
+            }
+            else
+            {
+                GameLogger.LogWarning("CountdownTimer: 未找到BroadcastManager实例，无法发送蛇形态结束广播");
+            }
+        }
+        
         // 重置携带字符为初始值
         ResetCarryCharacterToInitial();
         

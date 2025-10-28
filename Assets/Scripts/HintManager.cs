@@ -11,7 +11,8 @@ using TMPro;
 public enum SceneType
 {
     Level2,
-    Level3
+    Level3,
+    Level4
 }
 /// <summary>
 /// 提示管理器 - 控制提示图片的显示和宽度渐变动画
@@ -584,6 +585,11 @@ public class HintManager : MonoBehaviour
             // Level3：使用新的二级优先级逻辑
             return GetLevel3HintText();
         }
+        else if (currentScene == SceneType.Level4)
+        {
+            // Level4：使用新的二级优先级逻辑
+            return GetLevel4HintText();
+        }
 
         // 其他场景的默认兜底逻辑
         return "请仔细观察周围，或许有所发现";
@@ -661,6 +667,27 @@ public class HintManager : MonoBehaviour
     }
 
     /// <summary>
+    /// Level4 二级优先级提示逻辑
+    /// </summary>
+    /// <returns>提示文案</returns>
+    private string GetLevel4HintText()
+    {
+        // 第一优先级：核心谜题检查
+        List<string> hintPool = GetLevel4CorePuzzlePool();
+        if (hintPool.Count > 0)
+        {
+            // 从提示池中随机选择一条提示
+            int randomIndex = Random.Range(0, hintPool.Count);
+            string selectedHint = hintPool[randomIndex];
+            GameLogger.LogDev($"Level4提示: 从{hintPool.Count}条核心谜题提示中选择: {selectedHint}");
+            return selectedHint;
+        }
+        
+        // 第二优先级：收集与收尾检查
+        return GetLevel4CollectionAndFinishingHint();
+    }
+
+    /// <summary>
     /// Level3 收集与收尾检查
     /// </summary>
     /// <returns>收集或合成提示</returns>
@@ -680,10 +707,50 @@ public class HintManager : MonoBehaviour
     }
 
     /// <summary>
+    /// Level4 收集与收尾检查
+    /// </summary>
+    /// <returns>收集或合成提示</returns>
+    private string GetLevel4CollectionAndFinishingHint()
+    {
+        // 检查场景中是否还有未拾取的文字
+        if (HasLevel4UnpickedItems())
+        {
+            GameLogger.LogDev("Level4提示: 检测到未拾取的文字，给出收集提示");
+            return "湖光山色间，似乎还藏着文字。";
+        }
+        else
+        {
+            GameLogger.LogDev("Level4提示: 所有文字已收集，给出最终合成提示");
+            return "材料已齐，去解字台组合吧。";
+        }
+    }
+
+    /// <summary>
     /// 检查Level3场景中是否还有未拾取的文字
     /// </summary>
     /// <returns>是否存在未拾取的文字</returns>
     private bool HasLevel3UnpickedItems()
+    {
+        // 检查场景中是否还有可收集但未拾取的文字（通过Highlight组件判断）
+        Highlight[] allHighlights = FindObjectsOfType<Highlight>();
+        foreach (Highlight highlight in allHighlights)
+        {
+            if (highlight != null && highlight.IsCollectableActive())
+            {
+                GameLogger.LogDev($"发现未拾取的文字: {highlight.letter}");
+                return true;
+            }
+        }
+        
+        GameLogger.LogDev("所有文字已被拾取");
+        return false;
+    }
+
+    /// <summary>
+    /// 检查Level4场景中是否还有未拾取的文字
+    /// </summary>
+    /// <returns>是否存在未拾取的文字</returns>
+    private bool HasLevel4UnpickedItems()
     {
         // 检查场景中是否还有可收集但未拾取的文字（通过Highlight组件判断）
         Highlight[] allHighlights = FindObjectsOfType<Highlight>();
@@ -725,6 +792,44 @@ public class HintManager : MonoBehaviour
         AddBeachInteractionHintsNew(hintPool, carry);
         
         GameLogger.LogDev($"Level3核心谜题提示池构建完成，共{hintPool.Count}条提示");
+        UpdateHintPoolDisplay(hintPool);
+        
+        return hintPool;
+    }
+
+    /// <summary>
+    /// Level4 核心谜题提示池 - 按照新的详细逻辑构建
+    /// </summary>
+    /// <returns>所有满足条件的核心谜题提示</returns>
+    private List<string> GetLevel4CorePuzzlePool()
+    {
+        List<string> hintPool = new List<string>();
+        string carry = GetCurrentCarryCharacter();
+        
+        GameLogger.LogDev($"构建Level4核心谜题提示池, carry='{carry}'");
+        
+        // 1. 酒互动检查
+        AddWineInteractionHints(hintPool, carry);
+        
+        // 2. 蛇相关检查
+        AddSnakeHints(hintPool, carry);
+        
+        // 3. 皇民相关检查
+        AddEmperorHints(hintPool, carry);
+        
+        // 4. 清枯花相关检查
+        AddQingKuhuaHints(hintPool, carry);
+        
+        // 5. 睛商相关检查
+        AddJingShangHints(hintPool, carry);
+        
+        // 6. 柏鼠相关检查
+        AddBaiShuHints(hintPool, carry);
+        
+        // 7. 帛商相关检查
+        AddBoShangHints(hintPool, carry);
+        
+        GameLogger.LogDev($"Level4核心谜题提示池构建完成，共{hintPool.Count}条提示");
         UpdateHintPoolDisplay(hintPool);
         
         return hintPool;
@@ -1051,6 +1156,10 @@ public class HintManager : MonoBehaviour
         {
             return IsLevel3TargetCompleted(target);
         }
+        else if (currentScene == SceneType.Level4)
+        {
+            return IsLevel4TargetCompleted(target);
+        }
 
         return false;
     }
@@ -1086,6 +1195,25 @@ public class HintManager : MonoBehaviour
                 return !IsObjectEnabled(oldObject);
             case "生":
                 return !IsObjectEnabled(lifeObject);
+            default:
+                return false;
+        }
+    }
+
+    // 判断Level4场景的目标是否完成
+    private bool IsLevel4TargetCompleted(string target)
+    {
+        // Level4的目标字符：桥、难、断、续
+        // 这里可以根据具体的Level4目标实现逻辑
+        // 目前暂时返回false，表示Level4的目标检查逻辑待实现
+        switch (target)
+        {
+            case "桥":
+            case "难":
+            case "断":
+            case "续":
+                // 可以根据具体的Level4目标完成条件来实现
+                return false;
             default:
                 return false;
         }
@@ -1182,6 +1310,104 @@ public class HintManager : MonoBehaviour
         GameLogger.LogDev($"没有玩家携带字符 '{character}'");
         return false;
     }
+
+    #region Level4 提示检查方法
+
+    /// <summary>
+    /// 添加酒互动提示
+    /// </summary>
+    private void AddWineInteractionHints(List<string> hintPool, string carry)
+    {
+        // player和酒互动，场景中存在"骄"或"蝴"
+        if (IsTargetObjectVisible("骄") || IsTargetObjectVisible("蝴"))
+        {
+            hintPool.Add("饮下雄黄酒，或可显露真身。");
+            GameLogger.LogDev("添加酒互动提示: 雄黄酒");
+        }
+    }
+
+    /// <summary>
+    /// 添加蛇相关提示
+    /// </summary>
+    private void AddSnakeHints(List<string> hintPool, string carry)
+    {
+        if (carry == "蛇")
+        {
+            if (IsTargetObjectVisible("骄"))
+            {
+                hintPool.Add("「蛇」之本性，或可吞食骄马。");
+                GameLogger.LogDev("添加蛇提示: 骄马");
+            }
+            
+            if (IsTargetObjectVisible("蝴"))
+            {
+                hintPool.Add("「蛇」之本性，或可吞食虫蝶。");
+                GameLogger.LogDev("添加蛇提示: 虫蝶");
+            }
+        }
+    }
+
+    /// <summary>
+    /// 添加皇民相关提示
+    /// </summary>
+    private void AddEmperorHints(List<string> hintPool, string carry)
+    {
+        if (carry == "皇" && IsTargetObjectVisible("民"))
+        {
+            hintPool.Add("「皇」者临「民」，化为天之「骄」子。");
+            GameLogger.LogDev("添加皇民提示");
+        }
+    }
+
+    /// <summary>
+    /// 添加清枯花相关提示
+    /// </summary>
+    private void AddQingKuhuaHints(List<string> hintPool, string carry)
+    {
+        if (carry == "清" && IsTargetObjectVisible("枯花"))
+        {
+            hintPool.Add("「清」泉或可让枯萎的花盛开。");
+            GameLogger.LogDev("添加清枯花提示");
+        }
+    }
+
+    /// <summary>
+    /// 添加睛商相关提示
+    /// </summary>
+    private void AddJingShangHints(List<string> hintPool, string carry)
+    {
+        if (carry == "睛" && HasBroadcastHistory("商"))
+        {
+            hintPool.Add("以「睛」辨「玉」，方知其源。");
+            GameLogger.LogDev("添加睛商提示");
+        }
+    }
+
+    /// <summary>
+    /// 添加柏鼠相关提示
+    /// </summary>
+    private void AddBaiShuHints(List<string> hintPool, string carry)
+    {
+        if (carry == "柏" && IsTargetObjectVisible("鼠"))
+        {
+            hintPool.Add("观「柏」间松鼠，其戏耍之绳或可一用。");
+            GameLogger.LogDev("添加柏鼠提示");
+        }
+    }
+
+    /// <summary>
+    /// 添加帛商相关提示
+    /// </summary>
+    private void AddBoShangHints(List<string> hintPool, string carry)
+    {
+        if (carry == "帛" && !HasBroadcastHistory("商"))
+        {
+            hintPool.Add("以「帛」易物，乃商人之道。");
+            GameLogger.LogDev("添加帛商提示");
+        }
+    }
+
+    #endregion
 
     /// <summary>
     /// 更新提示池可视化显示

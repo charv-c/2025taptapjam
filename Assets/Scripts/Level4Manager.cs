@@ -1,5 +1,6 @@
 using UnityEngine;
 using System.Collections;
+using System.Collections.Generic;
 using UnityEngine.SceneManagement;
 
 /// <summary>
@@ -36,6 +37,9 @@ public class Level4Manager : MonoBehaviour, IBootstrapAware
         
         // 确保Bootstrap系统初始化
         GameBootstrap.EnsureInitialized();
+        
+        // 设置Level4的目标列表
+        SetLevel4Targets();
         
         // 设置当前关卡进度
         if (LevelProgressManager.Instance != null)
@@ -105,6 +109,28 @@ public class Level4Manager : MonoBehaviour, IBootstrapAware
         if (!sceneInitialized)
         {
             InitializeSceneContent();
+        }
+    }
+    
+    /// <summary>
+    /// 设置Level4的目标列表
+    /// </summary>
+    private void SetLevel4Targets()
+    {
+        // Level4的目标字符：桥、难、断、续
+        List<string> level4Targets = new List<string> { "桥", "难", "断", "续" };
+        
+        // 重置目标完成状态
+        PublicData.ResetTargetCompletion();
+        
+        // 设置Level4的目标列表
+        PublicData.SetCurrentTargetList(level4Targets);
+        
+        GameLogger.LogSystem($"Level4Manager: 已设置Level4目标列表: [{string.Join(", ", level4Targets)}]");
+        
+        if (showDebugInfo)
+        {
+            GameLogger.LogDev($"Level4Manager: 目标列表设置完成，当前目标: [{string.Join(", ", PublicData.GetCurrentTargetList())}]");
         }
     }
     

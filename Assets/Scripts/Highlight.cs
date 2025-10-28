@@ -983,6 +983,27 @@ public class Highlight : MonoBehaviour
                 }
             }
             
+            // 特殊处理："蝴"对象与蛇的互动
+            if (letter == "蝴")
+            {
+                if (player != null && player.CarryCharacter == "蛇")
+                {
+                    GameLogger.LogDev($"FunctionA: 玩家携带'蛇'字符与'蝴'对象互动，发送广播 '蛇蝴'");
+                    if (BroadcastManager.Instance != null)
+                    {
+                        BroadcastManager.Instance.BroadcastToAll("蛇蝴");
+                        GameLogger.LogDev($"FunctionA: 已广播 '蛇蝴'");
+                    }
+                    
+                    // 蝴对象不销毁，保持可重复交互
+                    return;
+                }
+                else
+                {
+                    GameLogger.LogDev($"FunctionA: 玩家携带字符'{player?.CarryCharacter}'，不能与'蝴'对象特殊互动，执行正常收集逻辑");
+                }
+            }
+            
             // 其他可收集对象的正常处理
             // 检查收集类型条件（仅限Level4）
             if (!CanCollectBasedOnType())
@@ -1018,6 +1039,30 @@ public class Highlight : MonoBehaviour
                 // 仅恢复与当前携带字符对应的被禁用高亮，并禁用当前对象高亮
                 TransferDisabledHighlightToCurrent();
                 return;
+            }
+            else if (player.CarryCharacter == "蛇")
+            {
+                // 蛇字符的特殊处理：与骄、蝴互动时发送特殊广播
+                if (letter == "骄")
+                {
+                    GameLogger.LogDev($"FunctionA: 玩家携带'蛇'字符与对象 '{letter}' 互动，发送广播 '蛇骄'");
+                    if (BroadcastManager.Instance != null)
+                    {
+                        BroadcastManager.Instance.BroadcastToAll("蛇骄");
+                    }
+                }
+                else if (letter == "蝴")
+                {
+                    GameLogger.LogDev($"FunctionA: 玩家携带'蛇'字符与对象 '{letter}' 互动，发送广播 '蛇蝴'");
+                    if (BroadcastManager.Instance != null)
+                    {
+                        BroadcastManager.Instance.BroadcastToAll("蛇蝴");
+                    }
+                }
+                else
+                {
+                    GameLogger.LogDev($"FunctionA: 玩家携带'蛇'字符，但对象 '{letter}' 不是骄或蝴，无反应");
+                }
             }
             else if (player.CarryCharacter == "侠")
             {
