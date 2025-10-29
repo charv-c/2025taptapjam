@@ -67,6 +67,7 @@ public class GameProgressData
         public List<string> completedTargets;
         public List<string> currentTargetList;
         public BeachObjectState beachObjectState;
+        public List<CountdownTimerState> countdownTimerStates; // 倒计时状态列表
         public float saveTime;
     }
 

@@ -179,10 +179,20 @@ public class Level4Manager : MonoBehaviour, IBootstrapAware
         if (sceneInitialized) return;
         
         sceneInitialized = true;
-        GameLogger.LogSystem("Level4Manager: 开始显示Level4开场白");
         
-        // 显示开场白
-        ShowOpeningSequence();
+        // 检查是否已经完成开场白（存档恢复的情况）
+        if (guideCompleted)
+        {
+            GameLogger.LogSystem("Level4Manager: 开场白已完成，直接开始游戏");
+            // 在存档恢复的情况下，直接启用所有操作，不需要等待协程
+            EnableAllOperations();
+        }
+        else
+        {
+            GameLogger.LogSystem("Level4Manager: 开始显示Level4开场白");
+            // 显示开场白
+            ShowOpeningSequence();
+        }
     }
 
     /// <summary>
@@ -364,6 +374,48 @@ public class Level4Manager : MonoBehaviour, IBootstrapAware
         else
         {
             GameLogger.LogWarning("Level4Manager: PlayerController为null，无法禁用操作。");
+        }
+    }
+    
+    /// <summary>
+    /// 启用所有玩家操作
+    /// </summary>
+    private void EnableAllOperations()
+    {
+        GameLogger.LogSystem("Level4Manager: 启用所有操作");
+        
+        if (playerController != null)
+        {
+            // 启用所有玩家的移动和F键响应
+            for (int i = 0; i < playerController.GetPlayerCount(); i++)
+            {
+                Player player = playerController.GetPlayerByIndex(i);
+                if (player != null)
+                {
+                    // 启用移动
+                    player.SetInputEnabled(true);
+                    // 启用F键响应（因为guideCompleted为true）
+                    player.SetEnterKeyEnabled(true);
+                }
+            }
+            
+            // 设置第一个玩家为当前玩家
+            if (playerController.GetPlayerCount() > 0)
+            {
+                playerController.SetCurrentPlayerIndex(0);
+            }
+            
+            // 启用玩家切换功能
+            playerController.EnablePlayerSwitching();
+            
+            // 更新玩家颜色状态（当前操控的玩家正常颜色，其他玩家灰色）
+            playerController.UpdatePlayerColors();
+            
+            GameLogger.LogSystem("Level4Manager: 已启用所有移动、切换、回车、空格操作，并设置玩家颜色状态");
+        }
+        else
+        {
+            GameLogger.LogWarning("Level4Manager: PlayerController为null，无法启用操作");
         }
     }
 

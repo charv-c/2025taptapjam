@@ -187,12 +187,38 @@ public class AutoHint : MonoBehaviour
 
     private string ResolveValue(string message)
     {
-        if (string.IsNullOrEmpty(message)) return string.Empty;
-        if (PublicData.autoHintDict != null && PublicData.autoHintDict.TryGetValue(message, out string value))
+        Debug.Log($"AutoHint.ResolveValue: 开始解析消息: '{message}'");
+        
+        if (string.IsNullOrEmpty(message)) 
         {
-            return value ?? string.Empty;
+            Debug.Log("AutoHint.ResolveValue: 消息为空，返回空字符串");
+            return string.Empty;
         }
+        
+        if (PublicData.autoHintDict != null)
+        {
+            Debug.Log($"AutoHint.ResolveValue: autoHintDict不为空，包含 {PublicData.autoHintDict.Count} 个条目");
+            Debug.Log($"AutoHint.ResolveValue: 检查键 '{message}' 是否存在");
+            
+            if (PublicData.autoHintDict.TryGetValue(message, out string value))
+            {
+                Debug.Log($"AutoHint.ResolveValue: 找到值: '{value}'");
+                return value ?? string.Empty;
+            }
+            else
+            {
+                Debug.LogWarning($"AutoHint.ResolveValue: 未找到键 '{message}' 对应的值");
+                // 打印字典中的所有键以便调试
+                Debug.Log($"AutoHint.ResolveValue: 字典中的键包括: {string.Join(", ", PublicData.autoHintDict.Keys)}");
+            }
+        }
+        else
+        {
+            Debug.LogError("AutoHint.ResolveValue: PublicData.autoHintDict为空");
+        }
+        
         // 如果广播内容不在字典中，返回空字符串（不显示提示）
+        Debug.Log("AutoHint.ResolveValue: 返回空字符串");
         return string.Empty;
     }
 

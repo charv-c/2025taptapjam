@@ -493,6 +493,9 @@ public class Player : MonoBehaviour
         // 执行交互
         if (targetHighlight != null)
         {
+            // 在触发交互前，检查是否需要发送蛇相关的特殊广播
+            CheckAndSendSnakeBroadcast(targetHighlight);
+            
             targetHighlight.TriggerInteraction();
             GameLogger.LogDev($"Player: 最终触发与Highlight对象 '{targetHighlight.gameObject.name}' 的交互");
         }
@@ -625,6 +628,59 @@ public class Player : MonoBehaviour
         }
         
         return isColliding;
+    }
+    
+    /// <summary>
+    /// 检查并发送蛇相关的特殊广播
+    /// </summary>
+    /// <param name="highlight">要交互的Highlight对象</param>
+    private void CheckAndSendSnakeBroadcast(Highlight highlight)
+    {
+        GameLogger.LogDev($"Player.CheckAndSendSnakeBroadcast: 开始检查，玩家携带字符='{CarryCharacter}'，交互对象letter='{highlight.letter}'");
+        
+        // 检查玩家是否携带"蛇"字符
+        if (CarryCharacter == "蛇")
+        {
+            GameLogger.LogDev($"Player.CheckAndSendSnakeBroadcast: 玩家携带'蛇'字符，检查交互对象");
+            
+            // 检查交互对象是否为"骄"或"蝴"
+            if (highlight.letter == "乔")
+            {
+                GameLogger.LogDev($"Player.CheckAndSendSnakeBroadcast: 检测到'乔'对象，准备发送广播 '蛇骄'");
+                if (BroadcastManager.Instance != null)
+                {
+                    GameLogger.LogDev($"Player.CheckAndSendSnakeBroadcast: BroadcastManager存在，发送广播 '蛇骄'");
+                    BroadcastManager.Instance.BroadcastToAll("蛇骄");
+                    GameLogger.LogDev($"Player.CheckAndSendSnakeBroadcast: 已广播 '蛇骄'");
+                }
+                else
+                {
+                    GameLogger.LogError($"Player.CheckAndSendSnakeBroadcast: BroadcastManager.Instance为空，无法发送广播 '蛇骄'");
+                }
+            }
+            else if (highlight.letter == "胡")
+            {
+                GameLogger.LogDev($"Player.CheckAndSendSnakeBroadcast: 检测到'胡'对象，准备发送广播 '蛇蝴'");
+                if (BroadcastManager.Instance != null)
+                {
+                    GameLogger.LogDev($"Player.CheckAndSendSnakeBroadcast: BroadcastManager存在，发送广播 '蛇蝴'");
+                    BroadcastManager.Instance.BroadcastToAll("蛇蝴");
+                    GameLogger.LogDev($"Player.CheckAndSendSnakeBroadcast: 已广播 '蛇蝴'");
+                }
+                else
+                {
+                    GameLogger.LogError($"Player.CheckAndSendSnakeBroadcast: BroadcastManager.Instance为空，无法发送广播 '蛇蝴'");
+                }
+            }
+            else
+            {
+                GameLogger.LogDev($"Player.CheckAndSendSnakeBroadcast: 交互对象letter='{highlight.letter}'不是'乔'或'胡'，不发送广播");
+            }
+        }
+        else
+        {
+            GameLogger.LogDev($"Player.CheckAndSendSnakeBroadcast: 玩家携带字符='{CarryCharacter}'不是'蛇'，不发送广播");
+        }
     }
     
     // 设置携带字符并更新米字格图片
@@ -836,24 +892,81 @@ public class Player : MonoBehaviour
     }
     
      
-     /// <summary>
-     /// 清空场景中所有倒计时
-     /// </summary>
-     private void ClearAllCountdownTimers()
-     {
-         // 查找场景中所有CountdownTimer组件
-         CountdownTimer[] allCountdownTimers = FindObjectsOfType<CountdownTimer>();
-         
-         foreach (CountdownTimer countdownTimer in allCountdownTimers)
-         {
-             if (countdownTimer != null)
-             {
-                 // 停止倒计时
-                 countdownTimer.StopCountdown();
-                 GameLogger.LogDev($"Player: 已清空倒计时 - {countdownTimer.gameObject.name}");
-             }
-         }
-         
-         GameLogger.LogDev($"Player: 已清空所有倒计时，共处理 {allCountdownTimers.Length} 个倒计时组件");
-     }
+    /// <summary>
+    /// 清空场景中所有倒计时
+    /// </summary>
+    private void ClearAllCountdownTimers()
+    {
+        // 查找场景中所有CountdownTimer组件
+        CountdownTimer[] allCountdownTimers = FindObjectsOfType<CountdownTimer>();
+        
+        foreach (CountdownTimer countdownTimer in allCountdownTimers)
+        {
+            if (countdownTimer != null)
+            {
+                // 停止倒计时
+                countdownTimer.StopCountdown();
+                GameLogger.LogDev($"Player: 已清空倒计时 - {countdownTimer.gameObject.name}");
+            }
+        }
+        
+        GameLogger.LogDev($"Player: 已清空所有倒计时，共处理 {allCountdownTimers.Length} 个倒计时组件");
+    }
+    
+    /// <summary>
+    /// 测试蛇相关广播的方法（可在Inspector中调用）
+    /// </summary>
+    [ContextMenu("测试蛇骄广播")]
+    public void TestSnakeJiaoBroadcast()
+    {
+        GameLogger.LogDev("Player: 测试发送'蛇骄'广播");
+        if (BroadcastManager.Instance != null)
+        {
+            BroadcastManager.Instance.BroadcastToAll("蛇骄");
+            GameLogger.LogDev("Player: 已发送'蛇骄'广播");
+        }
+        else
+        {
+            GameLogger.LogError("Player: BroadcastManager.Instance为空，无法发送广播");
+        }
+    }
+    
+    /// <summary>
+    /// 测试蛇蝴广播的方法（可在Inspector中调用）
+    /// </summary>
+    [ContextMenu("测试蛇蝴广播")]
+    public void TestSnakeHuBroadcast()
+    {
+        GameLogger.LogDev("Player: 测试发送'蛇蝴'广播");
+        if (BroadcastManager.Instance != null)
+        {
+            BroadcastManager.Instance.BroadcastToAll("蛇蝴");
+            GameLogger.LogDev("Player: 已发送'蛇蝴'广播");
+        }
+        else
+        {
+            GameLogger.LogError("Player: BroadcastManager.Instance为空，无法发送广播");
+        }
+    }
+    
+    /// <summary>
+    /// 检查场景中AutoHint对象的方法（可在Inspector中调用）
+    /// </summary>
+    [ContextMenu("检查AutoHint对象")]
+    public void CheckAutoHintObjects()
+    {
+        AutoHint[] autoHints = FindObjectsOfType<AutoHint>();
+        GameLogger.LogDev($"Player: 场景中找到 {autoHints.Length} 个AutoHint对象");
+        
+        for (int i = 0; i < autoHints.Length; i++)
+        {
+            AutoHint autoHint = autoHints[i];
+            GameLogger.LogDev($"Player: AutoHint[{i}]: {autoHint.gameObject.name}, enabled={autoHint.enabled}, activeInHierarchy={autoHint.gameObject.activeInHierarchy}");
+        }
+        
+        if (autoHints.Length == 0)
+        {
+            GameLogger.LogWarning("Player: 场景中没有找到AutoHint对象！这可能是自动提示不显示的原因。");
+        }
+    }
  }

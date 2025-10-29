@@ -1009,24 +1009,37 @@ public class Highlight : MonoBehaviour
                 }
             }
             
-            // 特殊处理："蝴"对象与蛇的互动
-            if (letter == "蝴")
+            // 特殊处理："乔"对象与蛇的互动（广播逻辑已移至Player.cs）
+            if (letter == "乔")
             {
                 if (player != null && player.CarryCharacter == "蛇")
                 {
-                    GameLogger.LogDev($"FunctionA: 玩家携带'蛇'字符与'蝴'对象互动，发送广播 '蛇蝴'");
-                    if (BroadcastManager.Instance != null)
-                    {
-                        BroadcastManager.Instance.BroadcastToAll("蛇蝴");
-                        GameLogger.LogDev($"FunctionA: 已广播 '蛇蝴'");
-                    }
+                    GameLogger.LogDev($"FunctionA: 玩家携带'蛇'字符与'乔'对象互动，广播逻辑由Player.cs处理，乔对象将被隐藏");
                     
-                    // 蝴对象不销毁，保持可重复交互
+                    // 乔对象被隐藏
+                    HideObject();
                     return;
                 }
                 else
                 {
-                    GameLogger.LogDev($"FunctionA: 玩家携带字符'{player?.CarryCharacter}'，不能与'蝴'对象特殊互动，执行正常收集逻辑");
+                    GameLogger.LogDev($"FunctionA: 玩家携带字符'{player?.CarryCharacter}'，不能与'乔'对象特殊互动，执行正常收集逻辑");
+                }
+            }
+            
+            // 特殊处理："胡"对象与蛇的互动（广播逻辑已移至Player.cs）
+            if (letter == "胡")
+            {
+                if (player != null && player.CarryCharacter == "蛇")
+                {
+                    GameLogger.LogDev($"FunctionA: 玩家携带'蛇'字符与'胡'对象互动，广播逻辑由Player.cs处理，胡对象将被销毁");
+                    
+                    // 胡对象被销毁
+                    Destroy(gameObject);
+                    return;
+                }
+                else
+                {
+                    GameLogger.LogDev($"FunctionA: 玩家携带字符'{player?.CarryCharacter}'，不能与'胡'对象特殊互动，执行正常收集逻辑");
                 }
             }
             
@@ -1068,26 +1081,18 @@ public class Highlight : MonoBehaviour
             }
             else if (player.CarryCharacter == "蛇")
             {
-                // 蛇字符的特殊处理：与骄、蝴互动时发送特殊广播
-                if (letter == "骄")
+                // 蛇字符的特殊处理：与乔、胡互动时发送特殊广播（广播逻辑已移至Player.cs）
+                if (letter == "乔")
                 {
-                    GameLogger.LogDev($"FunctionA: 玩家携带'蛇'字符与对象 '{letter}' 互动，发送广播 '蛇骄'");
-                    if (BroadcastManager.Instance != null)
-                    {
-                        BroadcastManager.Instance.BroadcastToAll("蛇骄");
-                    }
+                    GameLogger.LogDev($"FunctionA: 玩家携带'蛇'字符与对象 '{letter}' 互动，广播逻辑由Player.cs处理");
                 }
-                else if (letter == "蝴")
+                else if (letter == "胡")
                 {
-                    GameLogger.LogDev($"FunctionA: 玩家携带'蛇'字符与对象 '{letter}' 互动，发送广播 '蛇蝴'");
-                    if (BroadcastManager.Instance != null)
-                    {
-                        BroadcastManager.Instance.BroadcastToAll("蛇蝴");
-                    }
+                    GameLogger.LogDev($"FunctionA: 玩家携带'蛇'字符与对象 '{letter}' 互动，广播逻辑由Player.cs处理");
                 }
                 else
                 {
-                    GameLogger.LogDev($"FunctionA: 玩家携带'蛇'字符，但对象 '{letter}' 不是骄或蝴，无反应");
+                    GameLogger.LogDev($"FunctionA: 玩家携带'蛇'字符，但对象 '{letter}' 不是乔或胡，无反应");
                 }
             }
             else if (player.CarryCharacter == "侠")

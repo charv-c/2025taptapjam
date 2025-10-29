@@ -187,6 +187,7 @@ public class GameStateManager : MonoBehaviour
         var completedTargets = GetCompletedTargets();
         var currentTargetList = GetCurrentTargetList();
         var beachObjectState = GetBeachObjectState();
+        var countdownTimerStates = CollectCountdownTimerStates();
         
         var stateData = new GameProgressData.LevelStateData
         {
@@ -201,10 +202,11 @@ public class GameStateManager : MonoBehaviour
             completedTargets = completedTargets,
             currentTargetList = currentTargetList,
             beachObjectState = beachObjectState,
+            countdownTimerStates = countdownTimerStates,
             saveTime = Time.time
         };
         
-        LogDebug($"状态数据收集完成: 物体{objectStates.Count}个, 广播{broadcastHistory.Count}条, 飞字{flyingCharacters.Count}个, 可用字符串{availableStrings.Count}个, 已收集字符串{collectedStrings.Count}个");
+        LogDebug($"状态数据收集完成: 物体{objectStates.Count}个, 广播{broadcastHistory.Count}条, 飞字{flyingCharacters.Count}个, 可用字符串{availableStrings.Count}个, 已收集字符串{collectedStrings.Count}个, 倒计时{countdownTimerStates.Count}个");
         
         // **重构核心**：调用 LevelProgressManager 来保存关卡状态，而不是写入PlayerPrefs
         LevelProgressManager.Instance.SaveLevelState(currentLevelName, stateData);
@@ -672,6 +674,9 @@ public class GameStateManager : MonoBehaviour
         // 恢复BeachObject状态
         RestoreBeachObjectState(stateData.beachObjectState);
 
+        // 恢复倒计时状态
+        RestoreCountdownTimerStates(stateData.countdownTimerStates);
+
         // 清理存档中不存在的场景对象
         DestroyObjectsNotInSave(savedPaths);
         
@@ -694,6 +699,16 @@ public class GameStateManager : MonoBehaviour
                 l2.SetGuideCompleted(stateData.guideCompleted);
             }
         }
+        
+        // 如果是Level4，先将引导完成标志同步到管理器
+        if ((stateData.levelName ?? "").Trim().ToLowerInvariant().Contains("level4"))
+        {
+            Level4Manager l4 = FindObjectOfType<Level4Manager>();
+            if (l4 != null)
+            {
+                l4.SetGuideCompleted(stateData.guideCompleted);
+            }
+        }
 
         // 特殊处理：Level3场景恢复后按引导标志设置回车与玩家切换
         if (currentLevelName.ToLower().Contains("level3"))
@@ -704,6 +719,11 @@ public class GameStateManager : MonoBehaviour
         {
             // Level2场景恢复后按引导标志设置回车与玩家切换
             StartCoroutine(CheckLevel2PlayerMovementAfterRestore());
+        }
+        else if (currentLevelName.ToLower().Contains("level4"))
+        {
+            // Level4场景恢复后按引导标志设置回车与玩家切换
+            StartCoroutine(CheckLevel4PlayerMovementAfterRestore());
         }
         else
         {
@@ -810,6 +830,57 @@ public class GameStateManager : MonoBehaviour
 
                 playerController.UpdatePlayerColors();
                 LogDebug($"Level2恢复：guideCompleted={guideCompleted}，已应用回车/切换权限");
+            }
+        }
+    }
+    
+    /// <summary>
+    /// 检查Level4场景恢复后是否需要重新启用玩家移动
+    /// </summary>
+    private System.Collections.IEnumerator CheckLevel4PlayerMovementAfterRestore()
+    {
+        // 等待一帧确保所有系统初始化完成
+        yield return null;
+        
+        // 检查Level4Manager是否存在且场景已初始化
+        Level4Manager level4Manager = FindObjectOfType<Level4Manager>();
+        if (level4Manager != null)
+        {
+            PlayerController playerController = FindObjectOfType<PlayerController>();
+            if (playerController != null)
+            {
+                bool guideCompleted = level4Manager.IsGuideCompleted();
+
+                // 始终确保可移动
+                playerController.EnableCurrentPlayerMovement();
+
+                // 根据引导状态控制回车与切换
+                for (int i = 0; i < playerController.GetPlayerCount(); i++)
+                {
+                    Player player = playerController.GetPlayerByIndex(i);
+                    if (player != null)
+                    {
+                        player.SetInputEnabled(true);
+                        player.SetEnterKeyEnabled(guideCompleted);
+                    }
+                }
+
+                if (playerController.GetPlayerCount() > 0)
+                {
+                    playerController.SetCurrentPlayerIndex(0);
+                }
+
+                if (guideCompleted)
+                {
+                    playerController.EnablePlayerSwitching();
+                }
+                else
+                {
+                    playerController.DisablePlayerSwitching();
+                }
+
+                playerController.UpdatePlayerColors();
+                LogDebug($"Level4恢复：guideCompleted={guideCompleted}，已应用回车/切换权限");
             }
         }
     }
@@ -1126,6 +1197,31 @@ public class GameStateManager : MonoBehaviour
     }
     
     /// <summary>
+    /// 收集倒计时状态
+    /// </summary>
+    private List<GameProgressData.CountdownTimerState> CollectCountdownTimerStates()
+    {
+        var countdownTimerStates = new List<GameProgressData.CountdownTimerState>();
+        
+        // 查找场景中所有的CountdownTimer组件
+        CountdownTimer[] countdownTimers = FindObjectsOfType<CountdownTimer>();
+        LogDebug($"开始收集倒计时状态 - 找到 {countdownTimers.Length} 个CountdownTimer组件");
+        
+        foreach (CountdownTimer countdownTimer in countdownTimers)
+        {
+            if (countdownTimer != null)
+            {
+                var stateData = countdownTimer.GetStateData();
+                countdownTimerStates.Add(stateData);
+                LogDebug($"收集倒计时状态: {stateData.objectName}, 剩余时间: {stateData.remainingTime}秒, 激活: {stateData.isActive}");
+            }
+        }
+        
+        LogDebug($"倒计时状态收集完成 - 总计: {countdownTimerStates.Count} 个");
+        return countdownTimerStates;
+    }
+    
+    /// <summary>
     /// 恢复广播历史
     /// </summary>
     private void RestoreBroadcastHistory(List<string> history) { }
@@ -1292,6 +1388,68 @@ public class GameStateManager : MonoBehaviour
         {
             LogDebug("未找到BeachObject，跳过状态恢复");
         }
+    }
+    
+    /// <summary>
+    /// 恢复倒计时状态
+    /// </summary>
+    private void RestoreCountdownTimerStates(List<GameProgressData.CountdownTimerState> countdownTimerStates)
+    {
+        if (countdownTimerStates == null || countdownTimerStates.Count == 0) 
+        {
+            LogDebug("没有倒计时状态需要恢复");
+            return;
+        }
+        
+        LogDebug($"开始恢复 {countdownTimerStates.Count} 个倒计时状态");
+        
+        // 查找场景中所有的CountdownTimer组件
+        CountdownTimer[] countdownTimers = FindObjectsOfType<CountdownTimer>();
+        
+        foreach (var stateData in countdownTimerStates)
+        {
+            // 通过UniqueID或对象名称查找对应的CountdownTimer
+            CountdownTimer targetTimer = null;
+            
+            // 优先使用UniqueID查找
+            if (!string.IsNullOrEmpty(stateData.uniqueId))
+            {
+                foreach (var timer in countdownTimers)
+                {
+                    if (timer != null && timer.GetComponent<UniqueID>()?.ID == stateData.uniqueId)
+                    {
+                        targetTimer = timer;
+                        break;
+                    }
+                }
+            }
+            
+            // 如果UniqueID查找失败，使用对象名称查找
+            if (targetTimer == null)
+            {
+                foreach (var timer in countdownTimers)
+                {
+                    if (timer != null && timer.gameObject.name == stateData.objectName)
+                    {
+                        targetTimer = timer;
+                        break;
+                    }
+                }
+            }
+            
+            if (targetTimer != null)
+            {
+                // 恢复倒计时状态
+                targetTimer.RestoreFromStateData(stateData);
+                LogDebug($"已恢复倒计时状态: {stateData.objectName}, 剩余时间: {stateData.remainingTime}秒, 激活: {stateData.isActive}");
+            }
+            else
+            {
+                LogDebug($"未找到对应的CountdownTimer: {stateData.objectName} (UniqueID: {stateData.uniqueId})");
+            }
+        }
+        
+        LogDebug("倒计时状态恢复完成");
     }
     
     /// <summary>

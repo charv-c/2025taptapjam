@@ -55,6 +55,7 @@ public class BroadcastManager : MonoBehaviour
         
         int receiverCount = 0;
         int highlightCount = 0;
+        int autoHintCount = 0;
         
         foreach (MonoBehaviour obj in allObjects)
         {
@@ -67,6 +68,12 @@ public class BroadcastManager : MonoBehaviour
                     highlightCount++;
                     GameLogger.LogDev($"找到Highlight组件: {obj.gameObject.name}, letter={highlight.letter}, enabled={obj.enabled}, activeInHierarchy={obj.gameObject.activeInHierarchy}");
                 }
+                // 特别检查AutoHint组件
+                else if (obj is AutoHint autoHint)
+                {
+                    autoHintCount++;
+                    GameLogger.LogDev($"找到AutoHint组件: {obj.gameObject.name}, enabled={obj.enabled}, activeInHierarchy={obj.gameObject.activeInHierarchy}");
+                }
                 
                 // 调用对象的接收广播方法
                 obj.SendMessage("ReceiveBroadcast", broadcastedValue, SendMessageOptions.DontRequireReceiver);
@@ -76,7 +83,7 @@ public class BroadcastManager : MonoBehaviour
         
         if (enableBroadcastLogging)
         {
-            GameLogger.LogDev($"BroadcastManager: 广播完成，发送给 {receiverCount} 个对象，其中 {highlightCount} 个Highlight组件");
+            GameLogger.LogDev($"BroadcastManager: 广播完成，发送给 {receiverCount} 个对象，其中 {highlightCount} 个Highlight组件，{autoHintCount} 个AutoHint组件");
         }
     }
     
