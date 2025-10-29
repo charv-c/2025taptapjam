@@ -1014,9 +1014,12 @@ public class Highlight : MonoBehaviour
             {
                 if (player != null && player.CarryCharacter == "蛇")
                 {
-                    GameLogger.LogDev($"FunctionA: 玩家携带'蛇'字符与'乔'对象互动，广播逻辑由Player.cs处理，乔对象将被隐藏");
+                    GameLogger.LogDev($"FunctionA: 玩家携带'蛇'字符与'乔'对象互动，广播逻辑由Player.cs处理，先添加字符再隐藏对象");
                     
-                    // 乔对象被隐藏
+                    // 先将字符添加到解字台
+                    AddLetterToAvailableList();
+                    
+                    // 然后隐藏乔对象
                     HideObject();
                     return;
                 }
@@ -1031,9 +1034,12 @@ public class Highlight : MonoBehaviour
             {
                 if (player != null && player.CarryCharacter == "蛇")
                 {
-                    GameLogger.LogDev($"FunctionA: 玩家携带'蛇'字符与'胡'对象互动，广播逻辑由Player.cs处理，胡对象将被销毁");
+                    GameLogger.LogDev($"FunctionA: 玩家携带'蛇'字符与'胡'对象互动，广播逻辑由Player.cs处理，先添加字符再销毁对象");
                     
-                    // 胡对象被销毁
+                    // 先将字符添加到解字台
+                    AddLetterToAvailableList();
+                    
+                    // 然后销毁胡对象
                     Destroy(gameObject);
                     return;
                 }

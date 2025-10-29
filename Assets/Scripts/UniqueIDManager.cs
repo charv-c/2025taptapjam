@@ -265,4 +265,79 @@ public static class UniqueIDManager
     {
         GameLogger.LogError($"[UniqueIDManager] {message}");
     }
+    
+#if UNITY_EDITOR
+    /// <summary>
+    /// 编辑器工具：显示所有注册的对象
+    /// </summary>
+    [UnityEditor.MenuItem("工具/UniqueID/显示所有注册对象")]
+    public static void ShowAllRegisteredObjects()
+    {
+        Debug.Log(GetDebugInfo());
+    }
+    
+    /// <summary>
+    /// 编辑器工具：清理无效引用
+    /// </summary>
+    [UnityEditor.MenuItem("工具/UniqueID/清理无效引用")]
+    public static void EditorCleanupInvalidReferences()
+    {
+        CleanupInvalidReferences();
+        Debug.Log($"[UniqueIDManager] 清理完成，当前注册对象数量: {registeredObjects.Count}");
+    }
+    
+    /// <summary>
+    /// 编辑器工具：为场景中所有对象添加UniqueID
+    /// </summary>
+    [UnityEditor.MenuItem("工具/UniqueID/为场景对象添加UniqueID")]
+    public static void AddUniqueIDToAllObjects()
+    {
+        var allObjects = Object.FindObjectsOfType<GameObject>();
+        int addedCount = 0;
+        
+        foreach (var obj in allObjects)
+        {
+            // 跳过已有UniqueID的对象
+            if (obj.GetComponent<UniqueID>() != null)
+            {
+                continue;
+            }
+            
+            // 只为特定类型的对象添加UniqueID
+            if (ShouldAddUniqueID(obj))
+            {
+                obj.AddComponent<UniqueID>();
+                addedCount++;
+            }
+        }
+        
+        Debug.Log($"[UniqueIDManager] 为 {addedCount} 个对象添加了UniqueID组件");
+    }
+    
+    /// <summary>
+    /// 判断对象是否应该添加UniqueID
+    /// </summary>
+    private static bool ShouldAddUniqueID(GameObject obj)
+    {
+        // 跳过Unity内置对象
+        if (obj.name.StartsWith("__"))
+        {
+            return false;
+        }
+        
+        // 跳过DontDestroyOnLoad对象（通常是管理器）
+        if (obj.scene.name == "DontDestroyOnLoad")
+        {
+            return false;
+        }
+        
+        // 有以下组件的对象应该添加UniqueID
+        return obj.GetComponent<Highlight>() != null ||
+               obj.GetComponent<Collider2D>() != null ||
+               obj.GetComponent<SpriteRenderer>() != null ||
+               obj.name.StartsWith("Flying_") ||
+               obj.name.Contains("Target") ||
+               obj.name.Contains("Character");
+    }
+#endif
 }
