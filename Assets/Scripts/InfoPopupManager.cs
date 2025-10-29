@@ -59,6 +59,29 @@ public class InfoPopupManager : MonoBehaviour
     }
 
     /// <summary>
+    /// 查找没有父物体的顶层Canvas
+    /// </summary>
+    /// <returns>顶层Canvas，如果未找到则返回null</returns>
+    private Canvas FindTopLevelCanvas()
+    {
+        // 获取场景中所有的Canvas
+        Canvas[] allCanvases = FindObjectsOfType<Canvas>();
+        
+        // 查找没有父物体的Canvas（顶层Canvas）
+        foreach (Canvas canvas in allCanvases)
+        {
+            if (canvas.transform.parent == null)
+            {
+                GameLogger.LogSystem($"InfoPopupManager: 找到顶层Canvas: {canvas.name}");
+                return canvas;
+            }
+        }
+        
+        GameLogger.LogWarning("InfoPopupManager: 未找到没有父物体的顶层Canvas");
+        return null;
+    }
+
+    /// <summary>
     /// 显示信息弹窗。
     /// </summary>
     /// <param name="messages">要分步显示的消息数组。</param>
@@ -83,15 +106,15 @@ public class InfoPopupManager : MonoBehaviour
         }
 
         // 实例化弹窗
-        // 确保在顶层Canvas下实例化
-        Canvas mainCanvas = FindObjectOfType<Canvas>();
+        // 确保在顶层Canvas下实例化（没有父物体的Canvas）
+        Canvas mainCanvas = FindTopLevelCanvas();
         if (mainCanvas == null)
         {
-            GameLogger.LogError("InfoPopupManager: 场景中未找到Canvas！");
+            GameLogger.LogError("InfoPopupManager: 场景中未找到顶层Canvas！");
             return;
         }
         
-        GameLogger.LogSystem($"InfoPopupManager: 找到Canvas: {mainCanvas.name}，开始实例化弹窗预制体");
+        GameLogger.LogSystem($"InfoPopupManager: 找到顶层Canvas: {mainCanvas.name}，开始实例化弹窗预制体");
         currentPopupInstance = Instantiate(popupPanelPrefab, mainCanvas.transform);
         
         // 确保实例化的弹窗是激活状态
