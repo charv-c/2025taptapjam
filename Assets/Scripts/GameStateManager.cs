@@ -192,7 +192,7 @@ public class GameStateManager : MonoBehaviour
         var stateData = new GameProgressData.LevelStateData
         {
             levelName = currentLevelName,
-            guideCompleted = GetLevel3GuideCompletedIfAny(currentLevelName) || GetLevel2GuideCompletedIfAny(currentLevelName),
+            guideCompleted = GetLevel3GuideCompletedIfAny(currentLevelName) || GetLevel2GuideCompletedIfAny(currentLevelName) || GetLevel4GuideCompletedIfAny(currentLevelName),
             objectStates = objectStates,
             broadcastHistory = broadcastHistory,
             availableStrings = availableStrings,
@@ -397,7 +397,7 @@ public class GameStateManager : MonoBehaviour
             state.hasPlayer = true;
             state.playerCarryCharacter = player.GetCarryCharacter();
             state.playerInputEnabled = player.IsInputEnabled();
-            state.playerEnterKeyEnabled = player.IsEnterKeyEnabled();
+            state.playerEnterKeyEnabled = player.IsFKeyEnabled();
         }
 
         collector.Add(state);
@@ -644,7 +644,7 @@ public class GameStateManager : MonoBehaviour
                     }
                     // 恢复输入状态
                     player.SetInputEnabled(objState.playerInputEnabled);
-                    player.SetEnterKeyEnabled(objState.playerEnterKeyEnabled);
+                    player.SetFKeyEnabled(objState.playerEnterKeyEnabled);
                 }
             }
         }
@@ -707,6 +707,8 @@ public class GameStateManager : MonoBehaviour
             if (l4 != null)
             {
                 l4.SetGuideCompleted(stateData.guideCompleted);
+                // 立即设置玩家控制状态
+                l4.SetupPlayerControlsAfterRestore();
             }
         }
 
@@ -722,8 +724,8 @@ public class GameStateManager : MonoBehaviour
         }
         else if (currentLevelName.ToLower().Contains("level4"))
         {
-            // Level4场景恢复后按引导标志设置回车与玩家切换
-            StartCoroutine(CheckLevel4PlayerMovementAfterRestore());
+            // Level4场景恢复后玩家控制状态已在上面立即设置，无需额外协程
+            LogDebug("Level4恢复：玩家控制状态已立即设置");
         }
         else
         {
@@ -759,7 +761,7 @@ public class GameStateManager : MonoBehaviour
                     if (player != null)
                     {
                         player.SetInputEnabled(true);
-                        player.SetEnterKeyEnabled(guideCompleted);
+                        player.SetFKeyEnabled(guideCompleted);
                     }
                 }
 
@@ -810,7 +812,7 @@ public class GameStateManager : MonoBehaviour
                     if (player != null)
                     {
                         player.SetInputEnabled(true);
-                        player.SetEnterKeyEnabled(guideCompleted);
+                        player.SetFKeyEnabled(guideCompleted);
                     }
                 }
 
@@ -861,7 +863,7 @@ public class GameStateManager : MonoBehaviour
                     if (player != null)
                     {
                         player.SetInputEnabled(true);
-                        player.SetEnterKeyEnabled(guideCompleted);
+                        player.SetFKeyEnabled(guideCompleted);
                     }
                 }
 
@@ -1085,6 +1087,23 @@ public class GameStateManager : MonoBehaviour
         if (l2 != null)
         {
             return l2.IsGuideCompleted();
+        }
+        return false;
+    }
+    
+    /// <summary>
+    /// 读取Level4引导完成标志（仅当当前关卡为level4时有效）
+    /// </summary>
+    private bool GetLevel4GuideCompletedIfAny(string levelName)
+    {
+        if (string.IsNullOrEmpty(levelName)) return false;
+        string lower = levelName.Trim().ToLowerInvariant();
+        if (!lower.Contains("level4")) return false;
+
+        Level4Manager l4 = FindObjectOfType<Level4Manager>();
+        if (l4 != null)
+        {
+            return l4.IsGuideCompleted();
         }
         return false;
     }

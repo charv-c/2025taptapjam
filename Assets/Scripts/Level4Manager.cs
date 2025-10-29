@@ -20,7 +20,7 @@ public class Level4Manager : MonoBehaviour, IBootstrapAware
     // private bool bootstrapCompleted = false; // 已移除未使用的字段
     private bool sceneInitialized = false;
     
-    // 引导（开场流程）完成标志：用于控制回车互动与玩家切换
+    // 引导（开场流程）完成标志：用于控制F键互动与玩家切换
     // Level4有开场白，所以一开始设为false
     private bool guideCompleted = false;
 
@@ -180,43 +180,39 @@ public class Level4Manager : MonoBehaviour, IBootstrapAware
         
         sceneInitialized = true;
         
-        // 检查是否已经完成开场白（存档恢复的情况）
+        // 检查是否已经完成过开场白（从存档恢复的情况）
         if (guideCompleted)
         {
-            GameLogger.LogSystem("Level4Manager: 开场白已完成，直接开始游戏");
-            // 在存档恢复的情况下，直接启用所有操作，不需要等待协程
-            EnableAllOperations();
+            GameLogger.LogSystem("Level4Manager: 检测到开场白已完成，直接开始关卡");
+            StartLevel();
+            return;
+        }
+        
+        GameLogger.LogSystem("Level4Manager: 开始显示Level4开场白");
+        
+        // 显示开场白，结束后再正式开始关卡
+        if (InfoPopupManager.Instance != null)
+        {
+            InfoPopupManager.Instance.ShowPopup(openingMessages, () => {
+                OnOpeningCompleted(); // 先处理开场白结束逻辑
+                StartLevel(); // 再开始关卡
+            });
         }
         else
         {
-            GameLogger.LogSystem("Level4Manager: 开始显示Level4开场白");
-            // 显示开场白
-            ShowOpeningSequence();
+            GameLogger.LogWarning("Level4Manager: InfoPopupManager仍然为null，直接开始关卡");
+            StartLevel();
         }
     }
 
     /// <summary>
-    /// 显示开场白序列
+    /// 开场白结束时的处理（在StartLevel之前调用）
     /// </summary>
-    private void ShowOpeningSequence()
+    private void OnOpeningCompleted()
     {
-        GameLogger.LogSystem("Level4Manager: 开始显示开场白序列");
-        
-        if (InfoPopupManager.Instance != null)
-        {
-            InfoPopupManager.Instance.ShowPopup(
-                openingMessages,
-                OnOpeningCompleted,
-                null,
-                "开始游戏"
-            );
-            GameLogger.LogSystem("Level4Manager: 已调用InfoPopupManager显示开场白");
-        }
-        else
-        {
-            GameLogger.LogError("Level4Manager: InfoPopupManager实例未找到，跳过开场白直接开始游戏");
-            OnOpeningCompleted();
-        }
+        GameLogger.LogSystem("Level4Manager: 开场白结束，设置引导完成状态");
+        // 视为Level4引导完成
+        guideCompleted = true;
     }
 
     /// <summary>
@@ -224,7 +220,7 @@ public class Level4Manager : MonoBehaviour, IBootstrapAware
     /// </summary>
     private void StartLevel()
     {
-        GameLogger.LogSystem("Level4Manager: 正式开始Level4关卡。");
+        GameLogger.LogSystem("Level4Manager: 开场白结束，正式开始关卡。");
         // 强制启用玩家移动，避免被其他管理器在Start中覆盖
         StartCoroutine(EnsureEnableMovementNextFrame());
     }
@@ -288,24 +284,11 @@ public class Level4Manager : MonoBehaviour, IBootstrapAware
             }
         }
     }
-    
-    /// <summary>
-    /// 开场白结束时的处理
-    /// </summary>
-    private void OnOpeningCompleted()
-    {
-        GameLogger.LogSystem("Level4Manager: 开场白结束");
-        // 设置Level4引导完成
-        guideCompleted = true;
-        GameLogger.LogSystem($"Level4Manager: guideCompleted设置为{guideCompleted}");
-        
-        // 开场白完成后开始关卡
-        StartLevel();
-    }
 
     private System.Collections.IEnumerator EnsureEnableMovementNextFrame()
     {
         yield return new WaitForEndOfFrame();
+        PlayerController playerController = FindObjectOfType<PlayerController>();
         if (playerController != null)
         {
             playerController.EnableCurrentPlayerMovement();
@@ -317,7 +300,7 @@ public class Level4Manager : MonoBehaviour, IBootstrapAware
                 if (p != null)
                 {
                     p.SetInputEnabled(true);
-                    p.SetEnterKeyEnabled(guideCompleted);
+                    p.SetFKeyEnabled(guideCompleted);
                 }
             }
 
@@ -326,24 +309,19 @@ public class Level4Manager : MonoBehaviour, IBootstrapAware
             {
                 playerController.SetCurrentPlayerIndex(0);
             }
-            
-            // 修复：确保角色切换功能在开场白结束后正确启用
             if (guideCompleted)
             {
                 playerController.EnablePlayerSwitching();
-                GameLogger.LogDev("Level4Manager: 已启用角色切换功能");
-                GameLogger.LogDev($"Level4Manager: 玩家总数={playerController.GetPlayerCount()}");
             }
             else
             {
                 playerController.DisablePlayerSwitching();
-                GameLogger.LogDev("Level4Manager: 角色切换功能已禁用（引导未完成）");
             }
             playerController.UpdatePlayerColors();
 
             if (showDebugInfo)
             {
-                GameLogger.LogDev($"Level4Manager: 已启用移动/输入，guideCompleted={guideCompleted}，并更新玩家颜色与切换状态");
+                GameLogger.LogDev("Level4Manager: 已启用移动/输入，并更新玩家颜色与切换状态");
             }
         }
         else
@@ -366,7 +344,7 @@ public class Level4Manager : MonoBehaviour, IBootstrapAware
                 if (player != null)
                 {
                     player.SetInputEnabled(false);
-                    player.SetEnterKeyEnabled(false);
+                    player.SetFKeyEnabled(false);
                 }
             }
             playerController.DisablePlayerSwitching();
@@ -394,8 +372,8 @@ public class Level4Manager : MonoBehaviour, IBootstrapAware
                 {
                     // 启用移动
                     player.SetInputEnabled(true);
-                    // 启用F键响应（因为guideCompleted为true）
-                    player.SetEnterKeyEnabled(true);
+                    // 根据引导完成状态启用F键响应
+                    player.SetFKeyEnabled(guideCompleted);
                 }
             }
             
@@ -405,13 +383,20 @@ public class Level4Manager : MonoBehaviour, IBootstrapAware
                 playerController.SetCurrentPlayerIndex(0);
             }
             
-            // 启用玩家切换功能
-            playerController.EnablePlayerSwitching();
+            // 根据引导完成状态启用玩家切换功能
+            if (guideCompleted)
+            {
+                playerController.EnablePlayerSwitching();
+            }
+            else
+            {
+                playerController.DisablePlayerSwitching();
+            }
             
             // 更新玩家颜色状态（当前操控的玩家正常颜色，其他玩家灰色）
             playerController.UpdatePlayerColors();
             
-            GameLogger.LogSystem("Level4Manager: 已启用所有移动、切换、回车、空格操作，并设置玩家颜色状态");
+            GameLogger.LogSystem($"Level4Manager: 已启用所有移动操作，F键和切换状态: {guideCompleted}");
         }
         else
         {
@@ -434,5 +419,51 @@ public class Level4Manager : MonoBehaviour, IBootstrapAware
     {
         guideCompleted = completed;
         GameLogger.LogSystem($"Level4Manager: 引导完成状态设置为 {completed}");
+    }
+    
+    /// <summary>
+    /// 存档恢复后设置玩家控制状态（参考Level2和Level3的实现）
+    /// </summary>
+    public void SetupPlayerControlsAfterRestore()
+    {
+        GameLogger.LogSystem("Level4Manager: 存档恢复后设置玩家控制状态");
+        
+        if (playerController != null)
+        {
+            // 始终确保可移动
+            playerController.EnableCurrentPlayerMovement();
+            
+            // 根据引导状态控制F键与切换
+            for (int i = 0; i < playerController.GetPlayerCount(); i++)
+            {
+                Player player = playerController.GetPlayerByIndex(i);
+                if (player != null)
+                {
+                    player.SetInputEnabled(true);
+                    player.SetFKeyEnabled(guideCompleted);
+                }
+            }
+            
+            if (playerController.GetPlayerCount() > 0)
+            {
+                playerController.SetCurrentPlayerIndex(0);
+            }
+            
+            if (guideCompleted)
+            {
+                playerController.EnablePlayerSwitching();
+            }
+            else
+            {
+                playerController.DisablePlayerSwitching();
+            }
+            
+            playerController.UpdatePlayerColors();
+            GameLogger.LogSystem($"Level4Manager: 存档恢复后玩家控制设置完成 - guideCompleted={guideCompleted}");
+        }
+        else
+        {
+            GameLogger.LogWarning("Level4Manager: PlayerController为null，无法设置玩家控制状态");
+        }
     }
 }

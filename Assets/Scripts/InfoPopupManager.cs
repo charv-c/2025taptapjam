@@ -467,7 +467,7 @@ public class InfoPopupManager : MonoBehaviour
                 if (player != null)
                 {
                     player.SetInputEnabled(false);
-                    player.SetEnterKeyEnabled(false);
+                    player.SetFKeyEnabled(false);
                 }
             }
             playerController.DisablePlayerSwitching();
@@ -516,7 +516,7 @@ public class InfoPopupManager : MonoBehaviour
                 if (player != null)
                 {
                     player.SetInputEnabled(true);
-                    player.SetEnterKeyEnabled(true);
+                    player.SetFKeyEnabled(true);
                 }
             }
             

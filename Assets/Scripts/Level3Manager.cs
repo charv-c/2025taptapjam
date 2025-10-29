@@ -467,7 +467,7 @@ public class Level3Manager : MonoBehaviour, IBootstrapAware
                 if (p != null)
                 {
                     p.SetInputEnabled(true);
-                    p.SetEnterKeyEnabled(guideCompleted);
+                    p.SetFKeyEnabled(guideCompleted);
                 }
             }
 
@@ -512,7 +512,7 @@ public class Level3Manager : MonoBehaviour, IBootstrapAware
                 if (player != null)
                 {
                     player.SetInputEnabled(false);
-                    player.SetEnterKeyEnabled(false);
+                    player.SetFKeyEnabled(false);
                 }
             }
             playerController.DisablePlayerSwitching();

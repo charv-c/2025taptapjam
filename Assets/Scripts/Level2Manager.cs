@@ -255,7 +255,7 @@ public class Level2Manager : MonoBehaviour, IBootstrapAware
                 if (player != null)
                 {
                     player.SetInputEnabled(false);
-                    player.SetEnterKeyEnabled(false);
+                    player.SetFKeyEnabled(false);
                 }
             }
             playerController.DisablePlayerSwitching();
@@ -282,7 +282,7 @@ public class Level2Manager : MonoBehaviour, IBootstrapAware
                     // 启用移动
                     player.SetInputEnabled(true);
                     // 启用F键响应
-                    player.SetEnterKeyEnabled(true);
+                    player.SetFKeyEnabled(true);
                 }
             }
             

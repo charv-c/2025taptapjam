@@ -439,7 +439,7 @@ public class PlayerController : MonoBehaviour
             if (player != null)
             {
                 player.SetInputEnabled(true);
-                player.SetEnterKeyEnabled(true);
+                player.SetFKeyEnabled(true);
                 GameLogger.LogDev($"PlayerController: 已启用玩家 {i + 1} 的输入和交互");
             }
         }

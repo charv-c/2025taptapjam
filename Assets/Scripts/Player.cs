@@ -784,14 +784,14 @@ public class Player : MonoBehaviour
     }
     
     // 启用/禁用F键响应
-    public void SetEnterKeyEnabled(bool enabled)
+    public void SetFKeyEnabled(bool enabled)
     {
         enterKeyEnabled = enabled;
         GameLogger.LogDev($"Player: F键响应已{(enabled ? "启用" : "禁用")}");
     }
     
     // 获取F键响应状态
-    public bool IsEnterKeyEnabled()
+    public bool IsFKeyEnabled()
     {
         return enterKeyEnabled;
     }

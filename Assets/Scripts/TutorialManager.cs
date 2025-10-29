@@ -431,7 +431,7 @@ public class TutorialManager : MonoBehaviour
         if (playerController != null && playerController.GetCurrentPlayer() != null)
         {
             Player currentPlayer = playerController.GetCurrentPlayer();
-            currentPlayer.SetEnterKeyEnabled(true);
+            currentPlayer.SetFKeyEnabled(true);
             GameLogger.LogDev("TutorialManager: 已启用F键响应，允许与小狗交互");
         }
 
@@ -460,7 +460,7 @@ public class TutorialManager : MonoBehaviour
                 {
                     GameLogger.LogDev("TutorialManager: 检测到玩家已获得'伏'字，自动进入下一步");
                     // 禁用F键响应
-                    currentPlayer.SetEnterKeyEnabled(false);
+                    currentPlayer.SetFKeyEnabled(false);
                     // 自动进入下一步
                     GoToNextStep();
                     yield break; // 退出协程
@@ -545,7 +545,7 @@ public class TutorialManager : MonoBehaviour
         if (playerController != null && playerController.GetCurrentPlayer() != null)
         {
             Player currentPlayer = playerController.GetCurrentPlayer();
-            currentPlayer.SetEnterKeyEnabled(false);
+            currentPlayer.SetFKeyEnabled(false);
         }
         // 自动进入下一步
         GoToNextStep();
@@ -729,7 +729,7 @@ public class TutorialManager : MonoBehaviour
         if (playerController != null && playerController.GetCurrentPlayer() != null)
         {
             Player currentPlayer = playerController.GetCurrentPlayer();
-            currentPlayer.SetEnterKeyEnabled(false);
+            currentPlayer.SetFKeyEnabled(false);
         }
         // 自动进入下一步
         GoToNextStep();
@@ -1589,7 +1589,7 @@ public class TutorialManager : MonoBehaviour
         if (playerController != null && playerController.GetCurrentPlayer() != null)
         {
             Player currentPlayer = playerController.GetCurrentPlayer();
-            currentPlayer.SetEnterKeyEnabled(false);
+            currentPlayer.SetFKeyEnabled(false);
             GameLogger.LogDev("TutorialManager: 已禁用F键响应");
         }
     }
@@ -1600,7 +1600,7 @@ public class TutorialManager : MonoBehaviour
         if (playerController != null && playerController.GetCurrentPlayer() != null)
         {
             Player currentPlayer = playerController.GetCurrentPlayer();
-            currentPlayer.SetEnterKeyEnabled(true);
+            currentPlayer.SetFKeyEnabled(true);
             GameLogger.LogDev("TutorialManager: 已启用F键响应");
         }
     }
