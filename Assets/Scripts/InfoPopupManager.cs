@@ -59,28 +59,46 @@ public class InfoPopupManager : MonoBehaviour
     }
 
     /// <summary>
-    /// 查找没有父物体的顶层Canvas
+    /// 查找合适的Canvas用于显示弹窗
+    /// 优先查找ScreenSpaceOverlay类型的Canvas，确保弹窗能正确显示
     /// </summary>
-    /// <returns>顶层Canvas，如果未找到则返回null</returns>
-    private Canvas FindTopLevelCanvas()
+    /// <returns>找到的Canvas，如果没找到则返回null</returns>
+    private Canvas FindSuitableCanvas()
     {
-        // 获取场景中所有的Canvas
+        // 获取场景中所有Canvas
         Canvas[] allCanvases = FindObjectsOfType<Canvas>();
         
-        // 查找没有父物体的Canvas（顶层Canvas）
+        if (allCanvases.Length == 0)
+        {
+            GameLogger.LogError("InfoPopupManager: 场景中没有Canvas！");
+            return null;
+        }
+        
+        // 优先查找ScreenSpaceOverlay类型的Canvas
         foreach (Canvas canvas in allCanvases)
         {
-            if (canvas.transform.parent == null)
+            if (canvas.renderMode == RenderMode.ScreenSpaceOverlay)
             {
-                GameLogger.LogSystem($"InfoPopupManager: 找到顶层Canvas: {canvas.name}");
+                GameLogger.LogSystem($"InfoPopupManager: 找到ScreenSpaceOverlay Canvas: {canvas.name}");
                 return canvas;
             }
         }
         
-        GameLogger.LogWarning("InfoPopupManager: 未找到没有父物体的顶层Canvas");
-        return null;
+        // 如果没有ScreenSpaceOverlay，查找ScreenSpaceCamera类型
+        foreach (Canvas canvas in allCanvases)
+        {
+            if (canvas.renderMode == RenderMode.ScreenSpaceCamera)
+            {
+                GameLogger.LogSystem($"InfoPopupManager: 找到ScreenSpaceCamera Canvas: {canvas.name}");
+                return canvas;
+            }
+        }
+        
+        // 如果都没有，返回第一个Canvas并发出警告
+        GameLogger.LogWarning($"InfoPopupManager: 未找到ScreenSpace类型的Canvas，使用第一个Canvas: {allCanvases[0].name} (RenderMode: {allCanvases[0].renderMode})");
+        return allCanvases[0];
     }
-
+    
     /// <summary>
     /// 显示信息弹窗。
     /// </summary>
@@ -106,31 +124,44 @@ public class InfoPopupManager : MonoBehaviour
         }
 
         // 实例化弹窗
-        // 确保在顶层Canvas下实例化（没有父物体的Canvas）
-        Canvas mainCanvas = FindTopLevelCanvas();
+        // 查找合适的Canvas - 优先查找ScreenSpaceOverlay类型的Canvas
+        Canvas mainCanvas = FindSuitableCanvas();
         if (mainCanvas == null)
         {
-            GameLogger.LogError("InfoPopupManager: 场景中未找到顶层Canvas！");
+            GameLogger.LogError("InfoPopupManager: 场景中未找到合适的Canvas！");
             return;
         }
         
-        GameLogger.LogSystem($"InfoPopupManager: 找到顶层Canvas: {mainCanvas.name}，开始实例化弹窗预制体");
+        GameLogger.LogSystem($"InfoPopupManager: 找到Canvas: {mainCanvas.name} (RenderMode: {mainCanvas.renderMode})，开始实例化弹窗预制体");
         currentPopupInstance = Instantiate(popupPanelPrefab, mainCanvas.transform);
         
         // 确保实例化的弹窗是激活状态
         currentPopupInstance.SetActive(true);
         GameLogger.LogSystem("InfoPopupManager: 弹窗预制体已激活");
         
-        // 确保弹窗置顶显示 - 添加Canvas组件并设置最高排序顺序
+        // 确保弹窗置顶显示 - 添加Canvas组件并设置正确的渲染模式和排序顺序
         Canvas popupCanvas = currentPopupInstance.GetComponent<Canvas>();
         if (popupCanvas == null)
         {
             popupCanvas = currentPopupInstance.AddComponent<Canvas>();
         }
+        // 设置为ScreenSpaceOverlay渲染模式，确保在屏幕最前方显示
+        popupCanvas.renderMode = RenderMode.ScreenSpaceOverlay;
         // 开启覆盖排序，使其独立于父Canvas的排序
         popupCanvas.overrideSorting = true;
         // 设置排序值，确保在退出窗格之下（退出窗格为22，InfoPopup为10）
         popupCanvas.sortingOrder = 10;
+        
+        // 添加或配置CanvasScaler确保弹窗在不同分辨率下正确缩放
+        CanvasScaler popupScaler = currentPopupInstance.GetComponent<CanvasScaler>();
+        if (popupScaler == null)
+        {
+            popupScaler = currentPopupInstance.AddComponent<CanvasScaler>();
+        }
+        popupScaler.uiScaleMode = CanvasScaler.ScaleMode.ScaleWithScreenSize;
+        popupScaler.referenceResolution = new Vector2(1920, 1080);
+        popupScaler.screenMatchMode = CanvasScaler.ScreenMatchMode.MatchWidthOrHeight;
+        popupScaler.matchWidthOrHeight = 0.5f; // 平衡宽度和高度匹配
         
         // 添加GraphicRaycaster组件确保按钮能接收点击事件
         GraphicRaycaster popupRaycaster = currentPopupInstance.GetComponent<GraphicRaycaster>();
@@ -139,7 +170,7 @@ public class InfoPopupManager : MonoBehaviour
             popupRaycaster = currentPopupInstance.AddComponent<GraphicRaycaster>();
         }
         
-        GameLogger.LogSystem("InfoPopupManager: 已设置弹窗Canvas为置顶显示，并添加GraphicRaycaster");
+        GameLogger.LogSystem("InfoPopupManager: 已设置弹窗Canvas为ScreenSpaceOverlay模式，配置CanvasScaler和GraphicRaycaster");
         
         // 设置弹窗位置为屏幕顶端
         RectTransform panelRect = currentPopupInstance.GetComponent<RectTransform>();

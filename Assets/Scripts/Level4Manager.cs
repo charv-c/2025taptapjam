@@ -285,7 +285,7 @@ public class Level4Manager : MonoBehaviour, IBootstrapAware
     private void OnOpeningCompleted()
     {
         GameLogger.LogSystem("Level4Manager: 开场白结束");
-        // 视为Level4引导完成
+        // 设置Level4引导完成
         guideCompleted = true;
         GameLogger.LogSystem($"Level4Manager: guideCompleted设置为{guideCompleted}");
         
